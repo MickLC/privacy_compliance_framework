@@ -1,0 +1,286 @@
+# modules/jurisdiction_registry.yml - Jurisdiction Registry Module
+---
+# Jurisdiction registry - manages the repository of privacy laws
+---
+event: jurisdiction_intro
+question: Step 2: Jurisdictional Analysis
+subquestion: |
+  Based on your business profile, we'll now determine which privacy laws apply to your operations.
+  
+  The system will analyze:
+  - Where your business operates
+  - Where your customers/clients are located
+  - Your industry-specific regulations
+  - Data volumes and types you process
+buttons:
+  - Continue: continue
+---
+code: |
+  def load_jurisdiction_registry():
+    """Load the registry of all supported jurisdictions"""
+    global jurisdiction_registry
+    
+    # In production, load from external JSON file
+    # For demonstration, use inline definition
+    jurisdiction_registry = {
+      "jurisdictions": [
+        {
+          "id": "gdpr",
+          "name": "General Data Protection Regulation",
+          "short_name": "GDPR",
+          "region": "European Union",
+          "type": "comprehensive",
+          "effective_date": "2018-05-25",
+          "latest_amendment": "2023-01-01",
+          "requirements_file": "gdpr_requirements.json",
+          "applicability_function": "is_gdpr_applicable"
+        },
+        {
+          "id": "ccpa",
+          "name": "California Consumer Privacy Act / California Privacy Rights Act",
+          "short_name": "CCPA/CPRA",
+          "region": "California, USA",
+          "type": "comprehensive",
+          "effective_date": "2020-01-01",
+          "latest_amendment": "2023-01-01",
+          "requirements_file": "ccpa_requirements.json",
+          "applicability_function": "is_ccpa_applicable"
+        },
+        {
+          "id": "tdpsa",
+          "name": "Texas Data Privacy and Security Act",
+          "short_name": "TDPSA",
+          "region": "Texas, USA",
+          "type": "comprehensive",
+          "effective_date": "2024-07-01",
+          "latest_amendment": null,
+          "requirements_file": "tdpsa_requirements.json",
+          "applicability_function": "is_tdpsa_applicable"
+        },
+        {
+          "id": "hipaa",
+          "name": "Health Insurance Portability and Accountability Act",
+          "short_name": "HIPAA",
+          "region": "United States",
+          "type": "sectoral",
+          "effective_date": "2003-04-14",
+          "latest_amendment": "2013-03-26",
+          "requirements_file": "hipaa_requirements.json",
+          "applicability_function": "is_hipaa_applicable"
+        },
+        {
+          "id": "glba",
+          "name": "Gramm-Leach-Bliley Act",
+          "short_name": "GLBA",
+          "region": "United States",
+          "type": "sectoral",
+          "effective_date": "1999-11-12",
+          "latest_amendment": "2022-10-27",
+          "requirements_file": "glba_requirements.json",
+          "applicability_function": "is_glba_applicable"
+        }
+      ]
+    }
+    
+    return jurisdiction_registry
+---
+code: |
+  def determine_applicable_jurisdictions():
+    """Determine which privacy jurisdictions apply to the business"""
+    global applicable_jurisdictions
+    applicable_jurisdictions = []
+    
+    # For each jurisdiction in the registry, check applicability
+    for jurisdiction in jurisdiction_registry["jurisdictions"]:
+      # Get the appropriate applicability function
+      func_name = jurisdiction["applicability_function"]
+      
+      # Call the applicability function
+      if globals()[func_name]():
+        applicable_jurisdictions.append(jurisdiction["id"])
+    
+    return applicable_jurisdictions
+  
+  def is_gdpr_applicable():
+    """Determine if GDPR applies"""
+    return serves_eu or has_eu_establishment
+  
+  def is_ccpa_applicable():
+    """Determine if CCPA/CPRA applies"""
+    return ((company.annual_revenue >= 25000000 or 
+             california_records >= 100000 or
+             (california_records >= 50000 and sells_personal_info)) and
+            ('California' in states_with_locations or california_records > 0))
+  
+  def is_tdpsa_applicable():
+    """Determine if Texas TDPSA applies"""
+    # Check if Texas small business exemption applies
+    is_small_business = company.employee_count < 100 and company.annual_revenue < 10000000
+    
+    return (('Texas' in states_with_locations or texas_records > 0) and 
+            not is_small_business and 
+            (texas_records >= 100000 or 
+            (texas_records >= 25000 and sells_personal_info)))
+  
+  def is_hipaa_applicable():
+    """Determine if HIPAA applies"""
+    # Only check if the company is in healthcare
+    if company.industry != "Healthcare":
+      return False
+    
+    return is_hipaa_covered_entity or is_hipaa_business_associate or processes_phi
+  
+  def is_glba_applicable():
+    """Determine if GLBA applies"""
+    # Only check if the company is in financial services
+    if company.industry != "Financial Services":
+      return False
+    
+    return is_glba_financial_institution or (provides_financial_products and collects_npi)
+---
+code: |
+  def load_requirements_for_jurisdictions():
+    """Load detailed requirements for all applicable jurisdictions"""
+    global jurisdiction_requirements
+    jurisdiction_requirements = {}
+    
+    # For each applicable jurisdiction
+    for jurisdiction_id in applicable_jurisdictions:
+      # Find the registry entry
+      jurisdiction_entry = next((j for j in jurisdiction_registry["jurisdictions"] if j["id"] == jurisdiction_id), None)
+      
+      if jurisdiction_entry:
+        # In production, load from external JSON file
+        # For demonstration, use placeholder data
+        if jurisdiction_id == "gdpr":
+          jurisdiction_requirements["gdpr"] = {
+            "categories": [
+              {"id": "transparency", "name": "Transparency Requirements"},
+              {"id": "individual_rights", "name": "Individual Rights"},
+              {"id": "lawful_basis", "name": "Lawful Basis for Processing"},
+              {"id": "data_protection", "name": "Data Protection Requirements"},
+              {"id": "accountability", "name": "Accountability Requirements"},
+              {"id": "data_transfers", "name": "International Data Transfers"}
+            ],
+            "requirements": [
+              # Transparency Requirements
+              {"id": "gdpr-trans-1", "category": "transparency", "description": "Privacy notice must be provided to data subjects", "severity": "high"},
+              {"id": "gdpr-trans-2", "category": "transparency", "description": "Privacy notice must be concise, transparent, intelligible and easily accessible", "severity": "medium"},
+              {"id": "gdpr-trans-3", "category": "transparency", "description": "Privacy notice must be written in clear and plain language", "severity": "medium"},
+              
+              # Individual Rights
+              {"id": "gdpr-rights-1", "category": "individual_rights", "description": "Right of access by the data subject", "severity": "high"},
+              {"id": "gdpr-rights-2", "category": "individual_rights", "description": "Right to rectification", "severity": "high"},
+              {"id": "gdpr-rights-3", "category": "individual_rights", "description": "Right to erasure ('right to be forgotten')", "severity": "high"},
+              {"id": "gdpr-rights-4", "category": "individual_rights", "description": "Right to restriction of processing", "severity": "high"},
+              {"id": "gdpr-rights-5", "category": "individual_rights", "description": "Right to data portability", "severity": "high"},
+              {"id": "gdpr-rights-6", "category": "individual_rights", "description": "Right to object", "severity": "high"},
+              
+              # Additional requirements would be included here
+            ]
+          }
+        elif jurisdiction_id == "ccpa":
+          jurisdiction_requirements["ccpa"] = {
+            "categories": [
+              {"id": "notice", "name": "Notice Requirements"},
+              {"id": "consumer_rights", "name": "Consumer Rights"},
+              {"id": "opt_out", "name": "Opt-Out Requirements"},
+              {"id": "data_security", "name": "Data Security Requirements"}
+            ],
+            "requirements": [
+              # Notice Requirements
+              {"id": "ccpa-notice-1", "category": "notice", "description": "Notice at collection of personal information", "severity": "high"},
+              {"id": "ccpa-notice-2", "category": "notice", "description": "Privacy policy covering CCPA requirements", "severity": "high"},
+              
+              # Consumer Rights
+              {"id": "ccpa-rights-1", "category": "consumer_rights", "description": "Right to know about personal information collected, disclosed, or sold", "severity": "high"},
+              {"id": "ccpa-rights-2", "category": "consumer_rights", "description": "Right to delete personal information", "severity": "high"},
+              {"id": "ccpa-rights-3", "category": "consumer_rights", "description": "Right to opt-out of sale of personal information", "severity": "high"},
+              {"id": "ccpa-rights-4", "category": "consumer_rights", "description": "Right to non-discrimination", "severity": "high"},
+              
+              # Additional requirements would be included here
+            ]
+          }
+        elif jurisdiction_id == "tdpsa":
+          jurisdiction_requirements["tdpsa"] = {
+            "categories": [
+              {"id": "transparency", "name": "Transparency Requirements"},
+              {"id": "consumer_rights", "name": "Consumer Rights"},
+              {"id": "data_processing", "name": "Data Processing Requirements"},
+              {"id": "sensitive_data", "name": "Sensitive Data Processing"}
+            ],
+            "requirements": [
+              # Transparency Requirements
+              {"id": "tdpsa-trans-1", "category": "transparency", "description": "Privacy notice must be reasonably accessible, clear, and conspicuous", "severity": "high"},
+              {"id": "tdpsa-trans-2", "category": "transparency", "description": "Privacy notice must describe categories of personal and sensitive data processed", "severity": "high"},
+              
+              # Consumer Rights
+              {"id": "tdpsa-rights-1", "category": "consumer_rights", "description": "Right to access personal data", "severity": "high"},
+              {"id": "tdpsa-rights-2", "category": "consumer_rights", "description": "Right to correct inaccurate personal data", "severity": "high"},
+              {"id": "tdpsa-rights-3", "category": "consumer_rights", "description": "Right to delete personal data", "severity": "high"},
+              {"id": "tdpsa-rights-4", "category": "consumer_rights", "description": "Right to data portability", "severity": "high"},
+              {"id": "tdpsa-rights-5", "category": "consumer_rights", "description": "Right to opt out of targeted advertising", "severity": "high"},
+              {"id": "tdpsa-rights-6", "category": "consumer_rights", "description": "Right to opt out of sale of personal data", "severity": "high"},
+              
+              # Additional requirements would be included here
+            ]
+          }
+        elif jurisdiction_id == "hipaa":
+          jurisdiction_requirements["hipaa"] = {
+            "categories": [
+              {"id": "privacy_rule", "name": "Privacy Rule Requirements"},
+              {"id": "security_rule", "name": "Security Rule Requirements"},
+              {"id": "breach_notification", "name": "Breach Notification Requirements"}
+            ],
+            "requirements": [
+              # Privacy Rule Requirements
+              {"id": "hipaa-privacy-1", "category": "privacy_rule", "description": "Notice of Privacy Practices", "severity": "high"},
+              {"id": "hipaa-privacy-2", "category": "privacy_rule", "description": "Minimum necessary use and disclosure of PHI", "severity": "high"},
+              
+              # Security Rule Requirements
+              {"id": "hipaa-security-1", "category": "security_rule", "description": "Administrative safeguards", "severity": "high"},
+              {"id": "hipaa-security-2", "category": "security_rule", "description": "Physical safeguards", "severity": "high"},
+              {"id": "hipaa-security-3", "category": "security_rule", "description": "Technical safeguards", "severity": "high"},
+              
+              # Additional requirements would be included here
+            ]
+          }
+        elif jurisdiction_id == "glba":
+          jurisdiction_requirements["glba"] = {
+            "categories": [
+              {"id": "privacy_notice", "name": "Privacy Notice Requirements"},
+              {"id": "safeguards", "name": "Safeguards Rule Requirements"}
+            ],
+            "requirements": [
+              # Privacy Notice Requirements
+              {"id": "glba-privacy-1", "category": "privacy_notice", "description": "Initial and annual privacy notices", "severity": "high"},
+              {"id": "glba-privacy-2", "category": "privacy_notice", "description": "Clear and conspicuous privacy notices", "severity": "high"},
+              
+              # Safeguards Rule Requirements
+              {"id": "glba-safeguards-1", "category": "safeguards", "description": "Information security program", "severity": "high"},
+              {"id": "glba-safeguards-2", "category": "safeguards", "description": "Risk assessment", "severity": "high"},
+              
+              # Additional requirements would be included here
+            ]
+          }
+    
+    return jurisdiction_requirements
+---
+question: Applicable Privacy Laws
+subquestion: |
+  Based on your responses, the following privacy laws apply to your organization:
+  
+  % if not applicable_jurisdictions:
+  **No privacy laws were found to be applicable based on the information provided.**
+  
+  This might be because your organization falls under small business exemptions or does not process personal data in jurisdictions with comprehensive privacy laws.
+  % else:
+  % for jurisdiction_id in applicable_jurisdictions:
+  * **${ next((j["name"] for j in jurisdiction_registry["jurisdictions"] if j["id"] == jurisdiction_id), jurisdiction_id) }**
+  % endfor
+  % endif
+  
+  These laws will determine the requirements for your privacy documentation and practices.
+buttons:
+  - Continue: continue
+---

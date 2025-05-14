@@ -1,0 +1,197 @@
+{
+  "jurisdictionId": "tdpsa",
+  "name": "Texas Data Privacy and Security Act",
+  "shortName": "TDPSA",
+  "region": "Texas, USA",
+  "type": "comprehensive",
+  "effectiveDate": "2024-07-01",
+  "latestAmendment": null,
+  "categories": [
+    {
+      "id": "transparency",
+      "name": "Transparency Requirements"
+    },
+    {
+      "id": "consumer_rights",
+      "name": "Consumer Rights"
+    },
+    {
+      "id": "data_processing",
+      "name": "Data Processing Requirements"
+    },
+    {
+      "id": "sensitive_data",
+      "name": "Sensitive Data Processing"
+    },
+    {
+      "id": "contracts",
+      "name": "Contract Requirements"
+    },
+    {
+      "id": "security",
+      "name": "Security Requirements"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "tdpsa-trans-1",
+      "category": "transparency",
+      "description": "Privacy notice must be reasonably accessible, clear, and conspicuous",
+      "severity": "high",
+      "details": "A controller shall provide consumers with a reasonably accessible, clear, and conspicuous privacy notice.",
+      "articleReference": "Sec. 541.151, TDPSA"
+    },
+    {
+      "id": "tdpsa-trans-2",
+      "category": "transparency",
+      "description": "Privacy notice must describe categories of personal and sensitive data processed",
+      "severity": "high",
+      "details": "A privacy notice shall include the categories of personal data and sensitive data processed by the controller, the purpose for processing personal data, categories of personal data shared with third parties, categories of third parties with whom personal data is shared, and how consumers may exercise their rights.",
+      "articleReference": "Sec. 541.151, TDPSA"
+    },
+    {
+      "id": "tdpsa-trans-3",
+      "category": "transparency",
+      "description": "Changes to privacy notice require notification",
+      "severity": "medium",
+      "details": "A controller shall notify consumers of any changes to the privacy notice before processing personal data for purposes not disclosed in the privacy notice in effect at the time of collection.",
+      "articleReference": "Sec. 541.151(c), TDPSA"
+    },
+    {
+      "id": "tdpsa-rights-1",
+      "category": "consumer_rights",
+      "description": "Right to access personal data",
+      "severity": "high",
+      "details": "A consumer has the right to confirm whether a controller is processing the consumer's personal data and to access the consumer's personal data.",
+      "articleReference": "Sec. 541.201(1), TDPSA"
+    },
+    {
+      "id": "tdpsa-rights-2",
+      "category": "consumer_rights",
+      "description": "Right to correct inaccurate personal data",
+      "severity": "high",
+      "details": "A consumer has the right to correct inaccuracies in the consumer's personal data, taking into account the nature of the personal data and the purposes of the processing of the consumer's personal data.",
+      "articleReference": "Sec. 541.201(2), TDPSA"
+    },
+    {
+      "id": "tdpsa-rights-3",
+      "category": "consumer_rights",
+      "description": "Right to delete personal data",
+      "severity": "high",
+      "details": "A consumer has the right to delete personal data provided by or obtained about the consumer.",
+      "articleReference": "Sec. 541.201(3), TDPSA"
+    },
+    {
+      "id": "tdpsa-rights-4",
+      "category": "consumer_rights",
+      "description": "Right to data portability",
+      "severity": "high",
+      "details": "A consumer has the right to obtain a copy of the consumer's personal data previously provided to the controller in a portable and, to the extent technically feasible, readily usable format that allows the consumer to transmit the data to another controller without hindrance, where the processing is carried out by automated means.",
+      "articleReference": "Sec. 541.201(4), TDPSA"
+    },
+    {
+      "id": "tdpsa-rights-5",
+      "category": "consumer_rights",
+      "description": "Right to opt out of targeted advertising",
+      "severity": "high",
+      "details": "A consumer has the right to opt out of the processing of personal data for purposes of targeted advertising.",
+      "articleReference": "Sec. 541.201(5)(A), TDPSA"
+    },
+    {
+      "id": "tdpsa-rights-6",
+      "category": "consumer_rights",
+      "description": "Right to opt out of sale of personal data",
+      "severity": "high",
+      "details": "A consumer has the right to opt out of the sale of personal data.",
+      "articleReference": "Sec. 541.201(5)(B), TDPSA"
+    },
+    {
+      "id": "tdpsa-processing-1",
+      "category": "data_processing",
+      "description": "Data minimization",
+      "severity": "high",
+      "details": "A controller shall limit the collection of personal data to what is adequate, relevant, and reasonably necessary in relation to the disclosed purposes for which the data is processed.",
+      "articleReference": "Sec. 541.101(a), TDPSA"
+    },
+    {
+      "id": "tdpsa-processing-2",
+      "category": "data_processing",
+      "description": "Purpose limitation",
+      "severity": "high",
+      "details": "A controller may not process personal data for purposes that are not reasonably necessary to or compatible with the disclosed purposes for which the personal data is processed, unless the controller obtains the consumer's consent.",
+      "articleReference": "Sec. 541.101(b), TDPSA"
+    },
+    {
+      "id": "tdpsa-processing-3",
+      "category": "data_processing",
+      "description": "Reasonable security practices",
+      "severity": "high",
+      "details": "A controller shall establish, implement, and maintain reasonable administrative, technical, and physical data security practices to protect the confidentiality, integrity, and accessibility of personal data.",
+      "articleReference": "Sec. 541.103, TDPSA"
+    },
+    {
+      "id": "tdpsa-processing-4",
+      "category": "data_processing",
+      "description": "Non-discrimination",
+      "severity": "high",
+      "details": "A controller may not process personal data in violation of state or federal laws that prohibit discrimination against consumers nor discriminate against a consumer for exercising their rights under the TDPSA.",
+      "articleReference": "Sec. 541.104, TDPSA"
+    },
+    {
+      "id": "tdpsa-sensitive-1",
+      "category": "sensitive_data",
+      "description": "Consent for processing sensitive data",
+      "severity": "high",
+      "details": "A controller may not process sensitive data concerning a consumer without obtaining the consumer's consent, or, in the case of the processing of sensitive data concerning a known child, without processing the data in accordance with the Children's Online Privacy Protection Act.",
+      "articleReference": "Sec. 541.102, TDPSA"
+    },
+    {
+      "id": "tdpsa-sensitive-2",
+      "category": "sensitive_data",
+      "description": "Definition of sensitive data",
+      "severity": "medium",
+      "details": "Sensitive data includes personal data that reveals racial or ethnic origin, religious beliefs, health diagnosis, biometric data for identification purposes, genetic data, precise geolocation data, contents of communications to which the controller is not a recipient, and personal data collected from a known child.",
+      "articleReference": "Sec. 541.003(22), TDPSA"
+    },
+    {
+      "id": "tdpsa-contracts-1",
+      "category": "contracts",
+      "description": "Contract requirements for processors",
+      "severity": "high",
+      "details": "A controller that discloses personal data to a processor shall enter into a contract that sets forth instructions for processing personal data, the nature and purpose of processing, type of data subject to processing, duration of processing, and rights and obligations of both parties.",
+      "articleReference": "Sec. 541.052(a), TDPSA"
+    },
+    {
+      "id": "tdpsa-contracts-2",
+      "category": "contracts",
+      "description": "Processor restrictions",
+      "severity": "high",
+      "details": "A processor shall adhere to the controller's instructions and shall assist the controller in meeting obligations under the TDPSA, including data security and breach notification.",
+      "articleReference": "Sec. 541.052(b), TDPSA"
+    },
+    {
+      "id": "tdpsa-contracts-3",
+      "category": "contracts",
+      "description": "Subprocessor requirements",
+      "severity": "medium",
+      "details": "A processor shall provide a controller with reasonable opportunity to object before engaging a subprocessor, and shall ensure the subprocessor is bound by a written contract with the same obligations as the processor.",
+      "articleReference": "Sec. 541.052(c), TDPSA"
+    },
+    {
+      "id": "tdpsa-security-1",
+      "category": "security",
+      "description": "Data breach notification",
+      "severity": "high",
+      "details": "A controller shall provide notice to consumers of a breach of system security as defined by Section 521.053, Business & Commerce Code, in accordance with that section.",
+      "articleReference": "Sec. 541.153, TDPSA"
+    },
+    {
+      "id": "tdpsa-security-2",
+      "category": "security",
+      "description": "Data security requirements",
+      "severity": "high",
+      "details": "Security practices shall be appropriate to the volume and nature of the personal data at issue and the size and complexity of the business and its operations.",
+      "articleReference": "Sec. 541.103, TDPSA"
+    }
+  ]
+}

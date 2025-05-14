@@ -1,0 +1,195 @@
+/* privacy_framework.css */
+
+/* Main container styling */
+.da-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Header styling */
+h1, h2, h3 {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+h1 {
+  font-size: 28px;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 10px;
+  margin-bottom: 30px;
+}
+
+h2 {
+  font-size: 22px;
+  margin-top: 30px;
+  margin-bottom: 15px;
+}
+
+h3 {
+  font-size: 18px;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+/* Form styling */
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  font-weight: 600;
+  color: #34495e;
+  display: block;
+  margin-bottom: 8px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="number"],
+select, 
+textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: border 0.3s;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+select:focus, 
+textarea:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+/* Checkbox and radio styling */
+.fieldlist {
+  margin-bottom: 15px;
+}
+
+.fieldlist .form-group {
+  margin-bottom: 8px;
+}
+
+.fieldlist label {
+  font-weight: normal;
+  display: inline;
+  margin-left: 8px;
+}
+
+/* Button styling */
+.btn {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn:hover {
+  background-color: #2980b9;
+}
+
+/* Note styling */
+.note {
+  background-color: #f9f9f9;
+  border-left: 4px solid #3498db;
+  padding: 15px;
+  margin: 20px 0;
+}
+
+/* Help text styling */
+.helptext {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin-top: 5px;
+}
+
+/* Progress bar styling */
+.daprogressbar {
+  height: 10px;
+  background-color: #ecf0f1;
+  border-radius: 5px;
+  margin: 20px 0;
+}
+
+.daprogressbar-active {
+  background-color: #2ecc71;
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s;
+}
+
+/* Navigation styling */
+.da-screen-navbar {
+  margin-top: 30px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Section styling */
+.section {
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-left: 4px solid #3498db;
+}
+
+/* Special styling for compliance gaps */
+.gap-high {
+  border-left: 4px solid #e74c3c;
+}
+
+.gap-medium {
+  border-left: 4px solid #f39c12;
+}
+
+.gap-low {
+  border-left: 4px solid #2ecc71;
+}
+
+/* Summary box styling */
+.summary-box {
+  background-color: #eaf2f8;
+  padding: 15px;
+  border-radius: 4px;
+  margin: 20px 0;
+}
+
+.summary-box h3 {
+  margin-top: 0;
+  color: #3498db;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .da-page {
+    padding: 15px;
+  }
+  
+  h1 {
+    font-size: 24px;
+  }
+  
+  h2 {
+    font-size: 20px;
+  }
+  
+  h3 {
+    font-size: 16px;
+  }
+  
+  .btn {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+}

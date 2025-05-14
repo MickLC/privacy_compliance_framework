@@ -1,0 +1,219 @@
+# modules/current_practices.yml - Current Practices Module
+---
+# Current practices module - documents existing privacy practices
+---
+event: current_practices_intro
+question: Step 3: Current Privacy Practices
+subquestion: |
+  Next, let's document your current privacy practices.
+  
+  This will help identify any gaps between your current practices and legal requirements.
+buttons:
+  - Continue: continue
+---
+code: |
+  def document_current_practices():
+    """Collect and document current privacy practices"""
+    # This function orchestrates the collection of current practices
+    # It calls various screens and builds a complete picture of practices
+    
+    # Collect information about existing policies
+    existing_policies_screen
+    
+    # Collect information about data handling practices
+    data_handling_practices_screen
+    
+    # Collect information about individual rights handling
+    individual_rights_screen
+    
+    # Collect information about security practices
+    security_practices_screen
+    
+    # If HIPAA applies, collect HIPAA-specific information
+    if 'hipaa' in applicable_jurisdictions:
+      hipaa_practices_screen
+    
+    # If GLBA applies, collect GLBA-specific information
+    if 'glba' in applicable_jurisdictions:
+      glba_practices_screen
+    
+    return True
+---
+# Existing policies screen
+event: existing_policies_screen
+question: Existing Privacy Documentation
+fields:
+  - "Do you have an existing privacy policy?": has_existing_policy
+    datatype: yesnowide
+  - "If yes, please describe its scope and when it was last updated:": existing_policy_details
+    show if: has_existing_policy
+    datatype: area
+  - "Do you have separate policies for different channels or purposes?": has_separate_policies
+    datatype: yesnowide
+  - "Do you have a written data retention policy?": has_retention_policy
+    datatype: yesnowide
+  - "Do you have documented procedures for handling data subject requests?": has_dsr_procedures
+    datatype: yesnowide
+  - "Do you have a data breach response plan?": has_breach_plan
+    datatype: yesnowide
+---
+# Data handling practices screen
+event: data_handling_practices_screen
+question: Data Handling Practices
+fields:
+  - note: |
+      Please tell us about your current data handling practices. These will be compared with the requirements of applicable laws.
+      
+  - "Do you inform individuals about your data collection practices before collecting their data?": informs_before_collection
+    datatype: yesnowide
+  - "How do you currently collect consent for data processing?": consent_collection_method
+    datatype: checkboxes
+    choices:
+      - We don't currently collect consent
+      - Checkbox on forms
+      - Click-through on website
+      - Written consent forms
+      - Verbal consent
+      - Implied consent through use of service
+    none of the above: False
+  - "Do you document and maintain records of consent?": documents_consent
+    datatype: yesnowide
+  - "Do you have a process for data minimization?": has_data_minimization
+    datatype: yesnowide
+    help: Collecting only what's necessary for your stated purposes
+  - "Do you have defined data retention periods?": has_retention_periods
+    datatype: yesnowide
+  - "Do you share data with third parties?": shares_with_third_parties
+    datatype: yesnowide
+  - "If yes, do you have data processing agreements with these parties?": has_dpas
+    datatype: yesnowide
+    show if: shares_with_third_parties
+  - "Do you transfer personal data to countries outside your primary jurisdiction?": transfers_data_internationally
+    datatype: yesnowide
+  - "If yes, what safeguards do you have in place for international transfers?": international_transfer_safeguards
+    datatype: checkboxes
+    choices:
+      - Standard Contractual Clauses (SCCs)
+      - Binding Corporate Rules (BCRs)
+      - Adequacy decisions
+      - Explicit consent
+      - None currently in place
+    show if: transfers_data_internationally
+---
+# Individual rights screen
+event: individual_rights_screen
+question: Individual Rights Practices
+fields:
+  - note: |
+      Privacy laws give individuals various rights over their personal data. Please indicate which rights you currently support.
+      
+  - "Do you have a process for individuals to request access to their personal information?": has_access_process
+    datatype: yesnowide
+  - "Do you have a process for individuals to request correction of their personal information?": has_correction_process
+    datatype: yesnowide
+  - "Do you have a process for individuals to request deletion of their personal information?": has_deletion_process
+    datatype: yesnowide
+  - "Do you have a process for individuals to opt-out of the sale of their personal information?": has_optout_sale_process
+    datatype: yesnowide
+  - "Do you have a process for individuals to opt-out of targeted advertising?": has_optout_targeting_process
+    datatype: yesnowide
+  - "Do you have a process for individuals to request their data in a portable format?": has_portability_process
+    datatype: yesnowide
+  - "Do you have a process for individuals to object to or restrict processing of their personal information?": has_objection_process
+    datatype: yesnowide
+  - "How long does it typically take to respond to individual rights requests?": rights_response_timeframe
+    choices:
+      - We don't currently process these requests
+      - Less than 15 days
+      - 15-30 days
+      - 31-45 days
+      - More than 45 days
+---
+# Security practices screen
+event: security_practices_screen
+question: Security Practices
+fields:
+  - note: |
+      Protecting personal data with appropriate security measures is a key aspect of privacy compliance.
+      
+  - "Do you have a written information security policy?": has_security_policy
+    datatype: yesnowide
+  - "Do you use encryption for personal data?": uses_encryption
+    datatype: yesnowide
+    help: Either in transit, at rest, or both
+  - "Do you implement access controls for personal data?": has_access_controls
+    datatype: yesnowide
+  - "Do you conduct regular security assessments?": conducts_security_assessments
+    datatype: yesnowide
+  - "If yes, how frequently?": security_assessment_frequency
+    show if: conducts_security_assessments
+    choices:
+      - Monthly
+      - Quarterly
+      - Annually
+      - Every 2+ years
+  - "Do you provide privacy and security training to employees?": provides_security_training
+    datatype: yesnowide
+  - "If yes, how frequently is training provided?": security_training_frequency
+    show if: provides_security_training
+    choices:
+      - Upon hiring only
+      - Annually
+      - Bi-annually
+      - Quarterly
+  - "Have you experienced a data breach in the past 24 months?": had_data_breach
+    datatype: yesnowide
+  - "If yes, did you notify affected individuals and/or regulatory authorities?": notified_breach
+    datatype: yesnowide
+    show if: had_data_breach
+---
+# HIPAA-specific practices screen
+event: hipaa_practices_screen
+question: HIPAA Compliance Practices
+fields:
+  - note: |
+      Since HIPAA applies to your organization, please provide information about your HIPAA compliance practices.
+      
+  - "Do you have a designated Privacy Officer?": has_privacy_officer
+    datatype: yesnowide
+  - "Do you have a designated Security Officer?": has_security_officer
+    datatype: yesnowide
+  - "Have you conducted a HIPAA Security Risk Assessment within the past year?": recent_hipaa_risk_assessment
+    datatype: yesnowide
+  - "Do you have a Notice of Privacy Practices (NPP)?": has_npp
+    datatype: yesnowide
+  - "Do you have Business Associate Agreements (BAAs) with all vendors who access PHI?": has_baas
+    datatype: yesnowide
+  - "Do you have a process for authorizations for uses and disclosures of PHI?": has_authorization_process
+    datatype: yesnowide
+  - "Do you have a process for accounting of disclosures?": has_accounting_disclosures
+    datatype: yesnowide
+  - "Do you have a sanctions policy for privacy/security violations?": has_sanctions_policy
+    datatype: yesnowide
+  - "Do you have a documented emergency access procedure?": has_emergency_access
+    datatype: yesnowide
+---
+# GLBA-specific practices screen
+event: glba_practices_screen
+question: GLBA Compliance Practices
+fields:
+  - note: |
+      Since GLBA applies to your organization, please provide information about your GLBA compliance practices.
+      
+  - "Do you provide initial privacy notices to customers?": provides_initial_notices
+    datatype: yesnowide
+  - "Do you provide annual privacy notices to customers?": provides_annual_notices
+    datatype: yesnowide
+  - "Do you have an information security program as required by the Safeguards Rule?": has_safeguards_program
+    datatype: yesnowide
+  - "Have you designated a qualified individual to implement and supervise your information security program?": has_designated_individual
+    datatype: yesnowide
+  - "Have you conducted a risk assessment of your information security program?": conducted_safeguards_risk_assessment
+    datatype: yesnowide
+  - "Do you have written policies and procedures for your information security program?": has_written_safeguards
+    datatype: yesnowide
+  - "Do you monitor and test the effectiveness of your information security program?": tests_safeguards
+    datatype: yesnowide
+  - "Do you require your service providers to maintain appropriate safeguards?": requires_provider_safeguards
+    datatype: yesnowide
+---

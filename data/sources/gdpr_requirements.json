@@ -1,0 +1,197 @@
+{
+  "jurisdictionId": "gdpr",
+  "name": "General Data Protection Regulation",
+  "shortName": "GDPR",
+  "region": "European Union",
+  "type": "comprehensive",
+  "effectiveDate": "2018-05-25",
+  "latestAmendment": "2023-01-01",
+  "categories": [
+    {
+      "id": "transparency",
+      "name": "Transparency Requirements"
+    },
+    {
+      "id": "individual_rights",
+      "name": "Individual Rights"
+    },
+    {
+      "id": "lawful_basis",
+      "name": "Lawful Basis for Processing"
+    },
+    {
+      "id": "data_protection",
+      "name": "Data Protection Requirements"
+    },
+    {
+      "id": "accountability",
+      "name": "Accountability Requirements"
+    },
+    {
+      "id": "data_transfers",
+      "name": "International Data Transfers"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "gdpr-trans-1",
+      "category": "transparency",
+      "description": "Privacy notice must be provided to data subjects",
+      "severity": "high",
+      "details": "Controllers must provide information to data subjects at the time personal data is obtained, including identity and contact details of the controller, purposes of processing, legal basis, recipients, retention period, and data subject rights.",
+      "articleReference": "Art. 13 & 14, GDPR"
+    },
+    {
+      "id": "gdpr-trans-2",
+      "category": "transparency",
+      "description": "Privacy notice must be concise, transparent, intelligible and easily accessible",
+      "severity": "medium",
+      "details": "Information must be provided in a concise, transparent, intelligible and easily accessible form, using clear and plain language.",
+      "articleReference": "Art. 12(1), GDPR"
+    },
+    {
+      "id": "gdpr-trans-3",
+      "category": "transparency",
+      "description": "Privacy notice must be written in clear and plain language",
+      "severity": "medium",
+      "details": "Information addressed to the public or to data subjects must be concise, easily accessible and easy to understand, using clear and plain language.",
+      "articleReference": "Art. 12(1), GDPR"
+    },
+    {
+      "id": "gdpr-rights-1",
+      "category": "individual_rights",
+      "description": "Right of access by the data subject",
+      "severity": "high",
+      "details": "Data subjects have the right to obtain confirmation as to whether personal data concerning them is being processed, and if so, access to the personal data and specific information about the processing.",
+      "articleReference": "Art. 15, GDPR"
+    },
+    {
+      "id": "gdpr-rights-2",
+      "category": "individual_rights",
+      "description": "Right to rectification",
+      "severity": "high",
+      "details": "Data subjects have the right to obtain without undue delay the rectification of inaccurate personal data concerning them.",
+      "articleReference": "Art. 16, GDPR"
+    },
+    {
+      "id": "gdpr-rights-3",
+      "category": "individual_rights",
+      "description": "Right to erasure ('right to be forgotten')",
+      "severity": "high",
+      "details": "Data subjects have the right to obtain the erasure of personal data concerning them without undue delay under certain circumstances.",
+      "articleReference": "Art. 17, GDPR"
+    },
+    {
+      "id": "gdpr-rights-4",
+      "category": "individual_rights",
+      "description": "Right to restriction of processing",
+      "severity": "high",
+      "details": "Data subjects have the right to obtain restriction of processing under certain circumstances.",
+      "articleReference": "Art. 18, GDPR"
+    },
+    {
+      "id": "gdpr-rights-5",
+      "category": "individual_rights",
+      "description": "Right to data portability",
+      "severity": "high",
+      "details": "Data subjects have the right to receive the personal data concerning them in a structured, commonly used and machine-readable format and have the right to transmit those data to another controller without hindrance.",
+      "articleReference": "Art. 20, GDPR"
+    },
+    {
+      "id": "gdpr-rights-6",
+      "category": "individual_rights",
+      "description": "Right to object",
+      "severity": "high",
+      "details": "Data subjects have the right to object to processing of personal data based on legitimate interests, public interest, or official authority, and for direct marketing purposes.",
+      "articleReference": "Art. 21, GDPR"
+    },
+    {
+      "id": "gdpr-lawful-1",
+      "category": "lawful_basis",
+      "description": "Processing requires lawful basis",
+      "severity": "high",
+      "details": "Processing of personal data is lawful only if and to the extent that at least one of the lawful bases applies: consent, contract, legal obligation, vital interests, public interest, or legitimate interests.",
+      "articleReference": "Art. 6, GDPR"
+    },
+    {
+      "id": "gdpr-lawful-2",
+      "category": "lawful_basis",
+      "description": "Conditions for consent",
+      "severity": "high",
+      "details": "Consent must be freely given, specific, informed, and unambiguous indication of the data subject's wishes, by a clear affirmative action.",
+      "articleReference": "Art. 7, GDPR"
+    },
+    {
+      "id": "gdpr-protection-1",
+      "category": "data_protection",
+      "description": "Data protection by design and by default",
+      "severity": "high",
+      "details": "Controller shall implement appropriate technical and organizational measures to implement data protection principles and to integrate necessary safeguards into the processing.",
+      "articleReference": "Art. 25, GDPR"
+    },
+    {
+      "id": "gdpr-protection-2",
+      "category": "data_protection",
+      "description": "Security of processing",
+      "severity": "high",
+      "details": "Controller and processor shall implement appropriate technical and organizational measures to ensure a level of security appropriate to the risk.",
+      "articleReference": "Art. 32, GDPR"
+    },
+    {
+      "id": "gdpr-protection-3",
+      "category": "data_protection",
+      "description": "Data breach notification to supervisory authority",
+      "severity": "high",
+      "details": "In the case of a personal data breach, the controller shall without undue delay and, where feasible, not later than 72 hours after having become aware of it, notify the personal data breach to the supervisory authority.",
+      "articleReference": "Art. 33, GDPR"
+    },
+    {
+      "id": "gdpr-protection-4",
+      "category": "data_protection",
+      "description": "Data breach notification to data subject",
+      "severity": "high",
+      "details": "When the personal data breach is likely to result in a high risk to the rights and freedoms of natural persons, the controller shall communicate the personal data breach to the data subject without undue delay.",
+      "articleReference": "Art. 34, GDPR"
+    },
+    {
+      "id": "gdpr-accountability-1",
+      "category": "accountability",
+      "description": "Records of processing activities",
+      "severity": "high",
+      "details": "Each controller and, where applicable, the controller's representative, shall maintain a record of processing activities under its responsibility.",
+      "articleReference": "Art. 30, GDPR"
+    },
+    {
+      "id": "gdpr-accountability-2",
+      "category": "accountability",
+      "description": "Data Protection Impact Assessment",
+      "severity": "high",
+      "details": "Where processing is likely to result in a high risk to the rights and freedoms of natural persons, the controller shall carry out an assessment of the impact of the envisaged processing operations on the protection of personal data.",
+      "articleReference": "Art. 35, GDPR"
+    },
+    {
+      "id": "gdpr-accountability-3",
+      "category": "accountability",
+      "description": "Data Protection Officer",
+      "severity": "high",
+      "details": "The controller and the processor shall designate a data protection officer in certain cases specified by the regulation.",
+      "articleReference": "Art. 37, GDPR"
+    },
+    {
+      "id": "gdpr-transfers-1",
+      "category": "data_transfers",
+      "description": "Transfers on the basis of an adequacy decision",
+      "severity": "high",
+      "details": "A transfer of personal data to a third country or an international organisation may take place where the Commission has decided that the third country, a territory or one or more specified sectors within that third country, or the international organisation in question ensures an adequate level of protection.",
+      "articleReference": "Art. 45, GDPR"
+    },
+    {
+      "id": "gdpr-transfers-2",
+      "category": "data_transfers",
+      "description": "Transfers subject to appropriate safeguards",
+      "severity": "high",
+      "details": "In the absence of an adequacy decision, a controller or processor may transfer personal data to a third country or an international organisation only if the controller or processor has provided appropriate safeguards, and on condition that enforceable data subject rights and effective legal remedies for data subjects are available.",
+      "articleReference": "Art. 46, GDPR"
+    }
+  ]
+}

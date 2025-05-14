@@ -1,0 +1,181 @@
+{
+  "jurisdictionId": "ccpa",
+  "name": "California Consumer Privacy Act / California Privacy Rights Act",
+  "shortName": "CCPA/CPRA",
+  "region": "California, USA",
+  "type": "comprehensive",
+  "effectiveDate": "2020-01-01",
+  "latestAmendment": "2023-01-01",
+  "categories": [
+    {
+      "id": "notice",
+      "name": "Notice Requirements"
+    },
+    {
+      "id": "consumer_rights",
+      "name": "Consumer Rights"
+    },
+    {
+      "id": "opt_out",
+      "name": "Opt-Out Requirements"
+    },
+    {
+      "id": "data_security",
+      "name": "Data Security Requirements"
+    },
+    {
+      "id": "service_providers",
+      "name": "Service Provider Requirements"
+    },
+    {
+      "id": "children",
+      "name": "Children's Data Requirements"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "ccpa-notice-1",
+      "category": "notice",
+      "description": "Notice at collection of personal information",
+      "severity": "high",
+      "details": "A business shall, at or before the point of collection of personal information, inform consumers of the categories of personal information to be collected and the purposes for which the categories of personal information are collected or used.",
+      "articleReference": "Sec. 1798.100(b), CCPA"
+    },
+    {
+      "id": "ccpa-notice-2",
+      "category": "notice",
+      "description": "Privacy policy covering CCPA requirements",
+      "severity": "high",
+      "details": "A business shall maintain a privacy policy that includes information on consumers' rights under the CCPA, categories of personal information collected, sold, or disclosed, and other required disclosures.",
+      "articleReference": "Sec. 1798.130(a)(5), CCPA"
+    },
+    {
+      "id": "ccpa-notice-3",
+      "category": "notice",
+      "description": "Just-in-time notice for mobile applications",
+      "severity": "medium",
+      "details": "When a business collects personal information from a consumer's mobile device for a purpose that the consumer would not reasonably expect, it shall provide a just-in-time notice containing a summary of the categories of personal information being collected and a link to the full notice at collection.",
+      "articleReference": "CCPA Regulations, 11 CCR § 999.305(a)(4)"
+    },
+    {
+      "id": "ccpa-rights-1",
+      "category": "consumer_rights",
+      "description": "Right to know about personal information collected, disclosed, or sold",
+      "severity": "high",
+      "details": "A consumer shall have the right to request that a business disclose the categories and specific pieces of personal information the business has collected about the consumer, the categories of sources from which the personal information is collected, the business purpose for collecting or selling personal information, and the categories of third parties with whom the business shares personal information.",
+      "articleReference": "Sec. 1798.110, CCPA"
+    },
+    {
+      "id": "ccpa-rights-2",
+      "category": "consumer_rights",
+      "description": "Right to delete personal information",
+      "severity": "high",
+      "details": "A consumer shall have the right to request that a business delete any personal information about the consumer which the business has collected from the consumer.",
+      "articleReference": "Sec. 1798.105, CCPA"
+    },
+    {
+      "id": "ccpa-rights-3",
+      "category": "consumer_rights",
+      "description": "Right to opt-out of sale of personal information",
+      "severity": "high",
+      "details": "A consumer shall have the right, at any time, to direct a business that sells personal information about the consumer to third parties not to sell the consumer's personal information.",
+      "articleReference": "Sec. 1798.120, CCPA"
+    },
+    {
+      "id": "ccpa-rights-4",
+      "category": "consumer_rights",
+      "description": "Right to non-discrimination",
+      "severity": "high",
+      "details": "A business shall not discriminate against a consumer because the consumer exercised any of the consumer's rights under the CCPA.",
+      "articleReference": "Sec. 1798.125, CCPA"
+    },
+    {
+      "id": "ccpa-rights-5",
+      "category": "consumer_rights",
+      "description": "Right to correct inaccurate personal information",
+      "severity": "high",
+      "details": "A consumer shall have the right to request a business that maintains inaccurate personal information about the consumer to correct that inaccurate personal information.",
+      "articleReference": "Sec. 1798.106, CPRA"
+    },
+    {
+      "id": "ccpa-rights-6",
+      "category": "consumer_rights",
+      "description": "Right to limit use and disclosure of sensitive personal information",
+      "severity": "high",
+      "details": "A consumer shall have the right to direct a business that collects sensitive personal information about the consumer to limit its use of the consumer's sensitive personal information.",
+      "articleReference": "Sec. 1798.121, CPRA"
+    },
+    {
+      "id": "ccpa-opt-out-1",
+      "category": "opt_out",
+      "description": "Do Not Sell My Personal Information link",
+      "severity": "high",
+      "details": "A business that sells consumers' personal information shall provide a clear and conspicuous link on the business's internet homepage, titled 'Do Not Sell My Personal Information,' to a web page that enables a consumer to opt out of the sale of the consumer's personal information.",
+      "articleReference": "Sec. 1798.135(a), CCPA"
+    },
+    {
+      "id": "ccpa-opt-out-2",
+      "category": "opt_out",
+      "description": "Opt-out of sale request methods",
+      "severity": "high",
+      "details": "A business shall provide two or more designated methods for submitting requests to opt out of sale, including, at a minimum, an interactive webform accessible via a clear and conspicuous link titled 'Do Not Sell My Personal Information,' on the business's website or mobile application.",
+      "articleReference": "CCPA Regulations, 11 CCR § 999.315(a)"
+    },
+    {
+      "id": "ccpa-opt-out-3",
+      "category": "opt_out",
+      "description": "Opt-out of sharing for cross-context behavioral advertising",
+      "severity": "high",
+      "details": "A business that shares consumers' personal information for cross-context behavioral advertising shall provide a clear and conspicuous link titled 'Do Not Share My Personal Information' to allow consumers to opt out of the sharing of their personal information.",
+      "articleReference": "Sec. 1798.135, CPRA"
+    },
+    {
+      "id": "ccpa-security-1",
+      "category": "data_security",
+      "description": "Reasonable security procedures and practices",
+      "severity": "high",
+      "details": "A business that collects personal information about a consumer shall implement reasonable security procedures and practices appropriate to the nature of the personal information to protect the personal information from unauthorized or illegal access, destruction, use, modification, or disclosure.",
+      "articleReference": "Sec. 1798.100(e), CPRA"
+    },
+    {
+      "id": "ccpa-security-2",
+      "category": "data_security",
+      "description": "Risk assessments for high-risk processing",
+      "severity": "medium",
+      "details": "A business whose processing of consumers' personal information presents significant risk to consumers' privacy or security shall conduct a cybersecurity audit and submit a risk assessment to the California Privacy Protection Agency.",
+      "articleReference": "Sec. 1798.185(a)(15), CPRA"
+    },
+    {
+      "id": "ccpa-service-providers-1",
+      "category": "service_providers",
+      "description": "Service provider contracts",
+      "severity": "high",
+      "details": "A business that discloses personal information to a service provider shall enter into a written contract that prohibits the service provider from selling the personal information or retaining, using, or disclosing the personal information for any purpose other than the specific purpose of performing the services specified in the contract.",
+      "articleReference": "Sec. 1798.140(ag), CPRA"
+    },
+    {
+      "id": "ccpa-service-providers-2",
+      "category": "service_providers",
+      "description": "Third-party contracts",
+      "severity": "high",
+      "details": "A business that sells or shares personal information with a third party shall enter into an agreement with the third party that requires the third party to comply with applicable obligations under the CPRA and provide the same level of privacy protection as required by the CPRA.",
+      "articleReference": "Sec. 1798.100(d), CPRA"
+    },
+    {
+      "id": "ccpa-children-1",
+      "category": "children",
+      "description": "Opt-in consent for consumers under 16",
+      "severity": "high",
+      "details": "A business shall not sell or share the personal information of consumers if the business has actual knowledge that the consumer is less than 16 years of age, unless the consumer, in the case of consumers at least 13 years of age and less than 16 years of age, or the consumer's parent or guardian, in the case of consumers who are less than 13 years of age, has affirmatively authorized the sale or sharing of the consumer's personal information.",
+      "articleReference": "Sec. 1798.120(c), CPRA"
+    },
+    {
+      "id": "ccpa-children-2",
+      "category": "children",
+      "description": "Knowledge standard for children under 16",
+      "severity": "high",
+      "details": "A business that willfully disregards the consumer's age shall be deemed to have had actual knowledge of the consumer's age.",
+      "articleReference": "Sec. 1798.120(c), CPRA"
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+# modules/business_assessment.yml - Business Assessment Module
+---
+# Business assessment module - collects company profile and operations
+---
+event: business_information_intro
+question: Step 1: Business Information
+subquestion: |
+  First, let's gather information about your business operations, data collection practices, and presence.
+  
+  This information will help determine which privacy laws apply to your organization and what types of documentation you need.
+buttons:
+  - Continue: continue
+---
+# Basic business profile
+event: business_profile
+question: Business Profile
+fields:
+  - Company Name: company.name
+    required: True
+  - Industry Sector: company.industry
+    required: True
+    choices:
+      - Healthcare
+      - Financial Services
+      - Retail
+      - Technology
+      - Education
+      - Professional Services
+      - Manufacturing
+      - Other
+  - Number of Employees: company.employee_count
+    datatype: integer
+    required: True
+  - Annual Revenue (USD): company.annual_revenue
+    datatype: currency
+    required: True
+  - North American Industry Classification System (NAICS) Code: company.naics_code
+    required: False
+    help: Used for determining SBA size standards
+  - note: |
+      ## Business Presence
+      
+  - "Does your business have a website?": business_has_website
+    datatype: yesnowide
+    default: True
+  - "Does your business have physical locations where customers/clients visit?": business_has_physical_location
+    datatype: yesnowide
+    default: True
+  - "In which states do you have physical locations? (select all that apply)": states_with_locations
+    datatype: checkboxes
+    choices:
+      - California
+      - Texas
+      - New York
+      - Virginia
+      - Colorado
+      - Florida
+      - Other US States
+    none of the above: False
+    show if: business_has_physical_location
+  - "Do you serve customers/clients in the European Union?": serves_eu
+    datatype: yesnowide
+  - "Do you have an establishment in the EU?": has_eu_establishment
+    datatype: yesnowide
+  - note: |
+      ## Data Collection Details
+  - "How many California consumers' personal information do you process annually (approximately)?": california_records
+    datatype: integer
+    default: 0
+  - "How many Texas consumers' personal information do you process annually (approximately)?": texas_records
+    datatype: integer
+    default: 0
+  - "Do you sell or share personal information with third parties?": sells_personal_info
+    datatype: yesnowide
+  - "Do you process children's personal information?": processes_childrens_data
+    datatype: yesnowide
+  - "If yes, do you have mechanisms to verify parental consent?": has_parental_consent_mechanism
+    datatype: yesnowide
+    show if: processes_childrens_data
+---
+# Additional questions for healthcare entities
+question: Healthcare-Specific Information
+subquestion: |
+  Since you identified as being in the healthcare sector, we need some additional information to determine if HIPAA applies to your organization.
+fields:
+  - "Is your organization a covered entity under HIPAA (healthcare provider, health plan, or healthcare clearinghouse)?": is_hipaa_covered_entity
+    datatype: yesnowide
+  - "Does your organization act as a business associate to HIPAA covered entities?": is_hipaa_business_associate
+    datatype: yesnowide
+  - "Do you process, store, or transmit Protected Health Information (PHI)?": processes_phi
+    datatype: yesnowide
+show if:
+  variable: company.industry
+  is: "Healthcare"
+---
+# Additional questions for financial entities
+question: Financial Services-Specific Information
+subquestion: |
+  Since you identified as being in the financial services sector, we need some additional information to determine if financial privacy regulations apply to your organization.
+fields:
+  - "Is your organization a financial institution as defined by the Gramm-Leach-Bliley Act?": is_glba_financial_institution
+    datatype: yesnowide
+  - "Do you provide financial products or services to consumers?": provides_financial_products
+    datatype: yesnowide
+  - "Do you collect nonpublic personal information (NPI) from consumers?": collects_npi
+    datatype: yesnowide
+show if:
+  variable: company.industry
+  is: "Financial Services"
+---
+code: |
+  def sba_size_standards():
+    """Logic to determine if the business qualifies as a small business under SBA standards"""
+    # This would implement the SBA size standards based on NAICS codes and employee counts
+    # Simplified version for demonstration purposes
+    return company.employee_count < 100
+---

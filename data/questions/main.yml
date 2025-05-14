@@ -1,0 +1,155 @@
+# main.yml - Privacy Compliance Framework
+---
+metadata:
+  title: Privacy Compliance Framework
+  short title: Privacy Framework
+  description: Comprehensive privacy compliance assessment focusing on GDPR, CCPA/CPRA, and TDPSA
+  authors:
+    - Attorney Legal Assistant AI
+  version: 1.0
+---
+modules:
+  - docassemble.base.util
+  - docassemble.base.legal
+---
+features:
+  navigation: True
+  progress bar: True
+  css: privacy_framework.css
+---
+# Initial variables
+variable name: applicable_jurisdictions
+data: []
+---
+# Overall interview flow control
+mandatory: True
+code: |
+  # Step 1: Welcome and introduction
+  intro_screen
+  
+  # Step 2: Gather basic business information
+  business_information_intro
+  business_profile
+  
+  # Step 3: Analyze jurisdictional requirements
+  jurisdiction_intro
+  
+  # Load the jurisdiction registry
+  jurisdiction_registry = load_jurisdiction_registry()
+  
+  # Determine which laws apply
+  applicable_jurisdictions = determine_applicable_jurisdictions()
+  
+  # Load detailed requirements for applicable laws
+  jurisdiction_requirements = load_requirements_for_jurisdictions()
+  
+  # Step 4: Document current privacy practices
+  current_practices_intro
+  document_current_practices()
+  
+  # Step 5: Perform gap analysis
+  gap_analysis_intro
+  compliance_gaps = perform_gap_analysis()
+  gap_report = generate_gap_report()
+  
+  # Step 6: Generate documentation package
+  document_generation_intro
+  
+  # Generate internal policy
+  if generate_internal_policy:
+    internal_policy = generate_internal_policy_document()
+  
+  # Generate public-facing documents
+  if generate_public_documents:
+    public_documents = generate_public_facing_documents()
+  
+  # Generate remediation plan
+  if generate_remediation_plan:
+    remediation_plan = create_remediation_plan()
+  
+  # Step 7: Review and download
+  documentation_summary
+  download_documents
+---
+# Introduction screen
+event: intro_screen
+question: Privacy Compliance Framework
+subquestion: |
+  Welcome to the Privacy Compliance Framework.
+  
+  This system will help you:
+  
+  1. Determine which privacy laws apply to your business (focusing on GDPR, CCPA/CPRA, and TDPSA)
+  2. Document your current privacy practices
+  3. Identify compliance gaps and remediation needs
+  4. Generate appropriate privacy documentation
+  
+  The process takes approximately 20-30 minutes to complete.
+buttons:
+  - Get Started: continue
+---
+# Document summary
+event: documentation_summary
+question: Documentation Package Summary
+subquestion: |
+  Based on your responses, the following documents have been prepared:
+  
+  % if generate_internal_policy:
+  * **Internal Privacy Policy** - A comprehensive policy for internal use that guides your organization's handling of personal data
+  % endif
+  
+  % if generate_public_documents:
+  % if business_has_website:
+  * **Website Privacy Notice** - A public-facing privacy statement for your website
+  % endif
+  
+  % if business_has_physical_location and generate_physical_notice:
+  * **Physical Location Privacy Notice** - A condensed privacy notice for display at physical locations
+  % endif
+  % endif
+  
+  % if generate_gap_report:
+  * **Gap Analysis Report** - A detailed analysis of compliance gaps and recommendations
+  % endif
+  
+  % if generate_remediation_plan:
+  * **Remediation Plan** - A prioritized action plan to address compliance gaps
+  % endif
+  
+  Click "Continue" to download your documents.
+buttons:
+  - Continue: continue
+---
+# Download screen
+event: download_documents
+question: Download Your Documents
+subquestion: |
+  Your privacy compliance documentation package is ready for download.
+  
+  % if generate_internal_policy:
+  * [Internal Privacy Policy](${internal_policy_download_link})
+  % endif
+  
+  % if generate_public_documents:
+  % if business_has_website:
+  * [Website Privacy Notice](${website_privacy_notice_download_link})
+  % endif
+  
+  % if business_has_physical_location and generate_physical_notice:
+  * [Physical Location Privacy Notice](${physical_notice_download_link})
+  % endif
+  % endif
+  
+  % if generate_gap_report:
+  * [Gap Analysis Report](${gap_report_download_link})
+  % endif
+  
+  % if generate_remediation_plan:
+  * [Remediation Plan](${remediation_plan_download_link})
+  % endif
+  
+  These documents are provided as a starting point for your privacy compliance program. We recommend reviewing them with qualified legal counsel before implementation.
+buttons:
+  - Exit: exit
+  - Restart: restart
+---
