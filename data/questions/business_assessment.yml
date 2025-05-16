@@ -7,9 +7,9 @@ subquestion: |
   First, let's gather information about your business operations, data collection practices, and presence.
   
   This information will help determine which privacy laws apply to your organization and what types of documentation you need.
-field: show_business_information_intro
-buttons:
-  - Continue: continue
+fields:
+  - Continue: show_business_information_intro
+    input type: button
 ---
 # Basic business profile
 question: Business Profile
@@ -76,7 +76,10 @@ fields:
   - "If yes, do you have mechanisms to verify parental consent?": has_parental_consent_mechanism
     datatype: yesnowide
     show if: processes_childrens_data
-field: business_profile_complete
+  - note: |
+      
+  - Continue: business_profile_complete
+    input type: button
 ---
 # Additional questions for healthcare entities
 question: Healthcare-Specific Information
@@ -89,6 +92,10 @@ fields:
     datatype: yesnowide
   - "Do you process, store, or transmit Protected Health Information (PHI)?": processes_phi
     datatype: yesnowide
+  - note: |
+      
+  - Continue: continue
+    input type: button
 show if:
   variable: company.industry
   is: "Healthcare"
@@ -104,6 +111,10 @@ fields:
     datatype: yesnowide
   - "Do you collect nonpublic personal information (NPI) from consumers?": collects_npi
     datatype: yesnowide
+  - note: |
+      
+  - Continue: continue
+    input type: button
 show if:
   variable: company.industry
   is: "Financial Services"
