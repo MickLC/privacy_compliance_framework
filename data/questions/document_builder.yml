@@ -2,7 +2,7 @@
 ---
 # Document builder module - generates privacy documentation
 ---
-question: Step 5: Document Generation
+question: "Step 5: Document Generation"
 subquestion: |
   Finally, we'll generate your privacy documentation package.
   
@@ -805,7 +805,7 @@ This remediation plan outlines the actions necessary to address the compliance g
 2. **External Expertise**: Consulting support as needed
 3. **Documentation Tools**: Tools for creating and managing documentation"""
 
-  # Add function to generate gap analysis report download link
+  # Add function to generate gap report download link
   def generate_gap_report_download():
     """Generate gap report download link"""
     global gap_report_download_link
