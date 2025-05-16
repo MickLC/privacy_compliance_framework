@@ -12,6 +12,13 @@ modules:
   - docassemble.base.util
   - docassemble.base.legal
 ---
+include:
+  - business_assessment.yml
+  - current_practices.yml
+  - jurisdiction_registry.yml
+  - gap_analysis.yml
+  - document_builder.yml
+---
 features:
   navigation: True
   progress bar: True
@@ -25,14 +32,14 @@ data: []
 mandatory: True
 code: |
   # Step 1: Welcome and introduction
-  intro_screen
+  show_intro_screen
   
   # Step 2: Gather basic business information
-  business_information_intro
-  business_profile
+  show_business_information_intro
+  business_profile_complete
   
   # Step 3: Analyze jurisdictional requirements
-  jurisdiction_intro
+  show_jurisdiction_intro
   
   # Load the jurisdiction registry
   jurisdiction_registry = load_jurisdiction_registry()
@@ -44,16 +51,16 @@ code: |
   jurisdiction_requirements = load_requirements_for_jurisdictions()
   
   # Step 4: Document current privacy practices
-  current_practices_intro
-  document_current_practices()
+  show_current_practices_intro
+  current_practices_complete = document_current_practices()
   
   # Step 5: Perform gap analysis
-  gap_analysis_intro
+  show_gap_analysis_intro
   compliance_gaps = perform_gap_analysis()
   gap_report = generate_gap_report()
   
   # Step 6: Generate documentation package
-  document_generation_intro
+  show_document_generation_intro
   
   # Generate internal policy
   if generate_internal_policy:
@@ -68,11 +75,10 @@ code: |
     remediation_plan = create_remediation_plan()
   
   # Step 7: Review and download
-  documentation_summary
-  download_documents
+  show_documentation_summary
+  download_complete
 ---
 # Introduction screen
-event: intro_screen
 question: Privacy Compliance Framework
 subquestion: |
   Welcome to the Privacy Compliance Framework.
@@ -85,11 +91,11 @@ subquestion: |
   4. Generate appropriate privacy documentation
   
   The process takes approximately 20-30 minutes to complete.
+field: show_intro_screen
 buttons:
   - Get Started: continue
 ---
 # Document summary
-event: documentation_summary
 question: Documentation Package Summary
 subquestion: |
   Based on your responses, the following documents have been prepared:
@@ -117,11 +123,11 @@ subquestion: |
   % endif
   
   Click "Continue" to download your documents.
+field: show_documentation_summary
 buttons:
   - Continue: continue
 ---
 # Download screen
-event: download_documents
 question: Download Your Documents
 subquestion: |
   Your privacy compliance documentation package is ready for download.
@@ -149,6 +155,7 @@ subquestion: |
   % endif
   
   These documents are provided as a starting point for your privacy compliance program. We recommend reviewing them with qualified legal counsel before implementation.
+field: download_complete
 buttons:
   - Exit: exit
   - Restart: restart
