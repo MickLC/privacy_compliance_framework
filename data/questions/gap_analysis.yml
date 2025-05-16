@@ -7,9 +7,9 @@ subquestion: |
   Now we'll compare your current privacy practices against the requirements of applicable laws.
   
   This will identify gaps that need to be addressed and generate remediation recommendations.
-field: show_gap_analysis_intro
-buttons:
-  - Continue: continue
+fields:
+  - Continue: show_gap_analysis_intro
+    input type: button
 ---
 code: |
   def perform_gap_analysis():
@@ -541,6 +541,7 @@ subquestion: |
   % endfor
   
   A detailed gap analysis report and remediation plan will be included in your documentation package.
-buttons:
+fields:
   - Continue: continue
+    input type: button
 ---
