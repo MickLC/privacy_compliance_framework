@@ -192,7 +192,13 @@ fields:
   - "Do you have a documented emergency access procedure?": has_emergency_access
     datatype: yesnowide
 field: hipaa_practices_complete
-show if: 'hipaa' in applicable_jurisdictions
+---
+# For showing HIPAA questions conditionally
+code: |
+  if 'hipaa' in applicable_jurisdictions:
+    hipaa_practices_complete
+  else:
+    hipaa_practices_complete = True
 ---
 # GLBA-specific practices screen
 question: GLBA Compliance Practices
@@ -217,5 +223,11 @@ fields:
   - "Do you require your service providers to maintain appropriate safeguards?": requires_provider_safeguards
     datatype: yesnowide
 field: glba_practices_complete
-show if: 'glba' in applicable_jurisdictions
+---
+# For showing GLBA questions conditionally
+code: |
+  if 'glba' in applicable_jurisdictions:
+    glba_practices_complete
+  else:
+    glba_practices_complete = True
 ---
