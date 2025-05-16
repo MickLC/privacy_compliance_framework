@@ -542,6 +542,6 @@ subquestion: |
   
   A detailed gap analysis report and remediation plan will be included in your documentation package.
 fields:
-  - Continue: continue
+  - Continue: continue_gap_summary
     input type: button
 ---
