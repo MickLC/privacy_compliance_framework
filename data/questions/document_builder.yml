@@ -8,19 +8,19 @@ subquestion: |
   
   Please select which documents you'd like to generate:
 fields:
-  - "Generate Internal Privacy Policy": generate_internal_policy
+  - Generate Internal Privacy Policy: generate_internal_policy
     datatype: yesnowide
     default: True
-  - "Generate Public-Facing Privacy Statement": generate_public_documents
+  - Generate Public-Facing Privacy Statement: generate_public_documents
     datatype: yesnowide
     default: ${ business_has_website }
-  - "Generate Physical Privacy Notice": generate_physical_notice
+  - Generate Physical Privacy Notice: generate_physical_notice
     datatype: yesnowide
     default: ${ business_has_physical_location }
-  - "Generate Gap Analysis Report": generate_gap_report
+  - Generate Gap Analysis Report: generate_gap_report
     datatype: yesnowide
     default: True
-  - "Generate Remediation Plan": generate_remediation_plan
+  - Generate Remediation Plan: generate_remediation_plan
     datatype: yesnowide
     default: True
   - note: |
@@ -35,10 +35,9 @@ code: |
     
     # In production, this would load from a template file
     # For demonstration, use a template string
-    template = |
-# Internal Privacy Policy for {company_name}
+    template = """# Internal Privacy Policy for {company_name}
 
-##Effective Date: {effective_date}
+## Effective Date: {effective_date}
 
 ## 1. Introduction
 
@@ -80,7 +79,7 @@ This policy addresses requirements from the following privacy laws applicable to
 
 ## 10. Policy Governance
 
-{policy_governance}
+{policy_governance}"""
     
     # Build context for template
     context = {
@@ -388,8 +387,7 @@ This privacy statement describes the types of information we may collect from yo
 
 ## 8. Contact Information
 
-{contact_information}
-"""
+{contact_information}"""
     
     # Build context for template
     context = {
@@ -466,7 +464,9 @@ If you are a California resident, California law may provide you with additional
 * Right to Non-Discrimination: We will not discriminate against you for exercising any of your CCPA rights.
 
 **Exercising Your Rights**
-To exercise the rights described above, please submit a verifiable consumer request to us by [contact method].\n\n"""
+To exercise the rights described above, please submit a verifiable consumer request to us by [contact method].
+
+"""
     
     if "tdpsa" in applicable_jurisdictions:
       rights_text += """### Texas Privacy Rights
@@ -481,7 +481,9 @@ If you are a Texas resident, the Texas Data Privacy and Security Act (TDPSA) pro
 * Right to Opt-Out: You have the right to opt out of the processing of your personal data for purposes of targeted advertising, the sale of personal data, or profiling.
 
 **Exercising Your Rights**
-To exercise the rights described above, please submit a request to us by [contact method].\n\n"""
+To exercise the rights described above, please submit a request to us by [contact method].
+
+"""
     
     if "gdpr" in applicable_jurisdictions:
       rights_text += """### European Privacy Rights
@@ -497,7 +499,9 @@ If you are located in the European Economic Area (EEA), you have certain rights 
 * Right to Data Portability: You have the right to request that we transfer the data we have collected to another organization, or directly to you, under certain conditions.
 
 **Exercising Your Rights**
-To exercise the rights described above, please submit a request to us by [contact method].\n\n"""
+To exercise the rights described above, please submit a request to us by [contact method].
+
+"""
     
     if "hipaa" in applicable_jurisdictions:
       rights_text += """### HIPAA Privacy Rights
@@ -512,14 +516,18 @@ If we are a covered entity under HIPAA, you have certain rights regarding your p
 * Right to Request Confidential Communications: You have the right to request that we communicate with you about medical matters in a certain way or at a certain location.
 
 **Exercising Your Rights**
-To exercise the rights described above, please submit a request to us by [contact method].\n\n"""
+To exercise the rights described above, please submit a request to us by [contact method].
+
+"""
     
     if not rights_text:
       rights_text = """We respect your privacy rights and provide you with reasonable access to the personal data that you may have provided through your use of our services.
 
 If you wish to access or amend any personal data we hold about you, or to request that we delete any information about you, you may contact us as set forth in the "Contact Information" section.
 
-At your request, we will have any reference to you deleted or blocked in our database.\n\n"""
+At your request, we will have any reference to you deleted or blocked in our database.
+
+"""
     
     rights_text += """### Do Not Track Signals
 
@@ -580,8 +588,7 @@ Attn: Privacy Officer
 {physical_privacy_rights}
 
 ## Contact Us
-{physical_contact_information}
-"""
+{physical_contact_information}"""
     
     # Build context for template
     context = {
@@ -701,8 +708,7 @@ This remediation plan outlines the actions necessary to address the compliance g
 
 ## Resource Requirements
 
-{resource_requirements}
-"""
+{resource_requirements}"""
     
     # Build context for template
     context = {
