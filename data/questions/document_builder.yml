@@ -23,9 +23,11 @@ fields:
   - "Generate Remediation Plan": generate_remediation_plan
     datatype: yesnowide
     default: True
-field: show_document_generation_intro
-buttons:
-  - Continue: continue
+  - note: |
+      
+  - Continue: show_document_generation_intro
+    input type: button
+    label: Continue
 ---
 code: |
   def generate_internal_policy_document():
