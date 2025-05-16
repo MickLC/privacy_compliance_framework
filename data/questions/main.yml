@@ -73,6 +73,10 @@ code: |
   # Generate remediation plan
   if generate_remediation_plan:
     remediation_plan = create_remediation_plan()
+    
+  # Generate gap report download
+  if generate_gap_report:
+    gap_report_download_link = generate_gap_report_download()
   
   # Step 7: Review and download
   show_documentation_summary
