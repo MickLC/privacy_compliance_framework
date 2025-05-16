@@ -2,12 +2,12 @@
 ---
 # Current practices module - documents existing privacy practices
 ---
-event: current_practices_intro
 question: Step 3: Current Privacy Practices
 subquestion: |
   Next, let's document your current privacy practices.
   
   This will help identify any gaps between your current practices and legal requirements.
+field: show_current_practices_intro
 buttons:
   - Continue: continue
 ---
@@ -18,29 +18,28 @@ code: |
     # It calls various screens and builds a complete picture of practices
     
     # Collect information about existing policies
-    existing_policies_screen
+    existing_policies_complete = True
     
     # Collect information about data handling practices
-    data_handling_practices_screen
+    data_handling_practices_complete = True
     
     # Collect information about individual rights handling
-    individual_rights_screen
+    individual_rights_complete = True
     
     # Collect information about security practices
-    security_practices_screen
+    security_practices_complete = True
     
     # If HIPAA applies, collect HIPAA-specific information
     if 'hipaa' in applicable_jurisdictions:
-      hipaa_practices_screen
+      hipaa_practices_complete = True
     
     # If GLBA applies, collect GLBA-specific information
     if 'glba' in applicable_jurisdictions:
-      glba_practices_screen
+      glba_practices_complete = True
     
     return True
 ---
 # Existing policies screen
-event: existing_policies_screen
 question: Existing Privacy Documentation
 fields:
   - "Do you have an existing privacy policy?": has_existing_policy
@@ -56,9 +55,9 @@ fields:
     datatype: yesnowide
   - "Do you have a data breach response plan?": has_breach_plan
     datatype: yesnowide
+field: existing_policies_complete
 ---
 # Data handling practices screen
-event: data_handling_practices_screen
 question: Data Handling Practices
 fields:
   - note: |
@@ -99,9 +98,9 @@ fields:
       - Explicit consent
       - None currently in place
     show if: transfers_data_internationally
+field: data_handling_practices_complete
 ---
 # Individual rights screen
-event: individual_rights_screen
 question: Individual Rights Practices
 fields:
   - note: |
@@ -128,9 +127,9 @@ fields:
       - 15-30 days
       - 31-45 days
       - More than 45 days
+field: individual_rights_complete
 ---
 # Security practices screen
-event: security_practices_screen
 question: Security Practices
 fields:
   - note: |
@@ -166,9 +165,9 @@ fields:
   - "If yes, did you notify affected individuals and/or regulatory authorities?": notified_breach
     datatype: yesnowide
     show if: had_data_breach
+field: security_practices_complete
 ---
 # HIPAA-specific practices screen
-event: hipaa_practices_screen
 question: HIPAA Compliance Practices
 fields:
   - note: |
@@ -192,9 +191,10 @@ fields:
     datatype: yesnowide
   - "Do you have a documented emergency access procedure?": has_emergency_access
     datatype: yesnowide
+field: hipaa_practices_complete
+show if: 'hipaa' in applicable_jurisdictions
 ---
 # GLBA-specific practices screen
-event: glba_practices_screen
 question: GLBA Compliance Practices
 fields:
   - note: |
@@ -216,4 +216,6 @@ fields:
     datatype: yesnowide
   - "Do you require your service providers to maintain appropriate safeguards?": requires_provider_safeguards
     datatype: yesnowide
+field: glba_practices_complete
+show if: 'glba' in applicable_jurisdictions
 ---
