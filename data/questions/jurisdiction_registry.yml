@@ -2,7 +2,6 @@
 ---
 # Jurisdiction registry - manages the repository of privacy laws
 ---
-event: jurisdiction_intro
 question: Step 2: Jurisdictional Analysis
 subquestion: |
   Based on your business profile, we'll now determine which privacy laws apply to your operations.
@@ -12,6 +11,7 @@ subquestion: |
   - Where your customers/clients are located
   - Your industry-specific regulations
   - Data volumes and types you process
+field: show_jurisdiction_intro
 buttons:
   - Continue: continue
 ---
