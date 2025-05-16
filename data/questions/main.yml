@@ -95,9 +95,9 @@ subquestion: |
   4. Generate appropriate privacy documentation
   
   The process takes approximately 20-30 minutes to complete.
-field: show_intro_screen
-buttons:
-  - Get Started: continue
+fields:
+  - Continue: show_intro_screen
+    input type: button
 ---
 # Document summary
 question: Documentation Package Summary
@@ -127,9 +127,9 @@ subquestion: |
   % endif
   
   Click "Continue" to download your documents.
-field: show_documentation_summary
-buttons:
-  - Continue: continue
+fields:
+  - Continue: show_documentation_summary
+    input type: button
 ---
 # Download screen
 question: Download Your Documents
@@ -159,8 +159,10 @@ subquestion: |
   % endif
   
   These documents are provided as a starting point for your privacy compliance program. We recommend reviewing them with qualified legal counsel before implementation.
-field: download_complete
-buttons:
+fields:
   - Exit: exit
+    input type: button
   - Restart: restart
+    input type: button
+field: download_complete
 ---
