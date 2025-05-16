@@ -2,17 +2,16 @@
 ---
 # Business assessment module - collects company profile and operations
 ---
-event: business_information_intro
 question: Step 1: Business Information
 subquestion: |
   First, let's gather information about your business operations, data collection practices, and presence.
   
   This information will help determine which privacy laws apply to your organization and what types of documentation you need.
+field: show_business_information_intro
 buttons:
   - Continue: continue
 ---
 # Basic business profile
-event: business_profile
 question: Business Profile
 fields:
   - Company Name: company.name
@@ -77,6 +76,7 @@ fields:
   - "If yes, do you have mechanisms to verify parental consent?": has_parental_consent_mechanism
     datatype: yesnowide
     show if: processes_childrens_data
+field: business_profile_complete
 ---
 # Additional questions for healthcare entities
 question: Healthcare-Specific Information
