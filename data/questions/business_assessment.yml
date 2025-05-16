@@ -94,7 +94,7 @@ fields:
     datatype: yesnowide
   - note: |
       
-  - Continue: continue
+  - Continue: healthcare_continue
     input type: button
 show if:
   variable: company.industry
@@ -113,7 +113,7 @@ fields:
     datatype: yesnowide
   - note: |
       
-  - Continue: continue
+  - Continue: financial_continue
     input type: button
 show if:
   variable: company.industry
