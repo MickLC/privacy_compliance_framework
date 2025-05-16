@@ -2,7 +2,8 @@
 ---
 # Document builder module - generates privacy documentation
 ---
-question: Step 5: Document Generation
+question: |
+  Step 5: Document Generation
 subquestion: |
   Finally, we'll generate your privacy documentation package.
   
