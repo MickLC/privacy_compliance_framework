@@ -2,12 +2,12 @@
 ---
 # Gap analysis module - compares current practices to requirements
 ---
-event: gap_analysis_intro
 question: Step 4: Gap Analysis
 subquestion: |
   Now we'll compare your current privacy practices against the requirements of applicable laws.
   
   This will identify gaps that need to be addressed and generate remediation recommendations.
+field: show_gap_analysis_intro
 buttons:
   - Continue: continue
 ---
