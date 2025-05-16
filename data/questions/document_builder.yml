@@ -35,9 +35,10 @@ code: |
     
     # In production, this would load from a template file
     # For demonstration, use a template string
-    template = """# Internal Privacy Policy for {company_name}
+    template = |
+# Internal Privacy Policy for {company_name}
 
-Effective Date: {effective_date}
+##Effective Date: {effective_date}
 
 ## 1. Introduction
 
@@ -80,7 +81,6 @@ This policy addresses requirements from the following privacy laws applicable to
 ## 10. Policy Governance
 
 {policy_governance}
-"""
     
     # Build context for template
     context = {
