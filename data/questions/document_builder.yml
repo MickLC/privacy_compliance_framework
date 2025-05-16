@@ -2,7 +2,6 @@
 ---
 # Document builder module - generates privacy documentation
 ---
-event: document_generation_intro
 question: Step 5: Document Generation
 subquestion: |
   Finally, we'll generate your privacy documentation package.
@@ -24,6 +23,7 @@ fields:
   - "Generate Remediation Plan": generate_remediation_plan
     datatype: yesnowide
     default: True
+field: show_document_generation_intro
 buttons:
   - Continue: continue
 ---
@@ -98,6 +98,9 @@ This policy addresses requirements from the following privacy laws applicable to
     
     # Format the template with context
     internal_policy = template.format(**context)
+    
+    # Make it available for download
+    internal_policy_download_link = pdf_concatenate(internal_policy, filename="internal_privacy_policy.pdf")
     
     # In a real implementation, this would be saved to a file
     # For now, just return the document text
@@ -327,16 +330,18 @@ When transferring personal data across international borders, appropriate safegu
   
   def generate_public_facing_documents():
     """Generate public-facing privacy documents"""
-    global public_documents
+    global public_documents, website_privacy_notice_download_link, physical_notice_download_link
     public_documents = {}
     
     # Generate website privacy statement
     if business_has_website:
       public_documents["privacy_statement"] = generate_privacy_statement()
+      website_privacy_notice_download_link = pdf_concatenate(public_documents["privacy_statement"], filename="website_privacy_notice.pdf")
     
     # Generate physical privacy notice
     if business_has_physical_location and generate_physical_notice:
       public_documents["physical_notice"] = generate_physical_notice()
+      physical_notice_download_link = pdf_concatenate(public_documents["physical_notice"], filename="physical_privacy_notice.pdf")
     
     return public_documents
   
@@ -662,7 +667,7 @@ For our full privacy policy, visit: [Website URL] or request a copy from staff."
   
   def create_remediation_plan():
     """Generate remediation plan document"""
-    global remediation_plan_doc
+    global remediation_plan_doc, remediation_plan_download_link
     
     # In production, this would load from a template file
     # For demonstration, use a template string
@@ -712,6 +717,9 @@ This remediation plan outlines the actions necessary to address the compliance g
     
     # Format the template with context
     remediation_plan_doc = template.format(**context)
+    
+    # Make it available for download
+    remediation_plan_download_link = pdf_concatenate(remediation_plan_doc, filename="remediation_plan.pdf")
     
     # In a real implementation, this would be saved to a file
     # For now, just return the document text
@@ -796,4 +804,90 @@ This remediation plan outlines the actions necessary to address the compliance g
 1. **Training Materials**: Materials for staff training
 2. **External Expertise**: Consulting support as needed
 3. **Documentation Tools**: Tools for creating and managing documentation"""
+
+  # Add function to generate gap analysis report download link
+  def generate_gap_report_download():
+    """Generate gap report download link"""
+    global gap_report_download_link
+    
+    # Create a formatted gap report
+    gap_report_text = f"""# Privacy Compliance Gap Analysis Report for {company.name}
+
+**Analysis Date**: {today().strftime("%B %d, %Y")}
+
+## Executive Summary
+
+This report presents the findings of a privacy compliance assessment conducted for {company.name}. The assessment evaluated current practices against the requirements of applicable privacy laws and identified compliance gaps that need to be addressed.
+
+### Summary of Findings
+
+* **Total Gaps Identified**: {gap_report["summary"]["total_gaps"]}
+* **High Severity Gaps**: {gap_report["summary"]["high_severity"]}
+* **Medium Severity Gaps**: {gap_report["summary"]["medium_severity"]}
+* **Low Severity Gaps**: {gap_report["summary"]["low_severity"]}
+
+## Applicable Privacy Laws
+
+The following privacy laws were determined to be applicable to {company.name}:
+
+"""
+    
+    # Add applicable laws
+    for jurisdiction_id in applicable_jurisdictions:
+      law_name = next((j["name"] for j in jurisdiction_registry["jurisdictions"] if j["id"] == jurisdiction_id), jurisdiction_id)
+      gap_report_text += f"* **{law_name}** ({jurisdiction_id.upper()})\n"
+    
+    # Add detailed gap analysis by category
+    gap_report_text += "\n## Detailed Gap Analysis\n\n"
+    
+    # Policy gaps
+    if compliance_gaps["policy_gaps"]:
+      gap_report_text += "### Policy Gaps\n\n"
+      for i, gap in enumerate(compliance_gaps["policy_gaps"], 1):
+        jurisdiction = gap["jurisdiction"].upper()
+        severity = gap["severity"].title()
+        gap_report_text += f"{i}. **{gap['description']}** ({jurisdiction}, {severity})\n   - *Remediation*: {gap['remediation']}\n\n"
+    
+    # Operational gaps
+    if compliance_gaps["operational_gaps"]:
+      gap_report_text += "### Operational Gaps\n\n"
+      for i, gap in enumerate(compliance_gaps["operational_gaps"], 1):
+        jurisdiction = gap["jurisdiction"].upper()
+        severity = gap["severity"].title()
+        gap_report_text += f"{i}. **{gap['description']}** ({jurisdiction}, {severity})\n   - *Remediation*: {gap['remediation']}\n\n"
+    
+    # Documentation gaps
+    if compliance_gaps["documentation_gaps"]:
+      gap_report_text += "### Documentation Gaps\n\n"
+      for i, gap in enumerate(compliance_gaps["documentation_gaps"], 1):
+        jurisdiction = gap["jurisdiction"].upper()
+        severity = gap["severity"].title()
+        gap_report_text += f"{i}. **{gap['description']}** ({jurisdiction}, {severity})\n   - *Remediation*: {gap['remediation']}\n\n"
+    
+    # Technical gaps
+    if compliance_gaps["technical_gaps"]:
+      gap_report_text += "### Technical Gaps\n\n"
+      for i, gap in enumerate(compliance_gaps["technical_gaps"], 1):
+        jurisdiction = gap["jurisdiction"].upper()
+        severity = gap["severity"].title()
+        gap_report_text += f"{i}. **{gap['description']}** ({jurisdiction}, {severity})\n   - *Remediation*: {gap['remediation']}\n\n"
+    
+    # Conclusion
+    gap_report_text += """## Conclusion
+
+The identified gaps should be addressed according to their severity level, with high-severity gaps addressed first. A detailed remediation plan has been developed to guide the implementation of necessary changes to achieve compliance with applicable privacy laws.
+
+This report should be reviewed by appropriate stakeholders, including legal counsel, to ensure that remediation efforts are properly prioritized and implemented."""
+    
+    # Make it available for download
+    gap_report_download_link = pdf_concatenate(gap_report_text, filename="gap_analysis_report.pdf")
+    
+    return gap_report_download_link
+
+  # Initialize download links
+  gap_report_download_link = None
+  internal_policy_download_link = None
+  website_privacy_notice_download_link = None
+  physical_notice_download_link = None
+  remediation_plan_download_link = None
 ---
