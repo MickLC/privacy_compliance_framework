@@ -11,9 +11,9 @@ subquestion: |
   - Where your customers/clients are located
   - Your industry-specific regulations
   - Data volumes and types you process
-field: show_jurisdiction_intro
-buttons:
-  - Continue: continue
+fields:
+  - Continue: show_jurisdiction_intro
+    input type: button
 ---
 code: |
   def load_jurisdiction_registry():
@@ -281,6 +281,7 @@ subquestion: |
   % endif
   
   These laws will determine the requirements for your privacy documentation and practices.
-buttons:
+fields:
   - Continue: continue
+    input type: button
 ---
