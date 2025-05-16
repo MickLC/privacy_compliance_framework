@@ -37,7 +37,7 @@ code: |
     # For demonstration, use a template string
     template = """# Internal Privacy Policy for {company_name}
 
-**Effective Date**: {effective_date}
+Effective Date: {effective_date}
 
 ## 1. Introduction
 
