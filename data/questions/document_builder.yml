@@ -885,7 +885,7 @@ This report should be reviewed by appropriate stakeholders, including legal coun
     
     return gap_report_download_link
 
-  # Initialize download links
+  # Initialize download links as part of the code block (properly indented)
   gap_report_download_link = None
   internal_policy_download_link = None
   website_privacy_notice_download_link = None
