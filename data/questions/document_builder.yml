@@ -29,7 +29,6 @@ fields:
   - Continue: show_document_generation_intro
     input type: button
 ---
----
 code: |
   def generate_internal_policy_document():
     """Generate internal privacy policy document"""
