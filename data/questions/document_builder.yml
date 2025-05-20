@@ -9,24 +9,24 @@ subquestion: |
   
   Please select which documents you'd like to generate:
 fields:
-  - no label: generate_internal_policy
-    field: Generate Internal Privacy Policy
+  - field: generate_internal_policy
+    label: Generate Internal Privacy Policy
     datatype: yesnowide
     default: True
-  - no label: generate_public_documents
-    field: Generate Public-Facing Privacy Statement
+  - field: generate_public_documents
+    label: Generate Public-Facing Privacy Statement
     datatype: yesnowide
     default: ${ business_has_website }
-  - no label: generate_physical_notice
-    field: Generate Physical Privacy Notice
+  - field: generate_physical_notice
+    label: Generate Physical Privacy Notice
     datatype: yesnowide
     default: ${ business_has_physical_location }
-  - no label: generate_gap_report
-    field: Generate Gap Analysis Report
+  - field: generate_gap_report
+    label: Generate Gap Analysis Report
     datatype: yesnowide
     default: True
-  - no label: generate_remediation_plan
-    field: Generate Remediation Plan
+  - field: generate_remediation_plan
+    label: Generate Remediation Plan
     datatype: yesnowide
     default: True
   - note: |
