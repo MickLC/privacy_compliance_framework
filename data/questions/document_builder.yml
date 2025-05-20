@@ -10,24 +10,24 @@ subquestion: |
   Please select which documents you'd like to generate:
 fields:
   - Generate Internal Privacy Policy: generate_internal_policy
-    datatype: yesnowide
+    input type: checkbox
     default: True
   - Generate Public-Facing Privacy Statement: generate_public_documents
-    datatype: yesnowide
+    input type: checkbox
     default: ${ business_has_website }
   - Generate Physical Privacy Notice: generate_physical_notice
-    datatype: yesnowide
+    input type: checkbox
     default: ${ business_has_physical_location }
   - Generate Gap Analysis Report: generate_gap_report
-    datatype: yesnowide
+    input type: checkbox
     default: True
   - Generate Remediation Plan: generate_remediation_plan
-    datatype: yesnowide
+    input type: checkbox
     default: True
   - note: |
       
-  - continue button field: show_document_generation_intro
-    label: Continue
+  - Continue: show_document_generation_intro
+    input type: button
 ---
 code: |
   def generate_internal_policy_document():
