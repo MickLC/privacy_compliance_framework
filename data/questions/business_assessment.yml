@@ -1,7 +1,7 @@
 # modules/business_assessment.yml - Optimized Business Assessment Module
 ---
 objects:
-  - company: Individual
+  - company: DAObject
 ---
 modules:
   - requests
