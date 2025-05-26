@@ -38,22 +38,23 @@ code: |
     try:
       log("Starting NAICS data load...")
       
-      # Try to get from cache first
-      cached_choices = get_cached_naics_choices()
+      # Try to get from cache first (cache for 7 days since it's a static file)
+      cached_choices = get_cached_naics_choices(cache_days=7)
       if cached_choices:
         naics_choices = cached_choices
         naics_loading_status = "complete"
         log(f"Loaded {len(naics_choices)} NAICS codes from cache")
         return
       
-      # Load from API with optimizations
+      # Only download the large file if cache is empty/expired
+      log("Cache miss - attempting to download NAICS file...")
       api_choices = get_naics_choices_optimized()
       
       if api_choices and len(api_choices) > 100:
         naics_choices = api_choices
         cache_naics_choices(api_choices)
         naics_loading_status = "complete"
-        log(f"Loaded {len(naics_choices)} NAICS codes from API")
+        log(f"Downloaded and cached {len(naics_choices)} NAICS codes")
       else:
         # Fallback to static choices
         naics_choices = get_enhanced_fallback_naics_choices()
@@ -68,8 +69,10 @@ code: |
 
   # Trigger background loading when basic info is complete
   if basic_business_info_complete and not defined('naics_loading_triggered'):
+    log("=== TRIGGERING NAICS DATA LOAD ===")
     load_naics_data_async()
     naics_loading_triggered = True
+    log(f"=== NAICS LOAD COMPLETE. Status: {naics_loading_status}, Choices count: {len(naics_choices) if defined('naics_choices') else 'undefined'} ===")
   
   # Ensure naics_choices is always defined
   if not defined('naics_choices'):
@@ -180,10 +183,9 @@ code: |
   import os
   from datetime import datetime, timedelta
   
-  def get_cached_naics_choices():
+  def get_cached_naics_choices(cache_days=7):
     """Get NAICS choices from local cache if fresh"""
     cache_file = 'naics_choices_cache.json'
-    cache_duration_hours = 24  # Cache for 24 hours
     
     try:
       if os.path.exists(cache_file):
@@ -191,11 +193,11 @@ code: |
           cache_data = json.load(f)
         
         cache_time = datetime.fromisoformat(cache_data['timestamp'])
-        if datetime.now() - cache_time < timedelta(hours=cache_duration_hours):
-          log(f"Using cached NAICS choices ({len(cache_data['choices'])} items)")
+        if datetime.now() - cache_time < timedelta(days=cache_days):
+          log(f"Using cached NAICS choices ({len(cache_data['choices'])} items, cached {cache_time})")
           return cache_data['choices']
         else:
-          log("NAICS cache expired")
+          log(f"NAICS cache expired (cached {cache_time}, expires after {cache_days} days)")
       
     except Exception as e:
       log(f"Error reading NAICS cache: {e}")
@@ -222,29 +224,37 @@ code: |
       log(f"Error caching NAICS choices: {e}")
   
   def get_naics_choices_optimized():
-    """Optimized NAICS loading with streaming and filtering"""
+    """Download the complete NAICS file (static dataset, not API)"""
     try:
-      log("Fetching NAICS data from SBA API...")
+      log("=== DOWNLOADING NAICS FILE (4MB) ===")
       
       headers = {
         'Accept': 'application/json',
         'User-Agent': 'Privacy-Compliance-Framework/1.0'
       }
       
-      # Use longer timeout but stream the response
+      log(f"Downloading from: https://api.sba.gov/naics/naics.json")
+      
+      # Use reasonable timeout for 4MB file download
       response = requests.get(
         "https://api.sba.gov/naics/naics.json",
         headers=headers,
-        timeout=45,  # Longer timeout for large response
-        stream=True  # Stream to handle large response
+        timeout=30,  # 30 seconds should be enough for 4MB
+        stream=False  # Don't stream since we need the whole file anyway
       )
       
+      log(f"=== DOWNLOAD STATUS: {response.status_code}, SIZE: {len(response.content)} bytes ===")
+      
       if response.status_code == 200:
-        # Parse JSON from stream
+        log("=== PARSING NAICS FILE ===")
         naics_data = response.json()
         
-        # Process efficiently
+        log(f"=== FILE CONTAINS {len(naics_data)} NAICS RECORDS ===")
+        
+        # Process all records efficiently
         choices = []
+        processed_count = 0
+        
         for item in naics_data:
           naics_code = item.get('id', '').strip()
           naics_description = item.get('description', '').strip()
@@ -255,22 +265,27 @@ code: |
               naics_description = naics_description[:117] + "..."
             
             choices.append((naics_code, f"{naics_code}: {naics_description}"))
+            processed_count += 1
+          
+          # Log progress every 500 records
+          if processed_count % 500 == 0:
+            log(f"Processed {processed_count} NAICS codes...")
         
         # Sort by description for better UX
         choices.sort(key=lambda x: x[1])
         
-        log(f"Successfully processed {len(choices)} NAICS codes from API")
+        log(f"=== SUCCESSFULLY PROCESSED {len(choices)} NAICS CODES FROM FILE ===")
         return choices
       
       else:
-        log(f"SBA API returned status {response.status_code}")
+        log(f"=== DOWNLOAD FAILED: HTTP {response.status_code} ===")
         return None
         
     except requests.exceptions.Timeout:
-      log("SBA API request timed out")
+      log("=== NAICS FILE DOWNLOAD TIMED OUT ===")
       return None
     except Exception as e:
-      log(f"Error fetching NAICS data: {e}")
+      log(f"=== ERROR DOWNLOADING NAICS FILE: {e} ===")
       return None
   
   def filter_naics_choices(search_term):
