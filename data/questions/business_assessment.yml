@@ -7,7 +7,6 @@ modules:
   - requests
   - threading
 ---
----
 # Business information introduction
 question: "Step 1: Business Information"
 subquestion: |
