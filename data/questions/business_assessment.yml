@@ -12,74 +12,88 @@ subquestion: |
   This information will help determine which privacy laws apply to your organization and what types of documentation you need.
 continue button field: show_business_information_intro
 ---
-# Basic business profile
-question: Business Profile
+question: Business Profile  
 fields:
   - Company Name: company.name
     required: True
-  - Industry Sector: company.industry
+  - Primary Business Activity (NAICS Code): company.naics_code
     required: True
-    choices:
-      - Healthcare
-      - Financial Services
-      - Retail
-      - Technology
-      - Education
-      - Professional Services
-      - Manufacturing
-      - Other
+    datatype: combobox
+    choices: naics_choices
+    help: |
+      Start typing to search for your business activity. This determines industry 
+      classification and SBA small business size standards.
   - Number of Employees: company.employee_count
     datatype: integer
     required: True
   - Annual Revenue (USD): company.annual_revenue
     datatype: currency
     required: True
-  - North American Industry Classification System (NAICS) Code: company.naics_code
-    required: False
-    help: Used for determining SBA size standards
   - note: |
-      ## Business Presence
-      
-  - "Does your business have a website?": business_has_website
-    datatype: yesnowide
-    default: True
-  - "Does your business have physical locations where customers/clients visit?": business_has_physical_location
-    datatype: yesnowide
-    default: True
-  - "In which states do you have physical locations? (select all that apply)": states_with_locations
-    datatype: checkboxes
-    choices:
-      - California
-      - Texas
-      - New York
-      - Virginia
-      - Colorado
-      - Florida
-      - Other US States
-    none of the above: False
-    show if: business_has_physical_location
-  - "Do you serve customers/clients in the European Union?": serves_eu
-    datatype: yesnowide
-  - "Do you have an establishment in the EU?": has_eu_establishment
-    datatype: yesnowide
-  - note: |
-      ## Data Collection Details
-  - "How many California consumers' personal information do you process annually (approximately)?": california_records
-    datatype: integer
-    default: 0
-  - "How many Texas consumers' personal information do you process annually (approximately)?": texas_records
-    datatype: integer
-    default: 0
-  - "Do you sell or share personal information with third parties?": sells_personal_info
-    datatype: yesnowide
-  - "Do you process children's personal information?": processes_childrens_data
-    datatype: yesnowide
-  - "If yes, do you have mechanisms to verify parental consent?": has_parental_consent_mechanism
-    datatype: yesnowide
-    show if: processes_childrens_data
-  - note: |
-      
+      % if company.naics_code:
+      **Industry Classification**: ${get_industry_from_naics(get_naics_code_only())}
+      % endif
 continue button field: business_profile_complete
+---
+code: |
+  def get_industry_from_naics(naics_code):
+    """Derive broad industry category from NAICS code"""
+    if not naics_code or len(naics_code) < 2:
+      return "Other"
+    
+    # Map NAICS sectors to your original industry categories
+    sector = naics_code[:2]
+    
+    naics_to_industry = {
+      # Healthcare
+      "62": "Healthcare",  # Health Care and Social Assistance
+      
+      # Financial Services  
+      "52": "Financial Services",  # Finance and Insurance
+      
+      # Technology
+      "51": "Technology",  # Information
+      "54": "Technology",  # Professional, Scientific, and Technical Services (partial)
+      
+      # Retail
+      "44": "Retail",  # Retail Trade
+      "45": "Retail",  # Retail Trade
+      
+      # Education
+      "61": "Education",  # Educational Services
+      
+      # Manufacturing
+      "31": "Manufacturing",  # Manufacturing
+      "32": "Manufacturing",  # Manufacturing  
+      "33": "Manufacturing",  # Manufacturing
+      
+      # Professional Services (catch remaining 54 codes)
+      # Will be handled by specific NAICS code check below
+    }
+    
+    # Check sector-level mapping first
+    if sector in naics_to_industry:
+      return naics_to_industry[sector]
+    
+    # Handle Professional Services (NAICS 54) more specifically
+    if sector == "54":
+      # Legal, accounting, consulting, etc.
+      if naics_code.startswith(("5411", "5412", "5416")):  # Legal, accounting, consulting
+        return "Professional Services"
+      else:
+        return "Technology"  # Engineering, computer services, etc.
+    
+    # Default for unmapped sectors
+    return "Other"
+
+  # Auto-populate industry based on NAICS selection
+  def company_industry():
+    if company.naics_code:
+      return get_industry_from_naics(get_naics_code_only())
+    return "Other"
+  
+  # Make it available as a computed attribute
+  company.industry = company_industry()
 ---
 # Additional questions for healthcare entities
 question: Healthcare-Specific Information
