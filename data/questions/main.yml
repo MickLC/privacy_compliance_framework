@@ -95,9 +95,8 @@ subquestion: |
   4. Generate appropriate privacy documentation
   
   The process takes approximately 20-30 minutes to complete.
-fields:
-  - Continue: show_intro_screen
-    input type: button
+continue button field: show_intro_screen
+continue button label: "Let's get started"
 ---
 # Document summary
 question: Documentation Package Summary
