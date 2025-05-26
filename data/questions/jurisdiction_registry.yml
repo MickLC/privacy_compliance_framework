@@ -11,9 +11,8 @@ subquestion: |
   - Where your customers/clients are located
   - Your industry-specific regulations
   - Data volumes and types you process
-fields:
-  - Continue: show_jurisdiction_intro
-    input type: button
+
+continue button field: show_jurisdiction_intro
 ---
 code: |
   def load_jurisdiction_registry():

@@ -26,8 +26,7 @@ fields:
     default: True
   - note: |
       
-  - Continue: show_document_generation_intro
-    input type: button
+continue button field: show_document_generation_intro
 ---
 code: |
   def generate_internal_policy_document():

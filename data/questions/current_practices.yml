@@ -7,9 +7,8 @@ subquestion: |
   Next, let's document your current privacy practices.
   
   This will help identify any gaps between your current practices and legal requirements.
-fields:
-  - Continue: show_current_practices_intro
-    input type: button
+continue button field: show_current_practices_intro
+continue button label: "Let's get started"
 ---
 code: |
   def document_current_practices():

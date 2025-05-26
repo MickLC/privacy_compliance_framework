@@ -7,9 +7,7 @@ subquestion: |
   First, let's gather information about your business operations, data collection practices, and presence.
   
   This information will help determine which privacy laws apply to your organization and what types of documentation you need.
-fields:
-  - Continue: show_business_information_intro
-    input type: button
+continue button field: show_business_information_intro
 ---
 # Basic business profile
 question: Business Profile
