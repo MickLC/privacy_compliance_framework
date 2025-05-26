@@ -480,5 +480,5 @@ fields:
     help: |
       Any additional information about your business activities that might affect privacy compliance requirements.
 
-continue button field: how_business_information_intro
+continue button field: show_business_information_intro
 ---
