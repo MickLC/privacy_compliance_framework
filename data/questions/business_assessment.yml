@@ -79,7 +79,7 @@ fields:
     show if: processes_childrens_data
   - note: |
       
-  - Continue: business_profile_complete
+  - continue button field: business_profile_complete
     input type: button
 ---
 # Additional questions for healthcare entities
@@ -95,7 +95,7 @@ fields:
     datatype: yesnowide
   - note: |
       
-  - Continue: healthcare_continue
+  - continue button field: healthcare_continue
     input type: button
 show if:
   variable: company.industry
@@ -114,7 +114,7 @@ fields:
     datatype: yesnowide
   - note: |
       
-  - Continue: financial_continue
+  - continue button field: financial_continue
     input type: button
 show if:
   variable: company.industry

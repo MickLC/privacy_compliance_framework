@@ -280,7 +280,6 @@ subquestion: |
   % endif
   
   These laws will determine the requirements for your privacy documentation and practices.
-fields:
-  - Continue: applicable_law_continue
-    input type: button
+continue button field: applicable_law_continue
+continue button label: "Let's go"
 ---

@@ -9,6 +9,7 @@ subquestion: |
   This will identify gaps that need to be addressed and generate remediation recommendations.
 
 continue button field: show_gap_analysis_intro
+continue button label: "Let's go"
 ---
 code: |
   def perform_gap_analysis():
@@ -540,7 +541,6 @@ subquestion: |
   % endfor
   
   A detailed gap analysis report and remediation plan will be included in your documentation package.
-fields:
-  - Continue: continue_gap_summary
-    input type: button
+continue button field: continue_gap_summary
+continue button label: "Let's go"
 ---

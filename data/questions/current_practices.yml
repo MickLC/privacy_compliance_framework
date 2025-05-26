@@ -56,8 +56,8 @@ fields:
     datatype: yesnowide
   - note: |
       
-  - Continue: existing_policies_complete
-    input type: button
+continue button field: existing_policies_complete
+continue button label: "Let's go"
 ---
 # Data handling practices screen
 question: Data Handling Practices
@@ -102,8 +102,8 @@ fields:
     show if: transfers_data_internationally
   - note: |
       
-  - Continue: data_handling_practices_complete
-    input type: button
+continue button field: data_handling_practices_complete
+continue button label: "Let's go"
 ---
 # Individual rights screen
 question: Individual Rights Practices
@@ -134,8 +134,8 @@ fields:
       - More than 45 days
   - note: |
       
-  - Continue: individual_rights_complete
-    input type: button
+continue button field: individual_rights_complete
+continue button label: "Let's go"
 ---
 # Security practices screen
 question: Security Practices
@@ -175,8 +175,8 @@ fields:
     show if: had_data_breach
   - note: |
       
-  - Continue: security_practices_complete
-    input type: button
+continue button field: security_practices_complete
+continue button label: "Let's go"
 ---
 # HIPAA-specific practices screen
 question: HIPAA Compliance Practices
@@ -204,8 +204,8 @@ fields:
     datatype: yesnowide
   - note: |
       
-  - Continue: hipaa_practices_complete
-    input type: button
+continue button field: hipaa_practices_complete
+continue button label: "Let's go"
 ---
 # For showing HIPAA questions conditionally
 code: |
@@ -238,8 +238,8 @@ fields:
     datatype: yesnowide
   - note: |
       
-  - Continue: glba_practices_complete
-    input type: button
+continue button field: glba_practices_complete
+continue button label: "Let's go"
 ---
 # For showing GLBA questions conditionally
 code: |
