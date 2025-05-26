@@ -113,7 +113,7 @@ continue button label: |
   % endif
 show if: basic_business_info_complete
 ---
-# Enhanced NAICS selection with search capabilities
+# NAICS selection and industry derivation
 question: "Step 1b: Industry Classification"
 subquestion: |
   % if naics_loading_status == "complete":
@@ -123,29 +123,24 @@ subquestion: |
   % else:
   Select your primary business activity:
   % endif
-  
-  **Tip**: You can type to search for your industry (e.g., "legal services", "software", "retail")
 
 fields:
-  - Search for your industry: naics_search_term
-    required: False
-    help: |
-      Start typing to filter the list below. You can search by industry name or NAICS code.
   - Primary Business Activity (NAICS Code): company.naics_code
     required: True
     datatype: combobox
     choices: 
       code: |
         filter_naics_choices(naics_search_term) if defined('naics_search_term') and naics_search_term else naics_choices
-    help: |
-      % if naics_loading_status == "complete":
-      Current SBA NAICS codes with size standards
-      % else:
-      Standard industry classifications
-      % endif
 
 continue button field: naics_selection_complete
 show if: naics_loading_status != "loading"
+---
+# Immediately set industry after NAICS selection
+code: |
+  if naics_selection_complete and defined('company.naics_code') and company.naics_code:
+    company.industry = get_industry_from_naics(company.naics_code)
+  elif naics_selection_complete:
+    company.industry = "Other"
 ---
 # Optimized NAICS data processing functions
 code: |
