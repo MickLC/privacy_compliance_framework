@@ -453,11 +453,45 @@ code: |
   else:
     company_revenue_display = "Not specified"
 ---
-# Industry confirmation and additional fields
-question: Business Profile Complete
+# Fixed NAICS code display logic
+code: |
+  # Extract just the 6-digit NAICS code from the selection for display
+  if defined('company.naics_code') and company.naics_code:
+    # Debug: Log what we actually have
+    log(f"company.naics_code value: {repr(company.naics_code)}")
+    log(f"company.naics_code type: {type(company.naics_code)}")
+    
+    naics_str = str(company.naics_code).strip()
+    if ':' in naics_str:
+      company_naics_display = naics_str.split(':')[0].strip()
+    else:
+      company_naics_display = naics_str
+    
+    # Additional check for empty string
+    if not company_naics_display or company_naics_display == "":
+      company_naics_display = "Not properly set"
+  else:
+    company_naics_display = "Not selected"
+    log("company.naics_code is not defined or empty")
+  
+  # Format display values safely
+  if defined('company.employee_count') and company.employee_count:
+    company_employee_display = "{:,}".format(int(company.employee_count))
+  else:
+    company_employee_display = "Not specified"
+  
+  if defined('company.annual_revenue') and company.annual_revenue:
+    company_revenue_display = "${:,.0f}".format(float(company.annual_revenue))
+  else:
+    company_revenue_display = "Not specified"
+
+---
+# Debug version of the Business Profile Complete question
+question: Business Profile Complete (Debug)
 subquestion: |
   **Company**: ${ company.name }  
   **NAICS Code**: ${ company_naics_display }  
+  **Raw NAICS Value**: ${ repr(company.naics_code) if defined('company.naics_code') else 'undefined' }
   **Industry**: ${ company.industry }  
   **Employees**: ${ company_employee_display }  
   **Annual Revenue**: ${ company_revenue_display }
@@ -475,5 +509,5 @@ fields:
     help: |
       Any additional information about your business activities that might affect privacy compliance requirements.
 
-continue button field: show_business_information_intro
+continue button field: business_profile_complete
 ---
