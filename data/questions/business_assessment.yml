@@ -113,7 +113,7 @@ continue button label: |
   % endif
 show if: basic_business_info_complete
 ---
-# NAICS selection and industry derivation
+# Enhanced NAICS selection with search capabilities
 question: "Step 1b: Industry Classification"
 subquestion: |
   % if naics_loading_status == "complete":
@@ -123,24 +123,56 @@ subquestion: |
   % else:
   Select your primary business activity:
   % endif
+  
+  **Tip**: You can type to search for your industry (e.g., "legal services", "software", "retail")
 
 fields:
+  - Search for your industry: naics_search_term
+    required: False
+    help: |
+      Start typing to filter the list below. You can search by industry name or NAICS code.
   - Primary Business Activity (NAICS Code): company.naics_code
     required: True
     datatype: combobox
     choices: 
       code: |
         filter_naics_choices(naics_search_term) if defined('naics_search_term') and naics_search_term else naics_choices
+    help: |
+      % if naics_loading_status == "complete":
+      Current SBA NAICS codes with size standards
+      % else:
+      Standard industry classifications
+      % endif
 
 continue button field: naics_selection_complete
 show if: naics_loading_status != "loading"
 ---
-# Immediately set industry after NAICS selection
+# Set industry and format display values AFTER NAICS selection
 code: |
+  # Set industry based on NAICS selection
   if naics_selection_complete and defined('company.naics_code') and company.naics_code:
     company.industry = get_industry_from_naics(company.naics_code)
-  elif naics_selection_complete:
+    
+    # Now format the display values AFTER we know NAICS is set
+    naics_str = str(company.naics_code).strip()
+    if ':' in naics_str:
+      company_naics_display = naics_str.split(':')[0].strip()
+    else:
+      company_naics_display = naics_str
+  else:
     company.industry = "Other"
+    company_naics_display = "Not selected"
+  
+  # Format other display values
+  if defined('company.employee_count') and company.employee_count:
+    company_employee_display = "{:,}".format(int(company.employee_count))
+  else:
+    company_employee_display = "Not specified"
+  
+  if defined('company.annual_revenue') and company.annual_revenue:
+    company_revenue_display = "${:,.0f}".format(float(company.annual_revenue))
+  else:
+    company_revenue_display = "Not specified"
 ---
 # Optimized NAICS data processing functions
 code: |
@@ -399,99 +431,43 @@ code: |
   
   def get_industry_from_naics(naics_code):
     """Derive broad industry category from NAICS code"""
-    if not naics_code or len(naics_code) < 2:
+    if not naics_code or len(str(naics_code)) < 2:
       return "Other"
     
-    # Extract just the code if it's in "code: description" format
-    if ':' in naics_code:
-      naics_code = naics_code.split(':')[0].strip()
+    # Convert to string and extract just the code if it's in "code: description" format
+    naics_str = str(naics_code)
+    if ':' in naics_str:
+      naics_str = naics_str.split(':')[0].strip()
     
     # Map NAICS sectors to broad industry categories
-    sector = naics_code[:2]
+    if len(naics_str) >= 2:
+      sector = naics_str[:2]
+      
+      naics_to_industry = {
+        "62": "Healthcare",  # Health Care and Social Assistance
+        "52": "Financial Services",  # Finance and Insurance
+        "51": "Technology",  # Information
+        "54": "Professional Services",  # Professional, Scientific, and Technical Services
+        "44": "Retail",  # Retail Trade
+        "45": "Retail",  # Retail Trade
+        "61": "Education",  # Educational Services
+        "31": "Manufacturing",  # Manufacturing
+        "32": "Manufacturing",  # Manufacturing  
+        "33": "Manufacturing",  # Manufacturing
+        "23": "Construction",  # Construction
+        "53": "Real Estate",  # Real Estate and Rental and Leasing
+        "72": "Food Service",  # Accommodation and Food Services
+      }
+      
+      return naics_to_industry.get(sector, "Other")
     
-    naics_to_industry = {
-      "62": "Healthcare",  # Health Care and Social Assistance
-      "52": "Financial Services",  # Finance and Insurance
-      "51": "Technology",  # Information
-      "54": "Professional Services",  # Professional, Scientific, and Technical Services
-      "44": "Retail",  # Retail Trade
-      "45": "Retail",  # Retail Trade
-      "61": "Education",  # Educational Services
-      "31": "Manufacturing",  # Manufacturing
-      "32": "Manufacturing",  # Manufacturing  
-      "33": "Manufacturing",  # Manufacturing
-      "23": "Construction",  # Construction
-      "53": "Real Estate",  # Real Estate and Rental and Leasing
-      "72": "Food Service",  # Accommodation and Food Services
-    }
-    
-    return naics_to_industry.get(sector, "Other")
-
-  # Set the industry automatically when NAICS is selected
-  if defined('company.naics_code') and company.naics_code:
-    company.industry = get_industry_from_naics(company.naics_code)
+    return "Other"
 ---
-# Extract NAICS code for display
-code: |
-  # Extract just the 6-digit NAICS code from the selection for display
-  if defined('company.naics_code') and company.naics_code:
-    if isinstance(company.naics_code, str) and ':' in company.naics_code:
-      company_naics_display = company.naics_code.split(':')[0].strip()
-    else:
-      company_naics_display = str(company.naics_code)
-  else:
-    company_naics_display = "Not selected"
-  
-  # Format display values safely
-  if defined('company.employee_count') and company.employee_count:
-    company_employee_display = "{:,}".format(int(company.employee_count))
-  else:
-    company_employee_display = "Not specified"
-  
-  if defined('company.annual_revenue') and company.annual_revenue:
-    company_revenue_display = "${:,.0f}".format(float(company.annual_revenue))
-  else:
-    company_revenue_display = "Not specified"
----
-# Fixed NAICS code display logic
-code: |
-  # Extract just the 6-digit NAICS code from the selection for display
-  if defined('company.naics_code') and company.naics_code:
-    # Debug: Log what we actually have
-    log(f"company.naics_code value: {repr(company.naics_code)}")
-    log(f"company.naics_code type: {type(company.naics_code)}")
-    
-    naics_str = str(company.naics_code).strip()
-    if ':' in naics_str:
-      company_naics_display = naics_str.split(':')[0].strip()
-    else:
-      company_naics_display = naics_str
-    
-    # Additional check for empty string
-    if not company_naics_display or company_naics_display == "":
-      company_naics_display = "Not properly set"
-  else:
-    company_naics_display = "Not selected"
-    log("company.naics_code is not defined or empty")
-  
-  # Format display values safely
-  if defined('company.employee_count') and company.employee_count:
-    company_employee_display = "{:,}".format(int(company.employee_count))
-  else:
-    company_employee_display = "Not specified"
-  
-  if defined('company.annual_revenue') and company.annual_revenue:
-    company_revenue_display = "${:,.0f}".format(float(company.annual_revenue))
-  else:
-    company_revenue_display = "Not specified"
-
----
-# Debug version of the Business Profile Complete question
-question: Business Profile Complete (Debug)
+# Industry confirmation and additional fields
+question: Business Profile Complete
 subquestion: |
   **Company**: ${ company.name }  
   **NAICS Code**: ${ company_naics_display }  
-  **Raw NAICS Value**: ${ repr(company.naics_code) if defined('company.naics_code') else 'undefined' }
   **Industry**: ${ company.industry }  
   **Employees**: ${ company_employee_display }  
   **Annual Revenue**: ${ company_revenue_display }
