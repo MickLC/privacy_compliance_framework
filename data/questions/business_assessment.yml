@@ -24,6 +24,10 @@ continue button field: basic_business_info_complete
 ---
 # Background loading of NAICS data
 code: |
+  # Initialize loading status if not already set
+  if not defined('naics_loading_status'):
+    naics_loading_status = "not_started"
+  
   def load_naics_data_async():
     """Load NAICS data in background with comprehensive error handling"""
     global naics_loading_status, naics_choices, naics_load_error
@@ -66,6 +70,10 @@ code: |
   if basic_business_info_complete and not defined('naics_loading_triggered'):
     load_naics_data_async()
     naics_loading_triggered = True
+  
+  # Ensure naics_choices is always defined
+  if not defined('naics_choices'):
+    naics_choices = []
 ---
 # Loading screen with progress indication
 question: "Preparing Industry Classifications..."
@@ -424,29 +432,31 @@ code: |
     
     return naics_to_industry.get(sector, "Other")
 
-  # Auto-populate industry based on NAICS selection
-  def get_naics_code_only():
-    """Extract just the 6-digit NAICS code from the selection"""
-    if company.naics_code and isinstance(company.naics_code, str):
-      if ':' in company.naics_code:
-        return company.naics_code.split(':')[0].strip()
-      return company.naics_code
-    return company.naics_code
-
   # Set the industry automatically when NAICS is selected
   if defined('company.naics_code') and company.naics_code:
     company.industry = get_industry_from_naics(company.naics_code)
+---
+# Extract NAICS code for display
+code: |
+  # Extract just the 6-digit NAICS code from the selection for display
+  if defined('company.naics_code') and company.naics_code:
+    if isinstance(company.naics_code, str) and ':' in company.naics_code:
+      company_naics_display = company.naics_code.split(':')[0].strip()
+    else:
+      company_naics_display = str(company.naics_code)
+  else:
+    company_naics_display = "Not selected"
 ---
 # Industry confirmation and additional fields
 question: Business Profile Complete
 subquestion: |
   **Company**: ${company.name}  
-  **NAICS Code**: ${get_naics_code_only()}  
+  **NAICS Code**: ${company_naics_display}  
   **Industry**: ${company.industry}  
   **Employees**: ${company.employee_count:,}  
   **Annual Revenue**: ${currency(company.annual_revenue)}
 
-  % if naics_loading_status == "fallback" or naics_loading_status == "error":
+  % if defined('naics_loading_status') and (naics_loading_status == "fallback" or naics_loading_status == "error"):
   **Note**: Industry classification was selected from standard options. Current SBA data was not available during this session.
   % endif
 
