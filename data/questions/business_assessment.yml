@@ -9,14 +9,14 @@ modules:
   - requests
 ---
 code: |
-  def get_naics_choices():
-    """Fetch NAICS codes with caching to be respectful of API limits"""
+  def get_sba_naics_data():
+    """Fetch both NAICS codes and size standards from single SBA API with caching"""
     import datetime
     import os
     import json
     
     # Check if we have cached data that's still fresh (cache for 7 days)
-    cache_file = 'naics_cache.json'
+    cache_file = 'sba_naics_data_cache.json'
     cache_duration_days = 7
     
     try:
@@ -28,70 +28,95 @@ code: |
         # Check if cache is still fresh
         cache_date = datetime.datetime.fromisoformat(cache_data['cached_date'])
         if (datetime.datetime.now() - cache_date).days < cache_duration_days:
-          log("Using cached NAICS data")
-          return cache_data['choices']
+          log("Using cached SBA NAICS data")
+          return cache_data['naics_data']
         else:
-          log("NAICS cache expired, fetching fresh data")
+          log("SBA NAICS cache expired, fetching fresh data")
       
-      # Cache miss or expired - fetch from API
-      log("Fetching NAICS data from Census Bureau API")
+      # Cache miss or expired - fetch from SBA API
+      log("Fetching NAICS codes and size standards from SBA API")
       
-      # Census Bureau NAICS API endpoint
-      url = "https://api.census.gov/data/2022/naics"
+      # Single SBA API endpoint for both NAICS codes and size standards
+      url = "https://api.sba.gov/naics/naics.json"
       
       headers = {
         'Accept': 'application/json',
         'User-Agent': 'Privacy-Compliance-Framework/1.0'
       }
       
-      # Get all NAICS codes with descriptions
-      params = {
-        'get': 'NAICS2022,NAICS2022_LABEL',
-        'for': 'us:*'
-      }
-      
-      response = requests.get(url, headers=headers, params=params, timeout=15)
+      response = requests.get(url, headers=headers, timeout=10)
       
       if response.status_code == 200:
-        data = response.json()
-        
-        # Skip header row, format as dropdown choices
-        choices = []
-        for row in data[1:]:  # Skip header
-          naics_code = row[0]
-          naics_label = row[1]
-          
-          # Filter to 6-digit codes only (most specific level)
-          if len(naics_code) == 6:
-            choices.append((naics_code, f"{naics_code}: {naics_label}"))
-        
-        # Sort alphabetically by label
-        choices.sort(key=lambda x: x[1])
+        naics_data = response.json()
         
         # Cache the results
         try:
           cache_data = {
             'cached_date': datetime.datetime.now().isoformat(),
-            'choices': choices,
-            'api_response_count': len(choices)
+            'naics_data': naics_data,
+            'record_count': len(naics_data)
           }
           
           with open(cache_file, 'w') as f:
             json.dump(cache_data, f, indent=2)
           
-          log(f"Cached {len(choices)} NAICS codes for future use")
+          log(f"Successfully cached {len(naics_data)} NAICS codes with size standards from SBA API")
           
         except Exception as cache_error:
-          log(f"Warning: Could not cache NAICS data: {cache_error}")
+          log(f"Warning: Could not cache SBA NAICS data: {cache_error}")
         
-        return choices
+        return naics_data
         
       else:
-        log(f"API returned status {response.status_code}, using fallback")
-        return get_fallback_naics_choices()
+        log(f"SBA NAICS API returned status {response.status_code}")
+        return None
         
+    except requests.exceptions.Timeout:
+      log("SBA NAICS API request timed out")
+      return None
+    except requests.exceptions.RequestException as e:
+      log(f"SBA NAICS API request failed: {e}")
+      return None
     except Exception as e:
-      log(f"Error fetching NAICS data: {e}, using fallback")
+      log(f"Error fetching SBA NAICS data: {e}")
+      return None
+
+  def get_naics_choices_from_api():
+    """Extract NAICS choices from SBA API data"""
+    naics_data = get_sba_naics_data()
+    
+    if not naics_data:
+      return None
+    
+    try:
+      # Convert SBA data to dropdown choices format
+      choices = []
+      for item in naics_data:
+        naics_code = item.get('id', '')
+        naics_description = item.get('description', '')
+        
+        if naics_code and naics_description:
+          choices.append((naics_code, f"{naics_code}: {naics_description}"))
+      
+      # Sort alphabetically by description
+      choices.sort(key=lambda x: x[1])
+      
+      log(f"Extracted {len(choices)} NAICS choices from SBA API")
+      return choices
+      
+    except Exception as e:
+      log(f"Error processing NAICS choices from SBA data: {e}")
+      return None
+
+  def get_naics_choices():
+    """Main function that tries API first, falls back gracefully"""
+    # First try to get from API/cache
+    api_choices = get_naics_choices_from_api()
+    
+    if api_choices and len(api_choices) > 0:
+      return api_choices
+    else:
+      log("Using fallback NAICS choices due to API issues")
       return get_fallback_naics_choices()
   
   def get_fallback_naics_choices():
@@ -156,9 +181,18 @@ code: |
       ("532111", "532111: Passenger Car Rental")
     ]
 
-  # Cache-aware variable definition - only fetch once per interview session
+  # Use single SBA API for both NAICS choices and size standards
   if not defined('naics_choices_cached'):
-    naics_choices = get_naics_choices()
+    # Get NAICS choices from the single SBA API
+    api_choices = get_naics_choices_from_api()
+    
+    if api_choices and len(api_choices) > 0:
+      naics_choices = api_choices
+      log(f"Using {len(api_choices)} NAICS codes from SBA API")
+    else:
+      log("SBA API failed, using fallback NAICS choices")
+      naics_choices = get_fallback_naics_choices()
+    
     naics_choices_cached = True
   else:
     # Use existing cached choices for this interview session
@@ -336,12 +370,14 @@ fields:
     datatype: yesnowide
   - "Do you process, store, or transmit Protected Health Information (PHI)?": processes_phi
     datatype: yesnowide
-  - note: |
-      
 continue button field: healthcare_continue
-show if:
-  code: |
-    get_industry_from_naics(get_naics_code_only()) == "Healthcare"
+---
+# Conditional code to determine if healthcare questions should be asked
+code: |
+  if get_industry_from_naics(get_naics_code_only()) == "Healthcare":
+    healthcare_continue
+  else:
+    healthcare_continue = True
 ---
 # Additional questions for financial entities
 question: Financial Services-Specific Information
@@ -354,90 +390,52 @@ fields:
     datatype: yesnowide
   - "Do you collect nonpublic personal information (NPI) from consumers?": collects_npi
     datatype: yesnowide
-  - note: |
-      
 continue button field: financial_continue
-show if:
-  code: |
-    get_industry_from_naics(get_naics_code_only()) == "Financial Services"
+---
+# Conditional code to determine if financial questions should be asked
+code: |
+  if get_industry_from_naics(get_naics_code_only()) == "Financial Services":
+    financial_continue
+  else:
+    financial_continue = True
 ---
 code: |
   def get_sba_size_standard(naics_code):
-    """Fetch SBA size standards with caching"""
-    import datetime
-    import json
-    import os
-    
+    """Get SBA size standards from cached SBA API data"""
     if not naics_code:
       return None
     
-    # Use a cache file for SBA data (cache for 30 days since it changes infrequently)
-    cache_file = f'sba_cache_{naics_code}.json'
-    cache_duration_days = 30
-    
     try:
-      # Try to load from cache first
-      if os.path.exists(cache_file):
-        with open(cache_file, 'r') as f:
-          cache_data = json.load(f)
-        
-        # Check if cache is still fresh
-        cache_date = datetime.datetime.fromisoformat(cache_data['cached_date'])
-        if (datetime.datetime.now() - cache_date).days < cache_duration_days:
-          log(f"Using cached SBA data for NAICS {naics_code}")
-          return cache_data['sba_data']
+      # Get the cached SBA data (includes both NAICS codes and size standards)
+      naics_data = get_sba_naics_data()
       
-      # Cache miss or expired - fetch from API
-      log(f"Fetching SBA size standards for NAICS {naics_code}")
-      
-      # SBA API endpoint for size standards
-      url = f"https://api.sba.gov/rec/size-standards/v1/size-standards/{naics_code}"
-      
-      headers = {
-        'Accept': 'application/json',
-        'User-Agent': 'Privacy-Compliance-Framework/1.0'
-      }
-      
-      response = requests.get(url, headers=headers, timeout=10)
-      
-      if response.status_code == 200:
-        data = response.json()
-        
-        sba_data = {
-          'employee_threshold': data.get('employeeThreshold'),
-          'revenue_threshold': data.get('revenueThreshold'), 
-          'size_standard_description': data.get('sizeStandardDescription'),
-          'effective_date': data.get('effectiveDate')
-        }
-        
-        # Cache the results
-        try:
-          cache_data = {
-            'cached_date': datetime.datetime.now().isoformat(),
-            'naics_code': naics_code,
-            'sba_data': sba_data
-          }
-          
-          with open(cache_file, 'w') as f:
-            json.dump(cache_data, f, indent=2)
-          
-          log(f"Cached SBA data for NAICS {naics_code}")
-          
-        except Exception as cache_error:
-          log(f"Warning: Could not cache SBA data: {cache_error}")
-        
-        return sba_data
-        
-      else:
-        log(f"SBA API returned status {response.status_code} for NAICS {naics_code}")
+      if not naics_data:
+        log("No SBA NAICS data available")
         return None
+      
+      # Look up the specific NAICS code
+      for item in naics_data:
+        if item.get('id') == naics_code:
+          log(f"Found SBA size standard for NAICS {naics_code}")
+          return {
+            'employee_threshold': item.get('employeeCountLimit'),
+            'revenue_threshold': item.get('revenueLimit') * 1000000 if item.get('revenueLimit') else None,  # Convert millions to dollars
+            'asset_threshold': item.get('assetLimit') * 1000000 if item.get('assetLimit') else None,  # Convert millions to dollars
+            'size_standard_description': item.get('description'),
+            'sector_description': item.get('sectorDescription'),
+            'subsector_description': item.get('subsectorDescription'),
+            'footnote': item.get('footnote')
+          }
+      
+      log(f"NAICS code {naics_code} not found in SBA data")
+      return None
         
     except Exception as e:
-      log(f"Error fetching SBA data for NAICS {naics_code}: {e}")
+      log(f"Error getting SBA size standard for NAICS {naics_code}: {e}")
       return None
   
   def is_sba_small_business():
-    """Determine if business qualifies as SBA small business with caching"""
+    """Determine if business qualifies as SBA small business using real SBA API data"""
     naics_code = get_naics_code_only()
     
     if not naics_code:
@@ -448,8 +446,8 @@ code: |
     sba_data = get_sba_size_standard(naics_code)
     
     if not sba_data:
-      # Fallback if SBA API fails
-      log(f"SBA API failed for NAICS {naics_code}, using general standards")
+      # Fallback if API fails
+      log(f"SBA size standard lookup failed for NAICS {naics_code}, using general standards")
       return company.employee_count < 500 and company.annual_revenue < 7500000
     
     # Check employee threshold (if applicable)
@@ -464,6 +462,12 @@ code: |
         log(f"Not small business: ${company.annual_revenue:,.0f} revenue >= ${sba_data['revenue_threshold']:,.0f} threshold")
         return False
     
-    log(f"Qualifies as SBA small business under NAICS {naics_code}")
+    # Check asset threshold (if applicable - rare but exists for some industries)
+    if sba_data.get('asset_threshold'):
+      # Note: This would require adding an assets field to your business profile
+      # For now, we'll skip this check since most businesses don't use asset-based standards
+      pass
+    
+    log(f"Qualifies as SBA small business under NAICS {naics_code} standards")
     return True
 ---
