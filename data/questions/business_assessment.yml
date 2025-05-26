@@ -2,6 +2,9 @@
 ---
 # Business assessment module - collects company profile and operations
 ---
+objects:
+  - company: Individual
+---
 question: "Step 1: Business Information"
 subquestion: |
   First, let's gather information about your business operations, data collection practices, and presence.
