@@ -446,15 +446,26 @@ code: |
       company_naics_display = str(company.naics_code)
   else:
     company_naics_display = "Not selected"
+  
+  # Format display values safely
+  if defined('company.employee_count') and company.employee_count:
+    company_employee_display = "{:,}".format(int(company.employee_count))
+  else:
+    company_employee_display = "Not specified"
+  
+  if defined('company.annual_revenue') and company.annual_revenue:
+    company_revenue_display = "${:,.0f}".format(float(company.annual_revenue))
+  else:
+    company_revenue_display = "Not specified"
 ---
 # Industry confirmation and additional fields
 question: Business Profile Complete
 subquestion: |
-  **Company**: ${company.name}  
-  **NAICS Code**: ${company_naics_display}  
-  **Industry**: ${company.industry}  
-  **Employees**: ${company.employee_count:,}  
-  **Annual Revenue**: ${currency(company.annual_revenue)}
+  **Company**: ${ company.name }  
+  **NAICS Code**: ${ company_naics_display }  
+  **Industry**: ${ company.industry }  
+  **Employees**: ${ company_employee_display }  
+  **Annual Revenue**: ${ company_revenue_display }
 
   % if defined('naics_loading_status') and (naics_loading_status == "fallback" or naics_loading_status == "error"):
   **Note**: Industry classification was selected from standard options. Current SBA data was not available during this session.
