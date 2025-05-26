@@ -5,6 +5,235 @@
 objects:
   - company: Individual
 ---
+modules:
+  - requests
+---
+code: |
+  def get_naics_choices():
+    """Fetch NAICS codes with caching to be respectful of API limits"""
+    import datetime
+    import os
+    import json
+    
+    # Check if we have cached data that's still fresh (cache for 7 days)
+    cache_file = 'naics_cache.json'
+    cache_duration_days = 7
+    
+    try:
+      # Try to load from cache first
+      if os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
+          cache_data = json.load(f)
+        
+        # Check if cache is still fresh
+        cache_date = datetime.datetime.fromisoformat(cache_data['cached_date'])
+        if (datetime.datetime.now() - cache_date).days < cache_duration_days:
+          log("Using cached NAICS data")
+          return cache_data['choices']
+        else:
+          log("NAICS cache expired, fetching fresh data")
+      
+      # Cache miss or expired - fetch from API
+      log("Fetching NAICS data from Census Bureau API")
+      
+      # Census Bureau NAICS API endpoint
+      url = "https://api.census.gov/data/2022/naics"
+      
+      headers = {
+        'Accept': 'application/json',
+        'User-Agent': 'Privacy-Compliance-Framework/1.0'
+      }
+      
+      # Get all NAICS codes with descriptions
+      params = {
+        'get': 'NAICS2022,NAICS2022_LABEL',
+        'for': 'us:*'
+      }
+      
+      response = requests.get(url, headers=headers, params=params, timeout=15)
+      
+      if response.status_code == 200:
+        data = response.json()
+        
+        # Skip header row, format as dropdown choices
+        choices = []
+        for row in data[1:]:  # Skip header
+          naics_code = row[0]
+          naics_label = row[1]
+          
+          # Filter to 6-digit codes only (most specific level)
+          if len(naics_code) == 6:
+            choices.append((naics_code, f"{naics_code}: {naics_label}"))
+        
+        # Sort alphabetically by label
+        choices.sort(key=lambda x: x[1])
+        
+        # Cache the results
+        try:
+          cache_data = {
+            'cached_date': datetime.datetime.now().isoformat(),
+            'choices': choices,
+            'api_response_count': len(choices)
+          }
+          
+          with open(cache_file, 'w') as f:
+            json.dump(cache_data, f, indent=2)
+          
+          log(f"Cached {len(choices)} NAICS codes for future use")
+          
+        except Exception as cache_error:
+          log(f"Warning: Could not cache NAICS data: {cache_error}")
+        
+        return choices
+        
+      else:
+        log(f"API returned status {response.status_code}, using fallback")
+        return get_fallback_naics_choices()
+        
+    except Exception as e:
+      log(f"Error fetching NAICS data: {e}, using fallback")
+      return get_fallback_naics_choices()
+  
+  def get_fallback_naics_choices():
+    """Fallback NAICS choices if API fails"""
+    log("Using fallback NAICS choices")
+    return [
+      ("541110", "541110: Offices of Lawyers"),
+      ("541511", "541511: Custom Computer Programming Services"),
+      ("541512", "541512: Computer Systems Design Services"),
+      ("541513", "541513: Computer Facilities Management Services"),
+      ("541519", "541519: Other Computer Related Services"),
+      ("541611", "541611: Administrative Management and General Management Consulting Services"),
+      ("541612", "541612: Human Resources Consulting Services"),
+      ("541613", "541613: Marketing Consulting Services"),
+      ("541614", "541614: Process, Physical Distribution, and Logistics Consulting Services"),
+      ("541618", "541618: Other Management Consulting Services"),
+      ("541690", "541690: Other Scientific and Technical Consulting Services"),
+      ("541990", "541990: All Other Professional, Scientific, and Technical Services"),
+      ("522110", "522110: Commercial Banking"),
+      ("522120", "522120: Savings Institutions"),
+      ("522130", "522130: Credit Unions"),
+      ("524113", "524113: Direct Life Insurance Carriers"),
+      ("524114", "524114: Direct Health and Medical Insurance Carriers"),
+      ("524126", "524126: Direct Property and Casualty Insurance Carriers"),
+      ("621111", "621111: Offices of Physicians (except Mental Health Specialists)"),
+      ("621112", "621112: Offices of Physicians, Mental Health Specialists"),
+      ("621210", "621210: Offices of Dentists"),
+      ("621310", "621310: Offices of Chiropractors"),
+      ("621320", "621320: Offices of Optometrists"),
+      ("621330", "621330: Offices of Mental Health Practitioners (except Physicians)"),
+      ("621340", "621340: Offices of Physical, Occupational and Speech Therapists, and Audiologists"),
+      ("621391", "621391: Offices of Podiatrists"),
+      ("621399", "621399: Offices of All Other Miscellaneous Health Practitioners"),
+      ("621410", "621410: Family Planning Centers"),
+      ("621420", "621420: Outpatient Mental Health and Substance Abuse Centers"),
+      ("621491", "621491: HMO Medical Centers"),
+      ("621492", "621492: Kidney Dialysis Centers"),
+      ("621493", "621493: Freestanding Ambulary Surgical and Emergency Centers"),
+      ("621498", "621498: All Other Outpatient Care Centers"),
+      ("621511", "621511: Medical Laboratories"),
+      ("621512", "621512: Diagnostic Imaging Centers"),
+      ("621610", "621610: Home Health Care Services"),
+      ("621910", "621910: Ambulance Services"),
+      ("621991", "621991: Blood and Organ Banks"),
+      ("621999", "621999: All Other Miscellaneous Ambulatory Health Care Services"),
+      ("236115", "236115: New Single-Family Housing Construction (except For-Sale Builders)"),
+      ("236116", "236116: New Multifamily Housing Construction (except For-Sale Builders)"),
+      ("236117", "236117: New Housing For-Sale Builders"),
+      ("236118", "236118: Residential Remodelers"),
+      ("236210", "236210: Industrial Building Construction"),
+      ("236220", "236220: Commercial and Institutional Building Construction"),
+      ("311111", "311111: Dog and Cat Food Manufacturing"),
+      ("311119", "311119: Other Animal Food Manufacturing"),
+      ("441110", "441110: New Car Dealers"),
+      ("441120", "441120: Used Car Dealers"),
+      ("481111", "481111: Scheduled Passenger Air Transportation"),
+      ("511110", "511110: Newspaper Publishers"),
+      ("511120", "511120: Periodical Publishers"),
+      ("517110", "517110: Wired Telecommunications Carriers"),
+      ("518111", "518111: Internet Service Providers"),
+      ("531110", "531110: Lessors of Residential Buildings and Dwellings"),
+      ("532111", "532111: Passenger Car Rental")
+    ]
+
+  # Cache-aware variable definition - only fetch once per interview session
+  if not defined('naics_choices_cached'):
+    naics_choices = get_naics_choices()
+    naics_choices_cached = True
+  else:
+    # Use existing cached choices for this interview session
+    pass
+---
+code: |
+  def get_industry_from_naics(naics_code):
+    """Derive broad industry category from NAICS code"""
+    if not naics_code or len(naics_code) < 2:
+      return "Other"
+    
+    # Map NAICS sectors to your original industry categories
+    sector = naics_code[:2]
+    
+    naics_to_industry = {
+      # Healthcare
+      "62": "Healthcare",  # Health Care and Social Assistance
+      
+      # Financial Services  
+      "52": "Financial Services",  # Finance and Insurance
+      
+      # Technology
+      "51": "Technology",  # Information
+      "54": "Technology",  # Professional, Scientific, and Technical Services (partial)
+      
+      # Retail
+      "44": "Retail",  # Retail Trade
+      "45": "Retail",  # Retail Trade
+      
+      # Education
+      "61": "Education",  # Educational Services
+      
+      # Manufacturing
+      "31": "Manufacturing",  # Manufacturing
+      "32": "Manufacturing",  # Manufacturing  
+      "33": "Manufacturing",  # Manufacturing
+      
+      # Professional Services (catch remaining 54 codes)
+      # Will be handled by specific NAICS code check below
+    }
+    
+    # Check sector-level mapping first
+    if sector in naics_to_industry:
+      return naics_to_industry[sector]
+    
+    # Handle Professional Services (NAICS 54) more specifically
+    if sector == "54":
+      # Legal, accounting, consulting, etc.
+      if naics_code.startswith(("5411", "5412", "5416")):  # Legal, accounting, consulting
+        return "Professional Services"
+      else:
+        return "Technology"  # Engineering, computer services, etc.
+    
+    # Default for unmapped sectors
+    return "Other"
+
+  def get_naics_code_only():
+    """Extract just the 6-digit NAICS code from the selection"""
+    if company.naics_code and isinstance(company.naics_code, str):
+      # If it's in format "123456: Description", extract just the code
+      if ':' in company.naics_code:
+        return company.naics_code.split(':')[0].strip()
+      # If it's just the code
+      return company.naics_code
+    return company.naics_code
+
+  # Auto-populate industry based on NAICS selection
+  def company_industry():
+    if company.naics_code:
+      return get_industry_from_naics(get_naics_code_only())
+    return "Other"
+  
+  # Make it available as a computed attribute
+  company.industry = company_industry()
+---
 question: "Step 1: Business Information"
 subquestion: |
   First, let's gather information about your business operations, data collection practices, and presence.
@@ -19,7 +248,8 @@ fields:
   - Primary Business Activity (NAICS Code): company.naics_code
     required: True
     datatype: combobox
-    choices: naics_choices
+    choices:
+      code: naics_choices
     help: |
       Start typing to search for your business activity. This determines industry 
       classification and SBA small business size standards.
@@ -110,8 +340,8 @@ fields:
       
 continue button field: healthcare_continue
 show if:
-  variable: company.industry
-  is: "Healthcare"
+  code: |
+    get_industry_from_naics(get_naics_code_only()) == "Healthcare"
 ---
 # Additional questions for financial entities
 question: Financial Services-Specific Information
@@ -128,13 +358,112 @@ fields:
       
 continue button field: financial_continue
 show if:
-  variable: company.industry
-  is: "Financial Services"
+  code: |
+    get_industry_from_naics(get_naics_code_only()) == "Financial Services"
 ---
 code: |
-  def sba_size_standards():
-    """Logic to determine if the business qualifies as a small business under SBA standards"""
-    # This would implement the SBA size standards based on NAICS codes and employee counts
-    # Simplified version for demonstration purposes
-    return company.employee_count < 100
+  def get_sba_size_standard(naics_code):
+    """Fetch SBA size standards with caching"""
+    import datetime
+    import json
+    import os
+    
+    if not naics_code:
+      return None
+    
+    # Use a cache file for SBA data (cache for 30 days since it changes infrequently)
+    cache_file = f'sba_cache_{naics_code}.json'
+    cache_duration_days = 30
+    
+    try:
+      # Try to load from cache first
+      if os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
+          cache_data = json.load(f)
+        
+        # Check if cache is still fresh
+        cache_date = datetime.datetime.fromisoformat(cache_data['cached_date'])
+        if (datetime.datetime.now() - cache_date).days < cache_duration_days:
+          log(f"Using cached SBA data for NAICS {naics_code}")
+          return cache_data['sba_data']
+      
+      # Cache miss or expired - fetch from API
+      log(f"Fetching SBA size standards for NAICS {naics_code}")
+      
+      # SBA API endpoint for size standards
+      url = f"https://api.sba.gov/rec/size-standards/v1/size-standards/{naics_code}"
+      
+      headers = {
+        'Accept': 'application/json',
+        'User-Agent': 'Privacy-Compliance-Framework/1.0'
+      }
+      
+      response = requests.get(url, headers=headers, timeout=10)
+      
+      if response.status_code == 200:
+        data = response.json()
+        
+        sba_data = {
+          'employee_threshold': data.get('employeeThreshold'),
+          'revenue_threshold': data.get('revenueThreshold'), 
+          'size_standard_description': data.get('sizeStandardDescription'),
+          'effective_date': data.get('effectiveDate')
+        }
+        
+        # Cache the results
+        try:
+          cache_data = {
+            'cached_date': datetime.datetime.now().isoformat(),
+            'naics_code': naics_code,
+            'sba_data': sba_data
+          }
+          
+          with open(cache_file, 'w') as f:
+            json.dump(cache_data, f, indent=2)
+          
+          log(f"Cached SBA data for NAICS {naics_code}")
+          
+        except Exception as cache_error:
+          log(f"Warning: Could not cache SBA data: {cache_error}")
+        
+        return sba_data
+        
+      else:
+        log(f"SBA API returned status {response.status_code} for NAICS {naics_code}")
+        return None
+        
+    except Exception as e:
+      log(f"Error fetching SBA data for NAICS {naics_code}: {e}")
+      return None
+  
+  def is_sba_small_business():
+    """Determine if business qualifies as SBA small business with caching"""
+    naics_code = get_naics_code_only()
+    
+    if not naics_code:
+      # Fallback to general standards if no NAICS code
+      log("No NAICS code available, using general small business standards")
+      return company.employee_count < 500 and company.annual_revenue < 7500000
+    
+    sba_data = get_sba_size_standard(naics_code)
+    
+    if not sba_data:
+      # Fallback if SBA API fails
+      log(f"SBA API failed for NAICS {naics_code}, using general standards")
+      return company.employee_count < 500 and company.annual_revenue < 7500000
+    
+    # Check employee threshold (if applicable)
+    if sba_data.get('employee_threshold'):
+      if company.employee_count >= sba_data['employee_threshold']:
+        log(f"Not small business: {company.employee_count} employees >= {sba_data['employee_threshold']} threshold")
+        return False
+    
+    # Check revenue threshold (if applicable)  
+    if sba_data.get('revenue_threshold'):
+      if company.annual_revenue >= sba_data['revenue_threshold']:
+        log(f"Not small business: ${company.annual_revenue:,.0f} revenue >= ${sba_data['revenue_threshold']:,.0f} threshold")
+        return False
+    
+    log(f"Qualifies as SBA small business under NAICS {naics_code}")
+    return True
 ---
