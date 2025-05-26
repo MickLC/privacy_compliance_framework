@@ -7,6 +7,22 @@ modules:
   - requests
   - threading
 ---
+---
+# Business information introduction
+question: "Step 1: Business Information"
+subquestion: |
+  Let's start by gathering some basic information about your business.
+  
+  This information will help us:
+  - Determine which privacy laws apply to your organization
+  - Assess your compliance requirements
+  - Generate appropriate documentation
+  
+  The process will take approximately 10-15 minutes.
+
+continue button field: business_profile_complete
+continue button label: "Let's get started"
+---
 # Step 1: Basic business information (no API dependency)
 question: "Step 1a: Basic Business Information"
 subquestion: |
@@ -28,6 +44,318 @@ code: |
   if not defined('naics_loading_status'):
     naics_loading_status = "not_started"
   
+  # Ensure naics_choices is always defined
+  if not defined('naics_choices'):
+    naics_choices = []
+---
+# NAICS data processing functions (MUST be defined before being called)
+code: |
+  import json
+  import os
+  from datetime import datetime, timedelta
+---
+code: |  
+  def get_cached_naics_choices(cache_days=7):
+    """Get NAICS choices from local cache if fresh"""
+    cache_file = 'naics_choices_cache.json'
+    
+    try:
+      if os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
+          cache_data = json.load(f)
+        
+        cache_time = datetime.fromisoformat(cache_data['timestamp'])
+        if datetime.now() - cache_time < timedelta(days=cache_days):
+          log(f"Using cached NAICS choices ({len(cache_data['choices'])} items, cached {cache_time})")
+          return cache_data['choices']
+        else:
+          log(f"NAICS cache expired (cached {cache_time}, expires after {cache_days} days)")
+      
+    except Exception as e:
+      log(f"Error reading NAICS cache: {e}")
+    
+    return None
+---
+code: |
+  def cache_naics_choices(choices):
+    """Cache NAICS choices locally"""
+    cache_file = 'naics_choices_cache.json'
+    
+    try:
+      cache_data = {
+        'timestamp': datetime.now().isoformat(),
+        'choices': choices,
+        'count': len(choices)
+      }
+      
+      with open(cache_file, 'w') as f:
+        json.dump(cache_data, f)
+      
+      log(f"Cached {len(choices)} NAICS choices")
+      
+    except Exception as e:
+      log(f"Error caching NAICS choices: {e}")
+---
+code: |
+  def get_naics_choices_optimized():
+    """Download the complete NAICS file (static dataset, not API)"""
+    try:
+      log("=== DOWNLOADING NAICS FILE (4MB) ===")
+      
+      headers = {
+        'Accept': 'application/json',
+        'User-Agent': 'Privacy-Compliance-Framework/1.0'
+      }
+      
+      log(f"Downloading from: https://api.sba.gov/naics/naics.json")
+      
+      # Use reasonable timeout for 4MB file download
+      response = requests.get(
+        "https://api.sba.gov/naics/naics.json",
+        headers=headers,
+        timeout=30,  # 30 seconds should be enough for 4MB
+        stream=False  # Don't stream since we need the whole file anyway
+      )
+      
+      log(f"=== DOWNLOAD STATUS: {response.status_code}, SIZE: {len(response.content)} bytes ===")
+      
+      if response.status_code == 200:
+        log("=== PARSING NAICS FILE ===")
+        naics_data = response.json()
+        
+        log(f"=== FILE CONTAINS {len(naics_data)} NAICS RECORDS ===")
+        
+        # Process all records efficiently
+        choices = []
+        processed_count = 0
+        
+        for item in naics_data:
+          naics_code = item.get('id', '').strip()
+          naics_description = item.get('description', '').strip()
+          
+          if naics_code and naics_description and len(naics_code) == 6:
+            # Truncate overly long descriptions
+            if len(naics_description) > 120:
+              naics_description = naics_description[:117] + "..."
+            
+            choices.append((naics_code, f"{naics_code}: {naics_description}"))
+            processed_count += 1
+          
+          # Log progress every 500 records
+          if processed_count % 500 == 0:
+            log(f"Processed {processed_count} NAICS codes...")
+        
+        # Sort by description for better UX
+        choices.sort(key=lambda x: x[1])
+        
+        log(f"=== SUCCESSFULLY PROCESSED {len(choices)} NAICS CODES FROM FILE ===")
+        return choices
+      
+      else:
+        log(f"=== DOWNLOAD FAILED: HTTP {response.status_code} ===")
+        return None
+        
+    except requests.exceptions.Timeout:
+      log("=== NAICS FILE DOWNLOAD TIMED OUT ===")
+      return None
+    except Exception as e:
+      log(f"=== ERROR DOWNLOADING NAICS FILE: {e} ===")
+      return None
+---
+code: |
+  def filter_naics_choices(search_term):
+    """Filter NAICS choices based on search term"""
+    if not search_term or len(search_term) < 2:
+      return naics_choices
+    
+    search_lower = search_term.lower()
+    filtered = []
+    
+    for code, description in naics_choices:
+      # Search in both code and description
+      if (search_lower in code.lower() or 
+          search_lower in description.lower()):
+        filtered.append((code, description))
+    
+    # Limit results for performance
+    return filtered[:100]  # Show max 100 results
+---
+code: |
+  def get_enhanced_fallback_naics_choices():
+    """Enhanced fallback with more comprehensive industry coverage"""
+    log("Using enhanced fallback NAICS choices")
+    return [
+      # Legal Services
+      ("541110", "541110: Offices of Lawyers"),
+      ("541191", "541191: Title Abstract and Settlement Offices"),
+      ("541199", "541199: All Other Legal Services"),
+      
+      # Technology
+      ("541511", "541511: Custom Computer Programming Services"),
+      ("541512", "541512: Computer Systems Design Services"),
+      ("541513", "541513: Computer Facilities Management Services"),
+      ("541519", "541519: Other Computer Related Services"),
+      ("518210", "518210: Data Processing, Hosting, and Related Services"),
+      ("541715", "541715: Research and Development in the Physical, Engineering, and Life Sciences"),
+      
+      # Professional Services
+      ("541211", "541211: Offices of Certified Public Accountants"),
+      ("541213", "541213: Tax Preparation Services"),
+      ("541214", "541214: Payroll Services"),
+      ("541611", "541611: Administrative Management and General Management Consulting Services"),
+      ("541612", "541612: Human Resources Consulting Services"),
+      ("541613", "541613: Marketing Consulting Services"),
+      ("541618", "541618: Other Management Consulting Services"),
+      ("541990", "541990: All Other Professional, Scientific, and Technical Services"),
+      
+      # Healthcare
+      ("621111", "621111: Offices of Physicians (except Mental Health Specialists)"),
+      ("621112", "621112: Offices of Physicians, Mental Health Specialists"),
+      ("621210", "621210: Offices of Dentists"),
+      ("621310", "621310: Offices of Chiropractors"),
+      ("621320", "621320: Offices of Optometrists"),
+      ("621330", "621330: Offices of Mental Health Practitioners (except Physicians)"),
+      ("621340", "621340: Offices of Physical, Occupational and Speech Therapists"),
+      ("621420", "621420: Outpatient Mental Health and Substance Abuse Centers"),
+      ("621511", "621511: Medical Laboratories"),
+      ("621610", "621610: Home Health Care Services"),
+      
+      # Financial Services
+      ("522110", "522110: Commercial Banking"),
+      ("522120", "522120: Savings Institutions"),
+      ("522130", "522130: Credit Unions"),
+      ("522190", "522190: Other Depository Credit Intermediation"),
+      ("522210", "522210: Credit Card Issuing"),
+      ("522220", "522220: Sales Financing"),
+      ("522291", "522291: Consumer Lending"),
+      ("522292", "522292: Real Estate Credit"),
+      ("522298", "522298: All Other Nondepository Credit Intermediation"),
+      ("523110", "523110: Investment Banking and Securities Dealing"),
+      ("523120", "523120: Securities Brokerage"),
+      ("523130", "523130: Commodity Contracts Dealing"),
+      ("523140", "523140: Commodity Contracts Brokerage"),
+      ("523210", "523210: Securities and Commodity Exchanges"),
+      ("523910", "523910: Miscellaneous Intermediation"),
+      ("523920", "523920: Portfolio Management"),
+      ("523930", "523930: Investment Advice"),
+      ("523991", "523991: Trust, Fiduciary, and Custody Activities"),
+      ("523999", "523999: Miscellaneous Financial Investment Activities"),
+      ("524113", "524113: Direct Life Insurance Carriers"),
+      ("524114", "524114: Direct Health and Medical Insurance Carriers"),
+      ("524126", "524126: Direct Property and Casualty Insurance Carriers"),
+      ("524210", "524210: Insurance Agencies and Brokerages"),
+      
+      # Retail
+      ("441110", "441110: New Car Dealers"),
+      ("441120", "441120: Used Car Dealers"),
+      ("442110", "442110: Furniture Stores"),
+      ("443142", "443142: Electronics Stores"),
+      ("444110", "444110: Home Centers"),
+      ("445110", "445110: Supermarkets and Other Grocery (except Convenience) Stores"),
+      ("446110", "446110: Pharmacies and Drug Stores"),
+      ("448110", "448110: Men's Clothing Stores"),
+      ("448120", "448120: Women's Clothing Stores"),
+      ("451110", "451110: Sporting Goods Stores"),
+      ("452112", "452112: Discount Department Stores"),
+      
+      # Manufacturing
+      ("311111", "311111: Dog and Cat Food Manufacturing"),
+      ("311119", "311119: Other Animal Food Manufacturing"),
+      ("312111", "312111: Soft Drink Manufacturing"),
+      ("321113", "321113: Sawmills"),
+      ("325412", "325412: Pharmaceutical Preparation Manufacturing"),
+      ("334111", "334111: Electronic Computer Manufacturing"),
+      ("334220", "334220: Radio and Television Broadcasting and Wireless Communications Equipment Manufacturing"),
+      ("336111", "336111: Automobile Manufacturing"),
+      
+      # Construction
+      ("236115", "236115: New Single-Family Housing Construction (except For-Sale Builders)"),
+      ("236116", "236116: New Multifamily Housing Construction (except For-Sale Builders)"),
+      ("236117", "236117: New Housing For-Sale Builders"),
+      ("236118", "236118: Residential Remodelers"),
+      ("236210", "236210: Industrial Building Construction"),
+      ("236220", "236220: Commercial and Institutional Building Construction"),
+      ("238110", "238110: Poured Concrete Foundation and Structure Contractors"),
+      ("238120", "238120: Structural Steel and Precast Concrete Contractors"),
+      ("238130", "238130: Framing Contractors"),
+      ("238140", "238140: Masonry Contractors"),
+      ("238150", "238150: Glass and Glazing Contractors"),
+      ("238160", "238160: Roofing Contractors"),
+      ("238170", "238170: Siding Contractors"),
+      ("238210", "238210: Electrical Contractors and Other Wiring Installation Contractors"),
+      ("238220", "238220: Plumbing, Heating, and Air-Conditioning Contractors"),
+      
+      # Real Estate
+      ("531110", "531110: Lessors of Residential Buildings and Dwellings"),
+      ("531120", "531120: Lessors of Nonresidential Buildings (except Miniwarehouses)"),
+      ("531210", "531210: Offices of Real Estate Agents and Brokers"),
+      ("531311", "531311: Residential Property Managers"),
+      ("531312", "531312: Nonresidential Property Managers"),
+      ("531320", "531320: Offices of Real Estate Appraisers"),
+      ("531390", "531390: Other Activities Related to Real Estate"),
+      
+      # Education
+      ("611110", "611110: Elementary and Secondary Schools"),
+      ("611210", "611210: Junior Colleges"),
+      ("611310", "611310: Colleges, Universities, and Professional Schools"),
+      ("611420", "611420: Computer Training"),
+      ("611430", "611430: Professional and Management Development Training"),
+      ("611511", "611511: Cosmetology and Barber Schools"),
+      ("611512", "611512: Flight Training"),
+      ("611513", "611513: Apprenticeship Training"),
+      ("611519", "611519: Other Technical and Trade Schools"),
+      ("611610", "611610: Fine Arts Schools"),
+      ("611691", "611691: Exam Preparation and Tutoring"),
+      ("611692", "611692: Automobile Driving Schools"),
+      ("611699", "611699: All Other Miscellaneous Schools and Instruction"),
+      
+      # Food Service
+      ("722511", "722511: Full-Service Restaurants"),
+      ("722513", "722513: Limited-Service Restaurants"),
+      ("722514", "722514: Cafeterias, Grill Buffets, and Buffets"),
+      ("722515", "722515: Snack and Nonalcoholic Beverage Bars"),
+      
+      # Other Common Industries
+      ("541990", "541990: All Other Professional, Scientific, and Technical Services"),
+      ("999999", "999999: Other - Please specify in additional information")
+    ]
+---
+code: |
+  def get_industry_from_naics(naics_code):
+    """Derive broad industry category from NAICS code"""
+    if not naics_code or len(str(naics_code)) < 2:
+      return "Other"
+    
+    # Convert to string and extract just the code if it's in "code: description" format
+    naics_str = str(naics_code)
+    if ':' in naics_str:
+      naics_str = naics_str.split(':')[0].strip()
+    
+    # Map NAICS sectors to broad industry categories
+    if len(naics_str) >= 2:
+      sector = naics_str[:2]
+      
+      naics_to_industry = {
+        "62": "Healthcare",  # Health Care and Social Assistance
+        "52": "Financial Services",  # Finance and Insurance
+        "51": "Technology",  # Information
+        "54": "Professional Services",  # Professional, Scientific, and Technical Services
+        "44": "Retail",  # Retail Trade
+        "45": "Retail",  # Retail Trade
+        "61": "Education",  # Educational Services
+        "31": "Manufacturing",  # Manufacturing
+        "32": "Manufacturing",  # Manufacturing  
+        "33": "Manufacturing",  # Manufacturing
+        "23": "Construction",  # Construction
+        "53": "Real Estate",  # Real Estate and Rental and Leasing
+        "72": "Food Service",  # Accommodation and Food Services
+      }
+      
+      return naics_to_industry.get(sector, "Other")
+    
+    return "Other"
+---
+code: |
   def load_naics_data_async():
     """Load NAICS data in background with comprehensive error handling"""
     global naics_loading_status, naics_choices, naics_load_error
@@ -73,10 +401,83 @@ code: |
     load_naics_data_async()
     naics_loading_triggered = True
     log(f"=== NAICS LOAD COMPLETE. Status: {naics_loading_status}, Choices count: {len(naics_choices) if defined('naics_choices') else 'undefined'} ===")
-  
-  # Ensure naics_choices is always defined
-  if not defined('naics_choices'):
-    naics_choices = []
+    if not naics_code or len(str(naics_code)) < 2:
+      return "Other"
+    
+    # Convert to string and extract just the code if it's in "code: description" format
+    naics_str = str(naics_code)
+    if ':' in naics_str:
+      naics_str = naics_str.split(':')[0].strip()
+    
+    # Map NAICS sectors to broad industry categories
+    if len(naics_str) >= 2:
+      sector = naics_str[:2]
+      
+      naics_to_industry = {
+        "62": "Healthcare",  # Health Care and Social Assistance
+        "52": "Financial Services",  # Finance and Insurance
+        "51": "Technology",  # Information
+        "54": "Professional Services",  # Professional, Scientific, and Technical Services
+        "44": "Retail",  # Retail Trade
+        "45": "Retail",  # Retail Trade
+        "61": "Education",  # Educational Services
+        "31": "Manufacturing",  # Manufacturing
+        "32": "Manufacturing",  # Manufacturing  
+        "33": "Manufacturing",  # Manufacturing
+        "23": "Construction",  # Construction
+        "53": "Real Estate",  # Real Estate and Rental and Leasing
+        "72": "Food Service",  # Accommodation and Food Services
+      }
+      
+      return naics_to_industry.get(sector, "Other")
+    
+    return "Other"
+
+  def load_naics_data_async():
+    """Load NAICS data in background with comprehensive error handling"""
+    global naics_loading_status, naics_choices, naics_load_error
+    
+    naics_loading_status = "loading"
+    naics_load_error = None
+    
+    try:
+      log("Starting NAICS data load...")
+      
+      # Try to get from cache first (cache for 7 days since it's a static file)
+      cached_choices = get_cached_naics_choices(cache_days=7)
+      if cached_choices:
+        naics_choices = cached_choices
+        naics_loading_status = "complete"
+        log(f"Loaded {len(naics_choices)} NAICS codes from cache")
+        return
+      
+      # Only download the large file if cache is empty/expired
+      log("Cache miss - attempting to download NAICS file...")
+      api_choices = get_naics_choices_optimized()
+      
+      if api_choices and len(api_choices) > 100:
+        naics_choices = api_choices
+        cache_naics_choices(api_choices)
+        naics_loading_status = "complete"
+        log(f"Downloaded and cached {len(naics_choices)} NAICS codes")
+      else:
+        # Fallback to static choices
+        naics_choices = get_enhanced_fallback_naics_choices()
+        naics_loading_status = "fallback"
+        log(f"Using fallback NAICS choices ({len(naics_choices)} codes)")
+        
+    except Exception as e:
+      log(f"Error loading NAICS data: {e}")
+      naics_choices = get_enhanced_fallback_naics_choices()
+      naics_loading_status = "error"
+      naics_load_error = str(e)
+
+  # Trigger background loading when basic info is complete
+  if basic_business_info_complete and not defined('naics_loading_triggered'):
+    log("=== TRIGGERING NAICS DATA LOAD ===")
+    load_naics_data_async()
+    naics_loading_triggered = True
+    log(f"=== NAICS LOAD COMPLETE. Status: {naics_loading_status}, Choices count: {len(naics_choices) if defined('naics_choices') else 'undefined'} ===")
 ---
 # Loading screen with progress indication
 question: "Preparing Industry Classifications..."
@@ -177,189 +578,6 @@ code: |
   else:
     company_revenue_display = "Not specified"
 ---
-# Optimized NAICS data processing functions
-code: |
-  import json
-  import os
-  from datetime import datetime, timedelta
-  
-  def get_cached_naics_choices(cache_days=7):
-    """Get NAICS choices from local cache if fresh"""
-    cache_file = 'naics_choices_cache.json'
-    
-    try:
-      if os.path.exists(cache_file):
-        with open(cache_file, 'r') as f:
-          cache_data = json.load(f)
-        
-        cache_time = datetime.fromisoformat(cache_data['timestamp'])
-        if datetime.now() - cache_time < timedelta(days=cache_days):
-          log(f"Using cached NAICS choices ({len(cache_data['choices'])} items, cached {cache_time})")
-          return cache_data['choices']
-        else:
-          log(f"NAICS cache expired (cached {cache_time}, expires after {cache_days} days)")
-      
-    except Exception as e:
-      log(f"Error reading NAICS cache: {e}")
-    
-    return None
-  
-  def cache_naics_choices(choices):
-    """Cache NAICS choices locally"""
-    cache_file = 'naics_choices_cache.json'
-    
-    try:
-      cache_data = {
-        'timestamp': datetime.now().isoformat(),
-        'choices': choices,
-        'count': len(choices)
-      }
-      
-      with open(cache_file, 'w') as f:
-        json.dump(cache_data, f)
-      
-      log(f"Cached {len(choices)} NAICS choices")
-      
-    except Exception as e:
-      log(f"Error caching NAICS choices: {e}")
-  
-  def get_naics_choices_optimized():
-    """Download the complete NAICS file (static dataset, not API)"""
-    try:
-      log("=== DOWNLOADING NAICS FILE (4MB) ===")
-      
-      headers = {
-        'Accept': 'application/json',
-        'User-Agent': 'Privacy-Compliance-Framework/1.0'
-      }
-      
-      log(f"Downloading from: https://api.sba.gov/naics/naics.json")
-      
-      # Use reasonable timeout for 4MB file download
-      response = requests.get(
-        "https://api.sba.gov/naics/naics.json",
-        headers=headers,
-        timeout=30,  # 30 seconds should be enough for 4MB
-        stream=False  # Don't stream since we need the whole file anyway
-      )
-      
-      log(f"=== DOWNLOAD STATUS: {response.status_code}, SIZE: {len(response.content)} bytes ===")
-      
-      if response.status_code == 200:
-        log("=== PARSING NAICS FILE ===")
-        naics_data = response.json()
-        
-        log(f"=== FILE CONTAINS {len(naics_data)} NAICS RECORDS ===")
-        
-        # Process all records efficiently
-        choices = []
-        processed_count = 0
-        
-        for item in naics_data:
-          naics_code = item.get('id', '').strip()
-          naics_description = item.get('description', '').strip()
-          
-          if naics_code and naics_description and len(naics_code) == 6:
-            # Truncate overly long descriptions
-            if len(naics_description) > 120:
-              naics_description = naics_description[:117] + "..."
-            
-            choices.append((naics_code, f"{naics_code}: {naics_description}"))
-            processed_count += 1
-          
-          # Log progress every 500 records
-          if processed_count % 500 == 0:
-            log(f"Processed {processed_count} NAICS codes...")
-        
-        # Sort by description for better UX
-        choices.sort(key=lambda x: x[1])
-        
-        log(f"=== SUCCESSFULLY PROCESSED {len(choices)} NAICS CODES FROM FILE ===")
-        return choices
-      
-      else:
-        log(f"=== DOWNLOAD FAILED: HTTP {response.status_code} ===")
-        return None
-        
-    except requests.exceptions.Timeout:
-      log("=== NAICS FILE DOWNLOAD TIMED OUT ===")
-      return None
-    except Exception as e:
-      log(f"=== ERROR DOWNLOADING NAICS FILE: {e} ===")
-      return None
-  
-  def filter_naics_choices(search_term):
-    """Filter NAICS choices based on search term"""
-    if not search_term or len(search_term) < 2:
-      return naics_choices
-    
-    search_lower = search_term.lower()
-    filtered = []
-    
-    for code, description in naics_choices:
-      # Search in both code and description
-      if (search_lower in code.lower() or 
-          search_lower in description.lower()):
-        filtered.append((code, description))
-    
-    # Limit results for performance
-    return filtered[:100]  # Show max 100 results
-  
-  def get_enhanced_fallback_naics_choices():
-    """Enhanced fallback with more comprehensive industry coverage"""
-    log("Using enhanced fallback NAICS choices")
-    return [
-      # Legal Services
-      ("541110", "541110: Offices of Lawyers"),
-      ("541191", "541191: Title Abstract and Settlement Offices"),
-      ("541199", "541199: All Other Legal Services"),
-      
-      # Technology
-      ("541511", "541511: Custom Computer Programming Services"),
-      ("541512", "541512: Computer Systems Design Services"),
-      ("541513", "541513: Computer Facilities Management Services"),
-      ("541519", "541519: Other Computer Related Services"),
-      ("518210", "518210: Data Processing, Hosting, and Related Services"),
-      ("541715", "541715: Research and Development in the Physical, Engineering, and Life Sciences"),
-      
-      # Professional Services
-      ("541211", "541211: Offices of Certified Public Accountants"),
-      ("541213", "541213: Tax Preparation Services"),
-      ("541214", "541214: Payroll Services"),
-      ("541611", "541611: Administrative Management and General Management Consulting Services"),
-      ("541612", "541612: Human Resources Consulting Services"),
-      ("541613", "541613: Marketing Consulting Services"),
-      ("541618", "541618: Other Management Consulting Services"),
-      ("541990", "541990: All Other Professional, Scientific, and Technical Services"),
-      
-      # Healthcare
-      ("621111", "621111: Offices of Physicians (except Mental Health Specialists)"),
-      ("621112", "621112: Offices of Physicians, Mental Health Specialists"),
-      ("621210", "621210: Offices of Dentists"),
-      ("621310", "621310: Offices of Chiropractors"),
-      ("621320", "621320: Offices of Optometrists"),
-      ("621330", "621330: Offices of Mental Health Practitioners (except Physicians)"),
-      ("621340", "621340: Offices of Physical, Occupational and Speech Therapists"),
-      ("621420", "621420: Outpatient Mental Health and Substance Abuse Centers"),
-      ("621511", "621511: Medical Laboratories"),
-      ("621610", "621610: Home Health Care Services"),
-      
-      # Financial Services
-      ("522110", "522110: Commercial Banking"),
-      ("522120", "522120: Savings Institutions"),
-      ("522130", "522130: Credit Unions"),
-      ("522190", "522190: Other Depository Credit Intermediation"),
-      ("522210", "522210: Credit Card Issuing"),
-      ("522220", "522220: Sales Financing"),
-      ("522291", "522291: Consumer Lending"),
-      ("522292", "522292: Real Estate Credit"),
-      ("522298", "522298: All Other Nondepository Credit Intermediation"),
-      ("523110", "523110: Investment Banking and Securities Dealing"),
-      ("523120", "523120: Securities Brokerage"),
-      ("523130", "523130: Commodity Contracts Dealing"),
-      ("523140", "523140: Commodity Contracts Brokerage"),
-      ("523210", "523210: Securities and Commodity Exchanges"),
-      ("523910", "523910: Miscellaneous Intermediation"),
       ("523920", "523920: Portfolio Management"),
       ("523930", "523930: Investment Advice"),
       ("523991", "523991: Trust, Fiduciary, and Custody Activities"),
