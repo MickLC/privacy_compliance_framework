@@ -51,14 +51,26 @@ code: |
       
       log("Starting optimized NAICS download...")
       
-      # Create session with retry strategy
+      # Create session with retry strategy - using compatible parameters
       session = requests.Session()
-      retry_strategy = Retry(
-        total=2,
-        status_forcelist=[429, 500, 502, 503, 504],
-        method_whitelist=["HEAD", "GET", "OPTIONS"],
-        backoff_factor=1
-      )
+      
+      # Try modern parameter first, fall back to legacy if needed
+      try:
+        retry_strategy = Retry(
+          total=2,
+          status_forcelist=[429, 500, 502, 503, 504],
+          allowed_methods=["HEAD", "GET", "OPTIONS"],  # New parameter name
+          backoff_factor=1
+        )
+      except TypeError:
+        # Fallback for older urllib3 versions
+        retry_strategy = Retry(
+          total=2,
+          status_forcelist=[429, 500, 502, 503, 504],
+          method_whitelist=["HEAD", "GET", "OPTIONS"],  # Legacy parameter name
+          backoff_factor=1
+        )
+      
       adapter = HTTPAdapter(max_retries=retry_strategy)
       session.mount("http://", adapter)
       session.mount("https://", adapter)
@@ -910,4 +922,4 @@ code: |
     is_glba_financial_institution = False
     provides_financial_products = False
     collects_npi = False
----
+---i
