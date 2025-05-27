@@ -1,97 +1,4 @@
-def format_public_privacy_rights():
-    """Format the privacy rights section for public notice using imported requirements"""
-    rights_text = ""
-    
-    if "ccpa" in applicable_jurisdictions:
-      ccpa_parts = [
-        "### California Privacy Rights",
-        "",
-        "If you are a California resident, California law may provide you with additional rights regarding our use of your personal information.",
-        "",
-        "**Your Rights under the CCPA**"
-      ]
-      rights_text += "\n".join(ccpa_parts) + "\n"
-      
-      # Use imported CCPA requirements for rights descriptions
-      ccpa_rights_reqs = [req for req in ccpa_requirements["requirements"] if req["category"] == "consumer_rights"]
-      for req in ccpa_rights_reqs:
-        rights_text += f"* **{req['description']}**: You have the right as described in the CCPA.\n"
-      
-      exercising_parts = [
-        "",
-        "**Exercising Your Rights**",
-        "To exercise the rights described above, please submit a verifiable consumer request to us by [contact method].",
-        ""
-      ]
-      rights_text += "\n".join(exercising_parts) + "\n"
-    
-    if "tdpsa" in applicable_jurisdictions:
-      tdpsa_parts = [
-        "### Texas Privacy Rights",
-        "",
-        "If you are a Texas resident, the Texas Data Privacy and Security Act (TDPSA) provides you with specific rights regarding your personal data.",
-        "",
-        "**Your Rights under the TDPSA**"
-      ]
-      rights_text += "\n".join(tdpsa_parts) + "\n"
-      
-      # Use imported TDPSA requirements for rights descriptions
-      tdpsa_rights_reqs = [req for req in tdpsa_requirements["requirements"] if req["category"] == "consumer_rights"]
-      for req in tdpsa_rights_reqs:
-        rights_text += f"* **{req['description']}**: You have the right as described in the TDPSA.\n"
-      
-      exercising_parts = [
-        "",
-        "**Exercising Your Rights**",
-        "To exercise the rights described above, please submit a request to us by [contact method].",
-        ""
-      ]
-      rights_text += "\n".join(exercising_parts) + "\n"
-    
-    if "gdpr" in applicable_jurisdictions:
-      gdpr_parts = [
-        "### European Privacy Rights",
-        "",
-        "If you are located in the European Economic Area (EEA), you have certain rights under the General Data Protection Regulation (GDPR).",
-        "",
-        "**Your Rights under the GDPR**"
-      ]
-      rights_text += "\n".join(gdpr_parts) + "\n"
-      
-      # Use imported GDPR requirements for rights descriptions
-      gdpr_rights_reqs = [req for req in gdpr_requirements["requirements"] if req["category"] == "individual_rights"]
-      for req in gdpr_rights_reqs:
-        rights_text += f"* **{req['description']}**: You have the right as described in the GDPR.\n"
-      
-      exercising_parts = [
-        "",
-        "**Exercising Your Rights**",
-        "To exercise the rights described above, please submit a request to us by [contact method].",
-        ""
-      ]
-      rights_text += "\n".join(exercising_parts) + "\n"
-    
-    if not rights_text:
-      default_parts = [
-        "We respect your privacy rights and provide you with reasonable access to the personal data that you may have provided through your use of our services.",
-        "",
-        "If you wish to access or amend any personal data we hold about you, or to request that we delete any information about you, you may contact us as set forth in the \"Contact Information\" section.",
-        "",
-        "At your request, we will have any reference to you deleted or blocked in our database.",
-        ""
-      ]
-      rights_text = "\n".join(default_parts) + "\n"
-    
-    # Add Do Not Track section
-    dnt_parts = [
-      "### Do Not Track Signals",
-      "",
-      "Some browsers have a \"Do Not Track\" feature that lets you tell websites that you do not want to have your online activities tracked. We currently do not respond to \"Do Not Track\" signals."
-    ]
-    rights_text += "\n".join(dnt_parts)
-    
-    return rights_text
-    # modules/document_builder.yml - Document Builder Module
+# modules/document_builder.yml - Document Builder Module
 ---
 # Document builder module - generates privacy documentation
 ---
@@ -573,71 +480,92 @@ code: |
     rights_text = ""
     
     if "ccpa" in applicable_jurisdictions:
-      rights_text += '''### California Privacy Rights
-
-If you are a California resident, California law may provide you with additional rights regarding our use of your personal information.
-
-**Your Rights under the CCPA**
-'''
+      ccpa_parts = [
+        "### California Privacy Rights",
+        "",
+        "If you are a California resident, California law may provide you with additional rights regarding our use of your personal information.",
+        "",
+        "**Your Rights under the CCPA**"
+      ]
+      rights_text += "\n".join(ccpa_parts) + "\n"
+      
       # Use imported CCPA requirements for rights descriptions
       ccpa_rights_reqs = [req for req in ccpa_requirements["requirements"] if req["category"] == "consumer_rights"]
       for req in ccpa_rights_reqs:
         rights_text += f"* **{req['description']}**: You have the right as described in the CCPA.\n"
       
-      rights_text += '''
-**Exercising Your Rights**
-To exercise the rights described above, please submit a verifiable consumer request to us by [contact method].
-
-'''
+      exercising_parts = [
+        "",
+        "**Exercising Your Rights**",
+        "To exercise the rights described above, please submit a verifiable consumer request to us by [contact method].",
+        ""
+      ]
+      rights_text += "\n".join(exercising_parts) + "\n"
     
     if "tdpsa" in applicable_jurisdictions:
-      rights_text += '''### Texas Privacy Rights
-
-If you are a Texas resident, the Texas Data Privacy and Security Act (TDPSA) provides you with specific rights regarding your personal data.
-
-**Your Rights under the TDPSA**
-'''
+      tdpsa_parts = [
+        "### Texas Privacy Rights",
+        "",
+        "If you are a Texas resident, the Texas Data Privacy and Security Act (TDPSA) provides you with specific rights regarding your personal data.",
+        "",
+        "**Your Rights under the TDPSA**"
+      ]
+      rights_text += "\n".join(tdpsa_parts) + "\n"
+      
       # Use imported TDPSA requirements for rights descriptions
       tdpsa_rights_reqs = [req for req in tdpsa_requirements["requirements"] if req["category"] == "consumer_rights"]
       for req in tdpsa_rights_reqs:
         rights_text += f"* **{req['description']}**: You have the right as described in the TDPSA.\n"
       
-      rights_text += '''
-**Exercising Your Rights**
-To exercise the rights described above, please submit a request to us by [contact method].
-
-'''
+      exercising_parts = [
+        "",
+        "**Exercising Your Rights**",
+        "To exercise the rights described above, please submit a request to us by [contact method].",
+        ""
+      ]
+      rights_text += "\n".join(exercising_parts) + "\n"
     
     if "gdpr" in applicable_jurisdictions:
-      rights_text += '''### European Privacy Rights
-
-If you are located in the European Economic Area (EEA), you have certain rights under the General Data Protection Regulation (GDPR).
-
-**Your Rights under the GDPR**
-'''
+      gdpr_parts = [
+        "### European Privacy Rights",
+        "",
+        "If you are located in the European Economic Area (EEA), you have certain rights under the General Data Protection Regulation (GDPR).",
+        "",
+        "**Your Rights under the GDPR**"
+      ]
+      rights_text += "\n".join(gdpr_parts) + "\n"
+      
       # Use imported GDPR requirements for rights descriptions
       gdpr_rights_reqs = [req for req in gdpr_requirements["requirements"] if req["category"] == "individual_rights"]
       for req in gdpr_rights_reqs:
         rights_text += f"* **{req['description']}**: You have the right as described in the GDPR.\n"
       
-      rights_text += '''
-**Exercising Your Rights**
-To exercise the rights described above, please submit a request to us by [contact method].
-
-'''
+      exercising_parts = [
+        "",
+        "**Exercising Your Rights**",
+        "To exercise the rights described above, please submit a request to us by [contact method].",
+        ""
+      ]
+      rights_text += "\n".join(exercising_parts) + "\n"
     
     if not rights_text:
-      rights_text = '''We respect your privacy rights and provide you with reasonable access to the personal data that you may have provided through your use of our services.
-
-If you wish to access or amend any personal data we hold about you, or to request that we delete any information about you, you may contact us as set forth in the "Contact Information" section.
-
-At your request, we will have any reference to you deleted or blocked in our database.
-
-'''
+      default_parts = [
+        "We respect your privacy rights and provide you with reasonable access to the personal data that you may have provided through your use of our services.",
+        "",
+        "If you wish to access or amend any personal data we hold about you, or to request that we delete any information about you, you may contact us as set forth in the \"Contact Information\" section.",
+        "",
+        "At your request, we will have any reference to you deleted or blocked in our database.",
+        ""
+      ]
+      rights_text = "\n".join(default_parts) + "\n"
     
-    rights_text += '''### Do Not Track Signals
-
-Some browsers have a "Do Not Track" feature that lets you tell websites that you do not want to have your online activities tracked. We currently do not respond to "Do Not Track" signals.'''
+    # Add Do Not Track section
+    dnt_parts = [
+      "### Do Not Track Signals",
+      "",
+      "Some browsers have a \"Do Not Track\" feature that lets you tell websites that you do not want to have your online activities tracked. We currently do not respond to \"Do Not Track\" signals."
+    ]
+    rights_text += "\n".join(dnt_parts)
     
     return rights_text
   
@@ -811,240 +739,3 @@ code: |
 code: |
   def create_remediation_plan():
     """Generate remediation plan document"""
-    global remediation_plan_doc, remediation_plan_download_link
-    
-    template_parts = [
-      "# Privacy Compliance Remediation Plan for {company_name}",
-      "",
-      "**Created Date**: {created_date}",
-      "",
-      "## Executive Summary",
-      "",
-      "This remediation plan outlines the actions necessary to address the compliance gaps identified in the privacy compliance assessment for {company_name}. The plan prioritizes actions based on risk severity and provides estimated timeframes for implementation.",
-      "",
-      "## Prioritized Remediation Actions",
-      "",
-      "### High Priority Actions (30-Day Timeframe)",
-      "{high_priority_actions}",
-      "",
-      "### Medium Priority Actions (60-Day Timeframe)",
-      "{medium_priority_actions}",
-      "",
-      "### Low Priority Actions (90-Day Timeframe)",
-      "{low_priority_actions}",
-      "",
-      "## Implementation Approach",
-      "",
-      "{implementation_approach}",
-      "",
-      "## Monitoring and Validation",
-      "",
-      "{monitoring_validation}",
-      "",
-      "## Resource Requirements",
-      "",
-      "{resource_requirements}"
-    ]
-    
-    template = "\n".join(template_parts)
-    
-    # Build context for template
-    context = {
-      "company_name": company.name,
-      "created_date": today().strftime("%B %d, %Y"),
-      "high_priority_actions": format_priority_actions("high"),
-      "medium_priority_actions": format_priority_actions("medium"),
-      "low_priority_actions": format_priority_actions("low"),
-      "implementation_approach": format_implementation_approach(),
-      "monitoring_validation": format_monitoring_validation(),
-      "resource_requirements": format_resource_requirements()
-    }
-    
-    # Format the template with context
-    remediation_plan_doc = template.format(**context)
-    
-    # Make it available for download
-    remediation_plan_download_link = pdf_concatenate(remediation_plan_doc, filename="remediation_plan.pdf")
-    
-    return remediation_plan_doc
----
-code: |
-  def format_priority_actions(priority):
-    """Format the priority actions section for remediation plan"""
-    actions = [item for item in gap_report["remediation_plan"] if item["severity"] == priority]
-    
-    if not actions:
-      return "No actions identified at this priority level."
-    
-    action_text = ""
-    for i, action in enumerate(actions, 1):
-      jurisdiction = action["jurisdiction"].upper()
-      action_text += f"{i}. **{action['description']}** ({jurisdiction})\n"
-    
-    return action_text
-  
-  def format_implementation_approach():
-    """Format the implementation approach section for remediation plan"""
-    content_parts = [
-      "The following approach is recommended for implementing the remediation actions:",
-      "",
-      "### Phase 1: Planning and Organization",
-      "1. **Assign Ownership**: Designate individuals responsible for each remediation action",
-      "2. **Detailed Planning**: Develop detailed implementation plans for each action",
-      "3. **Resource Allocation**: Secure necessary resources for implementation",
-      "",
-      "### Phase 2: Development and Implementation",
-      "1. **Policy Development**: Create or update required policies and procedures",
-      "2. **Process Implementation**: Establish operational processes",
-      "3. **Technical Solutions**: Implement required technical solutions",
-      "4. **Documentation**: Create necessary documentation",
-      "",
-      "### Phase 3: Training and Awareness",
-      "1. **Staff Training**: Provide training on new policies and procedures",
-      "2. **Awareness Program**: Develop awareness program for all employees",
-      "3. **Specialized Training**: Provide specialized training for key personnel",
-      "",
-      "### Phase 4: Testing and Validation",
-      "1. **Testing**: Test new processes and controls",
-      "2. **Validation**: Validate compliance with requirements",
-      "3. **Adjustments**: Make necessary adjustments based on testing results"
-    ]
-    return "\n".join(content_parts)
-  
-  def format_monitoring_validation():
-    """Format the monitoring and validation section for remediation plan"""
-    content_parts = [
-      "To ensure the effectiveness of remediation actions, the following monitoring and validation activities should be implemented:",
-      "",
-      "### Ongoing Monitoring",
-      "1. **Regular Audits**: Conduct regular audits of privacy practices",
-      "2. **Compliance Checks**: Perform periodic compliance checks",
-      "3. **Incident Tracking**: Track privacy incidents and near-misses",
-      "",
-      "### Validation Activities",
-      "1. **Documentation Review**: Review documentation for completeness and accuracy",
-      "2. **Process Testing**: Test processes for effectiveness",
-      "3. **Technical Validation**: Validate technical controls",
-      "",
-      "### Reporting",
-      "1. **Status Reporting**: Regular status reports on remediation progress",
-      "2. **Executive Updates**: Updates to executive leadership",
-      "3. **Documentation**: Maintain documentation of validation activities"
-    ]
-    return "\n".join(content_parts)
-  
-  def format_resource_requirements():
-    """Format the resource requirements section for remediation plan"""
-    content_parts = [
-      "The following resources are likely needed to implement the remediation plan:",
-      "",
-      "### Personnel",
-      "1. **Privacy Officer**: Oversight and management of remediation efforts",
-      "2. **IT Security Personnel**: Implementation of technical controls",
-      "3. **Legal Support**: Review of policies and procedures",
-      "4. **Operations Staff**: Implementation of operational processes",
-      "5. **Training Personnel**: Development and delivery of training",
-      "",
-      "### Technology",
-      "1. **Consent Management System**: System for managing and documenting consent",
-      "2. **Data Subject Request System**: System for managing data subject requests",
-      "3. **Data Mapping Tool**: Tool for documenting data flows",
-      "4. **Policy Management System**: System for managing policies and procedures",
-      "",
-      "### Other Resources",
-      "1. **Training Materials**: Materials for staff training",
-      "2. **External Expertise**: Consulting support as needed",
-      "3. **Documentation Tools**: Tools for creating and managing documentation"
-    ]
-    return "\n".join(content_parts)
----
-code: |
-  def generate_gap_report_download():
-    """Generate gap report download link using imported requirements"""
-    global gap_report_download_link
-    
-    # Create a formatted gap report
-    gap_report_text = f'''# Privacy Compliance Gap Analysis Report for {company.name}
-
-**Analysis Date**: {today().strftime("%B %d, %Y")}
-
-## Executive Summary
-
-This report presents the findings of a privacy compliance assessment conducted for {company.name}. The assessment evaluated current practices against the requirements of applicable privacy laws and identified compliance gaps that need to be addressed.
-
-### Summary of Findings
-
-* **Total Gaps Identified**: {gap_report["summary"]["total_gaps"]}
-* **High Severity Gaps**: {gap_report["summary"]["high_severity"]}
-* **Medium Severity Gaps**: {gap_report["summary"]["medium_severity"]}
-* **Low Severity Gaps**: {gap_report["summary"]["low_severity"]}
-
-## Applicable Privacy Laws
-
-The following privacy laws were determined to be applicable to {company.name}:
-
-'''
-    
-    # Add applicable laws
-    for jurisdiction_id in applicable_jurisdictions:
-      law_name = next((j["name"] for j in jurisdiction_registry["jurisdictions"] if j["id"] == jurisdiction_id), jurisdiction_id)
-      gap_report_text += f"* **{law_name}** ({jurisdiction_id.upper()})\n"
-    
-    # Add detailed gap analysis by category
-    gap_report_text += "\n## Detailed Gap Analysis\n\n"
-    
-    # Policy gaps
-    if compliance_gaps["policy_gaps"]:
-      gap_report_text += "### Policy Gaps\n\n"
-      for i, gap in enumerate(compliance_gaps["policy_gaps"], 1):
-        jurisdiction = gap["jurisdiction"].upper()
-        severity = gap["severity"].title()
-        gap_report_text += f"{i}. **{gap['description']}** ({jurisdiction}, {severity})\n   - *Remediation*: {gap['remediation']}\n\n"
-    
-    # Operational gaps
-    if compliance_gaps["operational_gaps"]:
-      gap_report_text += "### Operational Gaps\n\n"
-      for i, gap in enumerate(compliance_gaps["operational_gaps"], 1):
-        jurisdiction = gap["jurisdiction"].upper()
-        severity = gap["severity"].title()
-        gap_report_text += f"{i}. **{gap['description']}** ({jurisdiction}, {severity})\n   - *Remediation*: {gap['remediation']}\n\n"
-    
-    # Documentation gaps
-    if compliance_gaps["documentation_gaps"]:
-      gap_report_text += "### Documentation Gaps\n\n"
-      for i, gap in enumerate(compliance_gaps["documentation_gaps"], 1):
-        jurisdiction = gap["jurisdiction"].upper()
-        severity = gap["severity"].title()
-        gap_report_text += f"{i}. **{gap['description']}** ({jurisdiction}, {severity})\n   - *Remediation*: {gap['remediation']}\n\n"
-    
-    # Technical gaps
-    if compliance_gaps["technical_gaps"]:
-      gap_report_text += "### Technical Gaps\n\n"
-      for i, gap in enumerate(compliance_gaps["technical_gaps"], 1):
-        jurisdiction = gap["jurisdiction"].upper()
-        severity = gap["severity"].title()
-        gap_report_text += f"{i}. **{gap['description']}** ({jurisdiction}, {severity})\n   - *Remediation*: {gap['remediation']}\n\n"
-    
-    # Conclusion
-    gap_report_text += f'''## Conclusion
-
-The identified gaps should be addressed according to their severity level, with high-severity gaps addressed first. A detailed remediation plan has been developed to guide the implementation of necessary changes to achieve compliance with applicable privacy laws.
-
-This report should be reviewed by appropriate stakeholders, including legal counsel, to ensure that remediation efforts are properly prioritized and implemented.
-
----
-
-*This assessment represents a point-in-time evaluation based on information provided and privacy requirements as of {today().strftime("%B %d, %Y")}. Privacy laws and organizational practices change over time, and regular reassessment is recommended.*'''
-    
-    # Make it available for download
-    gap_report_download_link = pdf_concatenate(gap_report_text, filename="gap_analysis_report.pdf")
-    
-    return gap_report_download_link
----
-code: |
-  # Initialize download links as global variables
-  gap_report_download_link = None
-  internal_policy_download_link = None
-  website_privacy_notice_download_link = None
-  physical_notice_download_link = None
-  remediation_plan_download_link = None
