@@ -19,43 +19,42 @@ code: |
     """Load the registry of all supported jurisdictions"""
     global jurisdiction_registry
     
-    # In production, load from external JSON file
-    # For demonstration, use inline definition
-    jurisdiction_registry = {
-      "jurisdictions": [
-        {
-          "id": "gdpr",
-          "name": "General Data Protection Regulation",
-          "short_name": "GDPR",
-          "region": "European Union",
-          "type": "comprehensive",
-          "effective_date": "2018-05-25",
-          "latest_amendment": "2023-01-01",
-          "requirements_file": "gdpr_requirements.json",
-          "applicability_function": "is_gdpr_applicable"
-        },
-        {
-          "id": "ccpa",
-          "name": "California Consumer Privacy Act / California Privacy Rights Act",
-          "short_name": "CCPA/CPRA",
-          "region": "California, USA",
-          "type": "comprehensive",
-          "effective_date": "2020-01-01",
-          "latest_amendment": "2023-01-01",
-          "requirements_file": "ccpa_requirements.json",
-          "applicability_function": "is_ccpa_applicable"
-        },
-        {
-          "id": "tdpsa",
-          "name": "Texas Data Privacy and Security Act",
-          "short_name": "TDPSA",
-          "region": "Texas, USA",
-          "type": "comprehensive",
-          "effective_date": "2024-07-01",
-          "latest_amendment": null,
-          "requirements_file": "tdpsa_requirements.json",
-          "applicability_function": "is_tdpsa_applicable"
-        },
+    if not defined('jurisdiction_registry'):
+      jurisdiction_registry = {
+        "jurisdictions": [
+          {
+            "id": "gdpr",
+            "name": "General Data Protection Regulation",
+            "short_name": "GDPR",
+            "region": "European Union",
+            "type": "comprehensive",
+            "effective_date": "2018-05-25",
+            "latest_amendment": "2023-01-01",
+            "requirements_file": "gdpr_requirements.json",
+            "applicability_function": "is_gdpr_applicable"
+          },
+          {
+            "id": "ccpa",
+            "name": "California Consumer Privacy Act / California Privacy Rights Act",
+            "short_name": "CCPA/CPRA",
+            "region": "California, USA",
+            "type": "comprehensive",
+            "effective_date": "2020-01-01",
+            "latest_amendment": "2023-01-01",
+            "requirements_file": "ccpa_requirements.json",
+            "applicability_function": "is_ccpa_applicable"
+          },
+          {
+            "id": "tdpsa",
+            "name": "Texas Data Privacy and Security Act",
+            "short_name": "TDPSA",
+            "region": "Texas, USA",
+            "type": "comprehensive",
+            "effective_date": "2024-07-01",
+            "latest_amendment": None,
+            "requirements_file": "tdpsa_requirements.json",
+            "applicability_function": "is_tdpsa_applicable"
+          },
         {
           "id": "hipaa",
           "name": "Health Insurance Portability and Accountability Act",
