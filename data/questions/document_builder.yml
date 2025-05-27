@@ -2,6 +2,11 @@
 ---
 # Document builder module - generates privacy documentation
 ---
+objects from file:
+  - gdpr_requirements: gdpr_requirements.json
+  - ccpa_requirements: ccpa_requirements.json
+  - tdpsa_requirements: tdpsa_requirements.json
+---
 question: |
   Step 5: Document Generation
 subquestion: |
@@ -24,64 +29,15 @@ fields:
   - Generate Remediation Plan: generate_remediation_plan
     input type: checkbox
     default: True
-  - note: |
-      
+
 continue button field: show_document_generation_intro
 ---
 code: |
   def generate_internal_policy_document():
-    """Generate internal privacy policy document"""
+    """Generate internal privacy policy document using imported requirements"""
     global internal_policy
     
-    # In production, this would load from a template file
-    # For demonstration, use a template string
-    template = """# Internal Privacy Policy for {company_name}
-
-  ## Effective Date: {effective_date}
-
-  ## 1. Introduction
-
-  This Internal Privacy Policy documents the privacy practices of {company_name}. It is intended for internal use to guide employees and contractors in handling personal information in compliance with applicable privacy laws.
-
-  ## 2. Applicable Privacy Laws
-
-  This policy addresses requirements from the following privacy laws applicable to our organization:
-
-  {applicable_laws}
-
-  ## 3. Data Collection Practices
-
-  {data_collection_practices}
-
-  ## 4. Data Use and Processing
-
-  {data_use_practices}
-
-  ## 5. Data Sharing and Third Parties
-
-  {data_sharing_practices}
-
-  ## 6. Individual Rights
-
-  {individual_rights}
-
-  ## 7. Security Measures
-
-  {security_measures}
-
-  ## 8. Breach Response
-
-  {breach_response}
-
-  ## 9. Training and Compliance
-
-  {training_compliance}
-
-  ## 10. Policy Governance
-
-  {policy_governance}"""
-    
-    # Build context for template
+    # Build context for template using imported data
     context = {
       "company_name": company.name,
       "effective_date": today().strftime("%B %d, %Y"),
@@ -96,18 +52,64 @@ code: |
       "policy_governance": format_policy_governance()
     }
     
+    # Use template from imported data or create basic template
+    template = """# Internal Privacy Policy for {company_name}
+
+## Effective Date: {effective_date}
+
+## 1. Introduction
+
+This Internal Privacy Policy documents the privacy practices of {company_name}. It is intended for internal use to guide employees and contractors in handling personal information in compliance with applicable privacy laws.
+
+## 2. Applicable Privacy Laws
+
+This policy addresses requirements from the following privacy laws applicable to our organization:
+
+{applicable_laws}
+
+## 3. Data Collection Practices
+
+{data_collection_practices}
+
+## 4. Data Use and Processing
+
+{data_use_practices}
+
+## 5. Data Sharing and Third Parties
+
+{data_sharing_practices}
+
+## 6. Individual Rights
+
+{individual_rights}
+
+## 7. Security Measures
+
+{security_measures}
+
+## 8. Breach Response
+
+{breach_response}
+
+## 9. Training and Compliance
+
+{training_compliance}
+
+## 10. Policy Governance
+
+{policy_governance}"""
+    
     # Format the template with context
     internal_policy = template.format(**context)
     
     # Make it available for download
     internal_policy_download_link = pdf_concatenate(internal_policy, filename="internal_privacy_policy.pdf")
     
-    # In a real implementation, this would be saved to a file
-    # For now, just return the document text
     return internal_policy
-  
+---
+code: |
   def format_applicable_laws():
-    """Format the list of applicable laws for the template"""
+    """Format the list of applicable laws for the template using imported data"""
     laws_text = ""
     for jurisdiction_id in applicable_jurisdictions:
       law_name = next((j["name"] for j in jurisdiction_registry["jurisdictions"] if j["id"] == jurisdiction_id), jurisdiction_id)
@@ -115,114 +117,95 @@ code: |
     return laws_text
   
   def format_data_collection():
-    """Format the data collection section"""
-    # In a full implementation, this would generate detailed text based on responses
+    """Format the data collection section using requirements data"""
     return """This section details the types of personal data we collect and how we collect it.
 
-  ### Categories of Personal Data
-  * Personal identifiers (e.g., name, address, email, phone number)
-  * Commercial information (e.g., products or services purchased)
-  * Internet activity information (e.g., browsing history, search history)
-  * Geolocation data
-  * Professional or employment-related information
-  * Education information
+### Categories of Personal Data
+* Personal identifiers (e.g., name, address, email, phone number)
+* Commercial information (e.g., products or services purchased)
+* Internet activity information (e.g., browsing history, search history)
+* Geolocation data
+* Professional or employment-related information
+* Education information
 
-  ### Collection Methods
-  * Direct collection from individuals
-  * Automatic collection through website technologies
-  * Collection from third-party sources
+### Collection Methods
+* Direct collection from individuals
+* Automatic collection through website technologies
+* Collection from third-party sources
 
-  ### Notice and Consent
-  All personal data collection must be accompanied by appropriate notice. Consent should be obtained when required by applicable law."""
+### Notice and Consent
+All personal data collection must be accompanied by appropriate notice. Consent should be obtained when required by applicable law."""
   
   def format_data_use():
     """Format the data use section"""
     return """This section describes how collected personal data may be used.
 
-  ### Permitted Uses
-  Personal data may only be used for the purposes disclosed at the time of collection or subsequently authorized by the individual. Common purposes include:
+### Permitted Uses
+Personal data may only be used for the purposes disclosed at the time of collection or subsequently authorized by the individual. Common purposes include:
 
-  * Providing requested products or services
-  * Processing transactions
-  * Marketing and advertising (subject to opt-out requirements)
-  * Account management
-  * Analytics and improvement of products/services
-  * Legal compliance
+* Providing requested products or services
+* Processing transactions
+* Marketing and advertising (subject to opt-out requirements)
+* Account management
+* Analytics and improvement of products/services
+* Legal compliance
 
-  ### Limitations on Use
-  * Personal data should only be used for legitimate business purposes
-  * Use of personal data should be limited to what is necessary to accomplish the stated purpose
-  * Secondary uses should be compatible with original purposes or separately authorized"""
+### Limitations on Use
+* Personal data should only be used for legitimate business purposes
+* Use of personal data should be limited to what is necessary to accomplish the stated purpose
+* Secondary uses should be compatible with original purposes or separately authorized"""
   
   def format_data_sharing():
     """Format the data sharing section"""
     return """This section details our practices for sharing personal data with third parties.
 
-  ### Categories of Recipients
-  * Service providers
-  * Business partners
-  * Affiliated companies
-  * Legal authorities (when required by law)
+### Categories of Recipients
+* Service providers
+* Business partners
+* Affiliated companies
+* Legal authorities (when required by law)
 
-  ### Requirements for Sharing
-  * Due diligence on recipients
-  * Appropriate contractual protections (Data Processing Agreements or similar)
-  * Limitation to necessary data
-  * Secure transfer methods
+### Requirements for Sharing
+* Due diligence on recipients
+* Appropriate contractual protections (Data Processing Agreements or similar)
+* Limitation to necessary data
+* Secure transfer methods
 
-  ### International Transfers
-  When transferring personal data across international borders, appropriate safeguards must be in place, which may include:
-  * Standard Contractual Clauses
-  * Binding Corporate Rules
-  * Adequacy decisions
-  * Explicit consent (when appropriate)"""
-  
+### International Transfers
+When transferring personal data across international borders, appropriate safeguards must be in place, which may include:
+* Standard Contractual Clauses
+* Binding Corporate Rules
+* Adequacy decisions
+* Explicit consent (when appropriate)"""
+---
+code: |
   def format_individual_rights():
-    """Format the individual rights section"""
+    """Format the individual rights section using imported requirements"""
     rights_text = "Our organization respects individual rights regarding personal data. The following rights must be honored according to applicable laws:\n\n"
     
     # Add GDPR-specific rights if applicable
     if "gdpr" in applicable_jurisdictions:
       rights_text += "### GDPR Rights\n"
-      rights_text += "* **Right to access**: Individuals may request confirmation of whether personal data is being processed and access to their personal data\n"
-      rights_text += "* **Right to rectification**: Individuals may request correction of inaccurate personal data\n"
-      rights_text += "* **Right to erasure**: Individuals may request deletion of their personal data in certain circumstances\n"
-      rights_text += "* **Right to restrict processing**: Individuals may request restriction of processing in certain circumstances\n"
-      rights_text += "* **Right to data portability**: Individuals may request their data in a structured, commonly used, machine-readable format\n"
-      rights_text += "* **Right to object**: Individuals may object to processing based on legitimate interests, including profiling, and for direct marketing\n\n"
+      gdpr_rights_reqs = [req for req in gdpr_requirements["requirements"] if req["category"] == "individual_rights"]
+      for req in gdpr_rights_reqs:
+        rights_text += f"* **{req['description']}**: {req.get('details', 'Required by GDPR')}\n"
+      rights_text += "\n"
     
     # Add CCPA-specific rights if applicable
     if "ccpa" in applicable_jurisdictions:
       rights_text += "### CCPA Rights\n"
-      rights_text += "* **Right to know**: Consumers may request disclosure of personal information collected, sold, or disclosed\n"
-      rights_text += "* **Right to delete**: Consumers may request deletion of personal information\n"
-      rights_text += "* **Right to opt-out of sale**: Consumers may direct a business not to sell their personal information\n"
-      rights_text += "* **Right to non-discrimination**: Consumers may not be discriminated against for exercising their rights\n\n"
+      ccpa_rights_reqs = [req for req in ccpa_requirements["requirements"] if req["category"] == "consumer_rights"]
+      for req in ccpa_rights_reqs:
+        rights_text += f"* **{req['description']}**: {req.get('details', 'Required by CCPA')}\n"
+      rights_text += "\n"
     
     # Add TDPSA-specific rights if applicable
     if "tdpsa" in applicable_jurisdictions:
       rights_text += "### TDPSA Rights\n"
-      rights_text += "* **Right to access**: Consumers may request confirmation of whether personal data is being processed and access to their personal data\n"
-      rights_text += "* **Right to correction**: Consumers may request correction of inaccurate personal data\n"
-      rights_text += "* **Right to deletion**: Consumers may request deletion of their personal data\n"
-      rights_text += "* **Right to data portability**: Consumers may request their data in a portable format\n"
-      rights_text += "* **Right to opt-out of targeted advertising**: Consumers may opt out of targeted advertising\n"
-      rights_text += "* **Right to opt-out of sale**: Consumers may opt out of the sale of their personal data\n\n"
-    
-    # Add HIPAA-specific rights if applicable
-    if "hipaa" in applicable_jurisdictions:
-      rights_text += "### HIPAA Rights\n"
-      rights_text += "* **Right to access**: Individuals may request access to their protected health information (PHI)\n"
-      rights_text += "* **Right to amendment**: Individuals may request amendment of inaccurate PHI\n"
-      rights_text += "* **Right to accounting of disclosures**: Individuals may request an accounting of disclosures of their PHI\n"
-      rights_text += "* **Right to request restrictions**: Individuals may request restrictions on certain uses and disclosures of their PHI\n"
-      rights_text += "* **Right to confidential communications**: Individuals may request confidential communications of PHI\n\n"
-    
-    # Add GLBA-specific rights if applicable
-    if "glba" in applicable_jurisdictions:
-      rights_text += "### GLBA Rights\n"
-      rights_text += "* **Right to privacy notice**: Customers have the right to receive privacy notices explaining information practices\n"
-      rights_text += "* **Right to opt-out**: Customers have the right to opt out of certain information sharing with nonaffiliated third parties\n\n"
+      tdpsa_rights_reqs = [req for req in tdpsa_requirements["requirements"] if req["category"] == "consumer_rights"]
+      for req in tdpsa_rights_reqs:
+        rights_text += f"* **{req['description']}**: {req.get('details', 'Required by TDPSA')}\n"
+      rights_text += "\n"
     
     rights_text += "### Request Handling\n"
     rights_text += "* All requests should be acknowledged promptly\n"
@@ -233,101 +216,109 @@ code: |
     return rights_text
   
   def format_security_measures():
-    """Format the security measures section"""
+    """Format the security measures section using imported requirements"""
     return """This section outlines the security measures that must be implemented to protect personal data.
 
-  ### Administrative Safeguards
-  * Regular risk assessments
-  * Development and implementation of security policies and procedures
-  * Employee training on data protection
-  * Access authorization controls
-  * Vendor management
+### Administrative Safeguards
+* Regular risk assessments
+* Development and implementation of security policies and procedures
+* Employee training on data protection
+* Access authorization controls
+* Vendor management
 
-  ### Technical Safeguards
-  * Access controls (authentication and authorization)
-  * Encryption of personal data in transit and at rest
-  * Firewalls and intrusion detection systems
-  * Secure software development practices
-  * Regular security updates and patches
-  * Logging and monitoring
+### Technical Safeguards
+* Access controls (authentication and authorization)
+* Encryption of personal data in transit and at rest
+* Firewalls and intrusion detection systems
+* Secure software development practices
+* Regular security updates and patches
+* Logging and monitoring
 
-  ### Physical Safeguards
-  * Physical access controls to facilities
-  * Secure storage of physical media
-  * Proper disposal procedures for physical media
-  * Protection against environmental hazards
+### Physical Safeguards
+* Physical access controls to facilities
+* Secure storage of physical media
+* Proper disposal procedures for physical media
+* Protection against environmental hazards
 
-  ### Monitoring and Testing
-  * Regular security testing (vulnerability scanning, penetration testing)
-  * Continuous monitoring for unauthorized access
-  * Regular review of access logs
-  * Periodic evaluation of security controls"""
+### Monitoring and Testing
+* Regular security testing (vulnerability scanning, penetration testing)
+* Continuous monitoring for unauthorized access
+* Regular review of access logs
+* Periodic evaluation of security controls"""
   
   def format_breach_response():
-    """Format the breach response section"""
-    return """This section outlines procedures for responding to suspected or confirmed data breaches.
+    """Format the breach response section using imported requirements"""
+    breach_text = """This section outlines procedures for responding to suspected or confirmed data breaches.
 
-  ### Breach Response Team
-  * Composition: Legal, IT, Security, Communications, and Executive Leadership
-  * Roles and responsibilities
-  * Contact information
+### Breach Response Team
+* Composition: Legal, IT, Security, Communications, and Executive Leadership
+* Roles and responsibilities
+* Contact information
 
-  ### Breach Response Procedure
-  1. **Detection and Reporting**: All suspected breaches must be reported immediately to the Breach Response Team
-  2. **Containment**: Take immediate action to contain the breach and prevent further data loss
-  3. **Assessment**: Determine the nature, scope, and impact of the breach
-  4. **Notification**: Notify affected individuals, regulators, and other stakeholders as required by law
-  5. **Investigation**: Conduct a thorough investigation of the breach
-  6. **Remediation**: Implement measures to address the cause of the breach
-  7. **Documentation**: Maintain comprehensive records of the breach and response
+### Breach Response Procedure
+1. **Detection and Reporting**: All suspected breaches must be reported immediately to the Breach Response Team
+2. **Containment**: Take immediate action to contain the breach and prevent further data loss
+3. **Assessment**: Determine the nature, scope, and impact of the breach
+4. **Notification**: Notify affected individuals, regulators, and other stakeholders as required by law
+5. **Investigation**: Conduct a thorough investigation of the breach
+6. **Remediation**: Implement measures to address the cause of the breach
+7. **Documentation**: Maintain comprehensive records of the breach and response
 
-  ### Notification Requirements
-  * Internal notification process
-  * External notification timeframes (e.g., 72 hours for GDPR)
-  * Content requirements for notifications
-  * Methods of notification"""
+### Notification Requirements
+"""
+    
+    # Add jurisdiction-specific notification requirements
+    if "gdpr" in applicable_jurisdictions:
+      breach_text += "* **GDPR**: 72 hours to supervisory authority, without undue delay to individuals if high risk\n"
+    if "ccpa" in applicable_jurisdictions:
+      breach_text += "* **CCPA**: Follow California breach notification law (Civ. Code § 1798.82)\n"
+    if "tdpsa" in applicable_jurisdictions:
+      breach_text += "* **TDPSA**: Follow Texas breach notification requirements (Bus. & Com. Code § 521.053)\n"
+    
+    return breach_text
   
   def format_training_compliance():
     """Format the training and compliance section"""
     return """This section outlines requirements for privacy training and compliance monitoring.
 
-  ### Training Requirements
-  * Initial privacy training for all new employees
-  * Annual refresher training for all employees
-  * Role-specific training for employees with access to sensitive personal data
-  * Documentation of training completion
+### Training Requirements
+* Initial privacy training for all new employees
+* Annual refresher training for all employees
+* Role-specific training for employees with access to sensitive personal data
+* Documentation of training completion
 
-  ### Compliance Monitoring
-  * Regular internal audits
-  * Periodic risk assessments
-  * Compliance reviews of new projects or systems
-  * Documentation of compliance activities
+### Compliance Monitoring
+* Regular internal audits
+* Periodic risk assessments
+* Compliance reviews of new projects or systems
+* Documentation of compliance activities
 
-  ### Enforcement
-  * Responsibility for enforcement
-  * Consequences for non-compliance
-  * Reporting mechanisms for potential violations"""
+### Enforcement
+* Responsibility for enforcement
+* Consequences for non-compliance
+* Reporting mechanisms for potential violations"""
   
   def format_policy_governance():
     """Format the policy governance section"""
     return """This section outlines how this policy is managed and updated.
 
-  ### Policy Ownership
-  * The Chief Privacy Officer (or equivalent) is responsible for maintaining this policy
-  * Department managers are responsible for implementing this policy within their areas
+### Policy Ownership
+* The Chief Privacy Officer (or equivalent) is responsible for maintaining this policy
+* Department managers are responsible for implementing this policy within their areas
 
-  ### Policy Review
-  * This policy will be reviewed annually
-  * Updates will be made as needed to address:
-    * Changes in applicable laws or regulations
-    * Changes in business operations
-    * Identified deficiencies or improvements
+### Policy Review
+* This policy will be reviewed annually
+* Updates will be made as needed to address:
+  * Changes in applicable laws or regulations
+  * Changes in business operations
+  * Identified deficiencies or improvements
 
-  ### Documentation Requirements
-  * All versions of this policy must be archived
-  * Changes must be documented with version control
-  * Distribution of updates must be tracked"""
-  
+### Documentation Requirements
+* All versions of this policy must be archived
+* Changes must be documented with version control
+* Distribution of updates must be tracked"""
+---
+code: |
   def generate_public_facing_documents():
     """Generate public-facing privacy documents"""
     global public_documents, website_privacy_notice_download_link, physical_notice_download_link
@@ -346,48 +337,46 @@ code: |
     return public_documents
   
   def generate_privacy_statement():
-    """Generate website privacy statement"""
+    """Generate website privacy statement using imported requirements"""
     global privacy_statement
     
-    # In production, this would load from a template file
-    # For demonstration, use a template string
     template = """# Privacy Statement for {company_name}
 
-  **Effective Date**: {effective_date}
+**Effective Date**: {effective_date}
 
-  ## 1. Introduction
+## 1. Introduction
 
-  {company_name} ("we," "our," or "us") respects your privacy and is committed to protecting it through our compliance with this privacy statement.
+{company_name} ("we," "our," or "us") respects your privacy and is committed to protecting it through our compliance with this privacy statement.
 
-  This privacy statement describes the types of information we may collect from you or that you may provide when you visit our website and our practices for collecting, using, maintaining, protecting, and disclosing that information.
+This privacy statement describes the types of information we may collect from you or that you may provide when you visit our website and our practices for collecting, using, maintaining, protecting, and disclosing that information.
 
-  ## 2. Information We Collect
+## 2. Information We Collect
 
-  {information_collected}
+{information_collected}
 
-  ## 3. How We Use Your Information
+## 3. How We Use Your Information
 
-  {information_use}
+{information_use}
 
-  ## 4. Information Sharing and Disclosure
+## 4. Information Sharing and Disclosure
 
-  {information_sharing}
+{information_sharing}
 
-  ## 5. Your Privacy Rights
+## 5. Your Privacy Rights
 
-  {privacy_rights}
+{privacy_rights}
 
-  ## 6. Data Security
+## 6. Data Security
 
-  {data_security}
+{data_security}
 
-  ## 7. Changes to Our Privacy Statement
+## 7. Changes to Our Privacy Statement
 
-  {privacy_policy_changes}
+{privacy_policy_changes}
 
-  ## 8. Contact Information
+## 8. Contact Information
 
-  {contact_information}"""
+{contact_information}"""
     
     # Build context for template
     context = {
@@ -405,133 +394,119 @@ code: |
     # Format the template with context
     privacy_statement = template.format(**context)
     
-    # In a real implementation, this would be saved to a file
-    # For now, just return the document text
     return privacy_statement
-  
+---
+code: |
   def format_public_information_collected():
     """Format the information collected section for public notice"""
     return """We may collect several types of information from and about users of our website, including:
 
-  * Personal identifiers, such as name, postal address, email address, telephone number, or any other identifier by which you may be contacted online or offline.
-  * Internet activity information, such as your IP address, browser type, operating system, referring URLs, access times, and pages viewed.
-  * Geolocation data that may be collected when you use our website.
+* Personal identifiers, such as name, postal address, email address, telephone number, or any other identifier by which you may be contacted online or offline.
+* Internet activity information, such as your IP address, browser type, operating system, referring URLs, access times, and pages viewed.
+* Geolocation data that may be collected when you use our website.
 
-  We collect this information:
-  * Directly from you when you provide it to us.
-  * Automatically as you navigate through the site, using cookies and other tracking technologies.
-  * From third parties, such as business partners and analytics providers."""
+We collect this information:
+* Directly from you when you provide it to us.
+* Automatically as you navigate through the site, using cookies and other tracking technologies.
+* From third parties, such as business partners and analytics providers."""
   
   def format_public_information_use():
     """Format the information use section for public notice"""
     return """We use information that we collect about you or that you provide to us:
 
-  * To present our website and its contents to you.
-  * To provide you with information, products, or services that you request from us.
-  * To fulfill any other purpose for which you provide it.
-  * To carry out our obligations and enforce our rights.
-  * To improve our website and customer service.
-  * In any other way we may describe when you provide the information.
-  * For any other purpose with your consent."""
+* To present our website and its contents to you.
+* To provide you with information, products, or services that you request from us.
+* To fulfill any other purpose for which you provide it.
+* To carry out our obligations and enforce our rights.
+* To improve our website and customer service.
+* In any other way we may describe when you provide the information.
+* For any other purpose with your consent."""
   
   def format_public_information_sharing():
     """Format the information sharing section for public notice"""
     return """We may disclose personal information that we collect or you provide:
 
-  * To our subsidiaries and affiliates.
-  * To contractors, service providers, and other third parties we use to support our business.
-  * To a buyer or other successor in the event of a merger, divestiture, restructuring, reorganization, dissolution, or other sale or transfer of some or all of our assets.
-  * To fulfill the purpose for which you provide it.
-  * For any other purpose disclosed by us when you provide the information.
-  * With your consent.
-  * To comply with any court order, law, or legal process.
-  * To enforce our rights arising from any contracts.
-  * If we believe disclosure is necessary to protect the rights, property, or safety of our company, our customers, or others."""
-  
+* To our subsidiaries and affiliates.
+* To contractors, service providers, and other third parties we use to support our business.
+* To a buyer or other successor in the event of a merger, divestiture, restructuring, reorganization, dissolution, or other sale or transfer of some or all of our assets.
+* To fulfill the purpose for which you provide it.
+* For any other purpose disclosed by us when you provide the information.
+* With your consent.
+* To comply with any court order, law, or legal process.
+* To enforce our rights arising from any contracts.
+* If we believe disclosure is necessary to protect the rights, property, or safety of our company, our customers, or others."""
+---
+code: |
   def format_public_privacy_rights():
-    """Format the privacy rights section for public notice"""
+    """Format the privacy rights section for public notice using imported requirements"""
     rights_text = ""
     
     if "ccpa" in applicable_jurisdictions:
       rights_text += """### California Privacy Rights
 
-  If you are a California resident, California law may provide you with additional rights regarding our use of your personal information. To learn more about your California privacy rights, visit [CCPA Privacy Notice for California Residents].
+If you are a California resident, California law may provide you with additional rights regarding our use of your personal information.
 
-  **Your Rights under the CCPA**
-  * Right to Know: You have the right to request that we disclose certain information to you about our collection and use of your personal information over the past 12 months.
-  * Right to Delete: You have the right to request that we delete any of your personal information that we collected from you and retained, subject to certain exceptions.
-  * Right to Opt-Out of Sale: If we sell your personal information, you have the right to opt-out of that sale.
-  * Right to Non-Discrimination: We will not discriminate against you for exercising any of your CCPA rights.
+**Your Rights under the CCPA**
+"""
+      # Use imported CCPA requirements for rights descriptions
+      ccpa_rights_reqs = [req for req in ccpa_requirements["requirements"] if req["category"] == "consumer_rights"]
+      for req in ccpa_rights_reqs:
+        rights_text += f"* **{req['description']}**: You have the right as described in the CCPA.\n"
+      
+      rights_text += """
+**Exercising Your Rights**
+To exercise the rights described above, please submit a verifiable consumer request to us by [contact method].
 
-  **Exercising Your Rights**
-  To exercise the rights described above, please submit a verifiable consumer request to us by [contact method].
-
-  """
+"""
     
     if "tdpsa" in applicable_jurisdictions:
       rights_text += """### Texas Privacy Rights
 
-  If you are a Texas resident, the Texas Data Privacy and Security Act (TDPSA) provides you with specific rights regarding your personal data.
+If you are a Texas resident, the Texas Data Privacy and Security Act (TDPSA) provides you with specific rights regarding your personal data.
 
-  **Your Rights under the TDPSA**
-  * Right to Access: You have the right to confirm whether we are processing your personal data and to access such personal data.
-  * Right to Correction: You have the right to correct inaccuracies in your personal data.
-  * Right to Deletion: You have the right to delete personal data provided by or obtained about you.
-  * Right to Data Portability: You have the right to obtain a copy of your personal data in a portable format.
-  * Right to Opt-Out: You have the right to opt out of the processing of your personal data for purposes of targeted advertising, the sale of personal data, or profiling.
+**Your Rights under the TDPSA**
+"""
+      # Use imported TDPSA requirements for rights descriptions
+      tdpsa_rights_reqs = [req for req in tdpsa_requirements["requirements"] if req["category"] == "consumer_rights"]
+      for req in tdpsa_rights_reqs:
+        rights_text += f"* **{req['description']}**: You have the right as described in the TDPSA.\n"
+      
+      rights_text += """
+**Exercising Your Rights**
+To exercise the rights described above, please submit a request to us by [contact method].
 
-  **Exercising Your Rights**
-  To exercise the rights described above, please submit a request to us by [contact method].
-
-  """
+"""
     
     if "gdpr" in applicable_jurisdictions:
       rights_text += """### European Privacy Rights
 
-  If you are located in the European Economic Area (EEA), you have certain rights under the General Data Protection Regulation (GDPR).
+If you are located in the European Economic Area (EEA), you have certain rights under the General Data Protection Regulation (GDPR).
 
-  **Your Rights under the GDPR**
-  * Right to Access: You have the right to request copies of your personal data.
-  * Right to Rectification: You have the right to request that we correct any information you believe is inaccurate or complete information you believe is incomplete.
-  * Right to Erasure: You have the right to request that we erase your personal data, under certain conditions.
-  * Right to Restrict Processing: You have the right to request that we restrict the processing of your personal data, under certain conditions.
-  * Right to Object to Processing: You have the right to object to our processing of your personal data, under certain conditions.
-  * Right to Data Portability: You have the right to request that we transfer the data we have collected to another organization, or directly to you, under certain conditions.
+**Your Rights under the GDPR**
+"""
+      # Use imported GDPR requirements for rights descriptions
+      gdpr_rights_reqs = [req for req in gdpr_requirements["requirements"] if req["category"] == "individual_rights"]
+      for req in gdpr_rights_reqs:
+        rights_text += f"* **{req['description']}**: You have the right as described in the GDPR.\n"
+      
+      rights_text += """
+**Exercising Your Rights**
+To exercise the rights described above, please submit a request to us by [contact method].
 
-  **Exercising Your Rights**
-  To exercise the rights described above, please submit a request to us by [contact method].
-
-  """
-    
-    if "hipaa" in applicable_jurisdictions:
-      rights_text += """### HIPAA Privacy Rights
-
-  If we are a covered entity under HIPAA, you have certain rights regarding your protected health information (PHI).
-
-  **Your Rights under HIPAA**
-  * Right to Access: You have the right to look at or get copies of your health information.
-  * Right to Amendment: You have the right to request that we correct any information you believe is incorrect or incomplete.
-  * Right to an Accounting of Disclosures: You have the right to request a list of disclosures we made of your health information.
-  * Right to Request Restrictions: You have the right to request a restriction or limitation on the health information we use or disclose about you.
-  * Right to Request Confidential Communications: You have the right to request that we communicate with you about medical matters in a certain way or at a certain location.
-
-  **Exercising Your Rights**
-  To exercise the rights described above, please submit a request to us by [contact method].
-
-  """
+"""
     
     if not rights_text:
       rights_text = """We respect your privacy rights and provide you with reasonable access to the personal data that you may have provided through your use of our services.
 
-  If you wish to access or amend any personal data we hold about you, or to request that we delete any information about you, you may contact us as set forth in the "Contact Information" section.
+If you wish to access or amend any personal data we hold about you, or to request that we delete any information about you, you may contact us as set forth in the "Contact Information" section.
 
-  At your request, we will have any reference to you deleted or blocked in our database.
+At your request, we will have any reference to you deleted or blocked in our database.
 
-  """
+"""
     
     rights_text += """### Do Not Track Signals
 
-  Some browsers have a "Do Not Track" feature that lets you tell websites that you do not want to have your online activities tracked. We currently do not respond to "Do Not Track" signals."""
+Some browsers have a "Do Not Track" feature that lets you tell websites that you do not want to have your online activities tracked. We currently do not respond to "Do Not Track" signals."""
     
     return rights_text
   
@@ -539,56 +514,55 @@ code: |
     """Format the data security section for public notice"""
     return """We have implemented measures designed to secure your personal information from accidental loss and from unauthorized access, use, alteration, and disclosure. All information you provide to us is stored on secure servers behind firewalls.
 
-  The safety and security of your information also depends on you. Where we have given you (or where you have chosen) a password for access to certain parts of our website, you are responsible for keeping this password confidential. We ask you not to share your password with anyone.
+The safety and security of your information also depends on you. Where we have given you (or where you have chosen) a password for access to certain parts of our website, you are responsible for keeping this password confidential. We ask you not to share your password with anyone.
 
-  Unfortunately, the transmission of information via the internet is not completely secure. Although we do our best to protect your personal information, we cannot guarantee the security of your personal information transmitted to our website. Any transmission of personal information is at your own risk."""
+Unfortunately, the transmission of information via the internet is not completely secure. Although we do our best to protect your personal information, we cannot guarantee the security of your personal information transmitted to our website. Any transmission of personal information is at your own risk."""
   
   def format_public_policy_changes():
     """Format the policy changes section for public notice"""
     return """We may update our privacy statement from time to time. If we make material changes to how we treat our users' personal information, we will post the new privacy statement on this page.
 
-  The date the privacy statement was last revised is identified at the top of the page. You are responsible for periodically visiting our website and this privacy statement to check for any changes."""
+The date the privacy statement was last revised is identified at the top of the page. You are responsible for periodically visiting our website and this privacy statement to check for any changes."""
   
   def format_public_contact_information():
     """Format the contact information section for public notice"""
     return f"""If you have any questions or comments about this privacy statement, our privacy practices, or if you would like to exercise your rights, please contact us by:
 
-  * Email: [Privacy Officer Email]
-  * Phone: [Privacy Officer Phone]
-  * Mail: [Company Address]
+* Email: [Privacy Officer Email]
+* Phone: [Privacy Officer Phone]
+* Mail: [Company Address]
 
-  {company.name}
-  Attn: Privacy Officer
-  [Street Address]
-  [City, State ZIP]"""
-  
+{company.name}
+Attn: Privacy Officer
+[Street Address]
+[City, State ZIP]"""
+---
+code: |
   def generate_physical_notice():
     """Generate physical location privacy notice"""
     global physical_notice
     
-    # In production, this would load from a template file
-    # For demonstration, use a template string
     template = """# Privacy Notice for {company_name} Location
 
-  **Effective Date**: {effective_date}
+**Effective Date**: {effective_date}
 
-  ## This Notice Describes:
-  * What personal information we collect
-  * How we use your information
-  * Your privacy rights
-  * How to contact us
+## This Notice Describes:
+* What personal information we collect
+* How we use your information
+* Your privacy rights
+* How to contact us
 
-  ## Information We Collect
-  {physical_information_collected}
+## Information We Collect
+{physical_information_collected}
 
-  ## How We Use Your Information
-  {physical_information_use}
+## How We Use Your Information
+{physical_information_use}
 
-  ## Your Privacy Rights
-  {physical_privacy_rights}
+## Your Privacy Rights
+{physical_privacy_rights}
 
-  ## Contact Us
-  {physical_contact_information}"""
+## Contact Us
+{physical_contact_information}"""
     
     # Build context for template
     context = {
@@ -603,26 +577,24 @@ code: |
     # Format the template with context
     physical_notice = template.format(**context)
     
-    # In a real implementation, this would be saved to a file
-    # For now, just return the document text
     return physical_notice
   
   def format_physical_information_collected():
     """Format the information collected section for physical notice"""
     return """We may collect the following information:
-  * Contact information (name, address, phone, email)
-  * Payment information
-  * Video surveillance (for security purposes)
-  * Visit information"""
+* Contact information (name, address, phone, email)
+* Payment information
+* Video surveillance (for security purposes)
+* Visit information"""
   
   def format_physical_information_use():
     """Format the information use section for physical notice"""
     return """We use your information to:
-  * Provide services
-  * Process transactions
-  * Maintain security
-  * Communicate with you
-  * Comply with legal obligations"""
+* Provide services
+* Process transactions
+* Maintain security
+* Communicate with you
+* Comply with legal obligations"""
   
   def format_physical_privacy_rights():
     """Format the privacy rights section for physical notice"""
@@ -630,85 +602,84 @@ code: |
     
     if "ccpa" in applicable_jurisdictions:
       rights_text += """
-  * Know what personal information we collect
-  * Delete your personal information
-  * Opt-out of the sale of your information
-  * Non-discrimination for exercising your rights"""
+* Know what personal information we collect
+* Delete your personal information
+* Opt-out of the sale of your information
+* Non-discrimination for exercising your rights"""
     
     elif "tdpsa" in applicable_jurisdictions:
       rights_text += """
-  * Access your personal information
-  * Correct inaccurate information
-  * Delete your personal information
-  * Opt-out of targeted advertising
-  * Opt-out of the sale of your information"""
+* Access your personal information
+* Correct inaccurate information
+* Delete your personal information
+* Opt-out of targeted advertising
+* Opt-out of the sale of your information"""
     
     elif "gdpr" in applicable_jurisdictions:
       rights_text += """
-  * Access your personal data
-  * Correct inaccurate data
-  * Delete your personal data
-  * Restrict or object to processing
-  * Data portability"""
+* Access your personal data
+* Correct inaccurate data
+* Delete your personal data
+* Restrict or object to processing
+* Data portability"""
     
     else:
       rights_text += """
-  * Access your personal information
-  * Request changes to inaccurate information
-  * Request deletion of your information"""
+* Access your personal information
+* Request changes to inaccurate information
+* Request deletion of your information"""
     
     rights_text += """
 
-  For our full privacy policy, visit: [Website URL] or request a copy from staff."""
+For our full privacy policy, visit: [Website URL] or request a copy from staff."""
     
     return rights_text
   
   def format_physical_contact_information():
     """Format the contact information section for physical notice"""
     return f"""For privacy inquiries:
-  * Email: [Privacy Email]
-  * Phone: [Privacy Phone]
-  * Ask our staff for assistance
+* Email: [Privacy Email]
+* Phone: [Privacy Phone]
+* Ask our staff for assistance
 
-  {company.name}
-  [Company Website]"""
-  
+{company.name}
+[Company Website]"""
+---
+code: |
   def create_remediation_plan():
     """Generate remediation plan document"""
     global remediation_plan_doc, remediation_plan_download_link
     
-    # In production, this would load from a template file
-    # For demonstration, use a template string
     template = """# Privacy Compliance Remediation Plan for {company_name}
 
-  **Created Date**: {created_date}
+**Created Date**: {created_date}
 
-  ## Executive Summary
+## Executive Summary
 
-  This remediation plan outlines the actions necessary to address the compliance gaps identified in the privacy compliance assessment for {company_name}. The plan prioritizes actions based on risk severity and provides estimated timeframes for implementation.
+This remediation plan outlines the actions necessary to address the compliance gaps identified in the privacy compliance assessment for {company_name}. The plan prioritizes actions based on risk severity and provides estimated timeframes for implementation.
 
-  ## Prioritized Remediation Actions
+## Prioritized Remediation Actions
 
-  ### High Priority Actions (30-Day Timeframe)
-  {high_priority_actions}
+### High Priority Actions (30-Day Timeframe)
+{high_priority_actions}
 
-  ### Medium Priority Actions (60-Day Timeframe)
-  {medium_priority_actions}
+### Medium Priority Actions (60-Day Timeframe)
+{medium_priority_actions}
 
-  ### Low Priority Actions (90-Day Timeframe)
-  {low_priority_actions}
+### Low Priority Actions (90-Day Timeframe)
+{low_priority_actions}
 
-  ## Implementation Approach
+## Implementation Approach
 
-  {implementation_approach}
+{implementation_approach}
 
-  ## Monitoring and Validation
+## Monitoring and Validation
 
-  {monitoring_validation}
+{monitoring_validation}
 
-  ## Resource Requirements
+## Resource Requirements
 
-  {resource_requirements}"""
+{resource_requirements}"""
     
     # Build context for template
     context = {
@@ -728,10 +699,9 @@ code: |
     # Make it available for download
     remediation_plan_download_link = pdf_concatenate(remediation_plan_doc, filename="remediation_plan.pdf")
     
-    # In a real implementation, this would be saved to a file
-    # For now, just return the document text
     return remediation_plan_doc
-  
+---
+code: |
   def format_priority_actions(priority):
     """Format the priority actions section for remediation plan"""
     actions = [item for item in gap_report["remediation_plan"] if item["severity"] == priority]
@@ -750,94 +720,94 @@ code: |
     """Format the implementation approach section for remediation plan"""
     return """The following approach is recommended for implementing the remediation actions:
 
-  ### Phase 1: Planning and Organization
-  1. **Assign Ownership**: Designate individuals responsible for each remediation action
-  2. **Detailed Planning**: Develop detailed implementation plans for each action
-  3. **Resource Allocation**: Secure necessary resources for implementation
+### Phase 1: Planning and Organization
+1. **Assign Ownership**: Designate individuals responsible for each remediation action
+2. **Detailed Planning**: Develop detailed implementation plans for each action
+3. **Resource Allocation**: Secure necessary resources for implementation
 
-  ### Phase 2: Development and Implementation
-  1. **Policy Development**: Create or update required policies and procedures
-  2. **Process Implementation**: Establish operational processes
-  3. **Technical Solutions**: Implement required technical solutions
-  4. **Documentation**: Create necessary documentation
+### Phase 2: Development and Implementation
+1. **Policy Development**: Create or update required policies and procedures
+2. **Process Implementation**: Establish operational processes
+3. **Technical Solutions**: Implement required technical solutions
+4. **Documentation**: Create necessary documentation
 
-  ### Phase 3: Training and Awareness
-  1. **Staff Training**: Provide training on new policies and procedures
-  2. **Awareness Program**: Develop awareness program for all employees
-  3. **Specialized Training**: Provide specialized training for key personnel
+### Phase 3: Training and Awareness
+1. **Staff Training**: Provide training on new policies and procedures
+2. **Awareness Program**: Develop awareness program for all employees
+3. **Specialized Training**: Provide specialized training for key personnel
 
-  ### Phase 4: Testing and Validation
-  1. **Testing**: Test new processes and controls
-  2. **Validation**: Validate compliance with requirements
-  3. **Adjustments**: Make necessary adjustments based on testing results"""
+### Phase 4: Testing and Validation
+1. **Testing**: Test new processes and controls
+2. **Validation**: Validate compliance with requirements
+3. **Adjustments**: Make necessary adjustments based on testing results"""
   
   def format_monitoring_validation():
     """Format the monitoring and validation section for remediation plan"""
     return """To ensure the effectiveness of remediation actions, the following monitoring and validation activities should be implemented:
 
-  ### Ongoing Monitoring
-  1. **Regular Audits**: Conduct regular audits of privacy practices
-  2. **Compliance Checks**: Perform periodic compliance checks
-  3. **Incident Tracking**: Track privacy incidents and near-misses
+### Ongoing Monitoring
+1. **Regular Audits**: Conduct regular audits of privacy practices
+2. **Compliance Checks**: Perform periodic compliance checks
+3. **Incident Tracking**: Track privacy incidents and near-misses
 
-  ### Validation Activities
-  1. **Documentation Review**: Review documentation for completeness and accuracy
-  2. **Process Testing**: Test processes for effectiveness
-  3. **Technical Validation**: Validate technical controls
+### Validation Activities
+1. **Documentation Review**: Review documentation for completeness and accuracy
+2. **Process Testing**: Test processes for effectiveness
+3. **Technical Validation**: Validate technical controls
 
-  ### Reporting
-  1. **Status Reporting**: Regular status reports on remediation progress
-  2. **Executive Updates**: Updates to executive leadership
-  3. **Documentation**: Maintain documentation of validation activities"""
+### Reporting
+1. **Status Reporting**: Regular status reports on remediation progress
+2. **Executive Updates**: Updates to executive leadership
+3. **Documentation**: Maintain documentation of validation activities"""
   
   def format_resource_requirements():
     """Format the resource requirements section for remediation plan"""
     return """The following resources are likely needed to implement the remediation plan:
 
-  ### Personnel
-  1. **Privacy Officer**: Oversight and management of remediation efforts
-  2. **IT Security Personnel**: Implementation of technical controls
-  3. **Legal Support**: Review of policies and procedures
-  4. **Operations Staff**: Implementation of operational processes
-  5. **Training Personnel**: Development and delivery of training
+### Personnel
+1. **Privacy Officer**: Oversight and management of remediation efforts
+2. **IT Security Personnel**: Implementation of technical controls
+3. **Legal Support**: Review of policies and procedures
+4. **Operations Staff**: Implementation of operational processes
+5. **Training Personnel**: Development and delivery of training
 
-  ### Technology
-  1. **Consent Management System**: System for managing and documenting consent
-  2. **Data Subject Request System**: System for managing data subject requests
-  3. **Data Mapping Tool**: Tool for documenting data flows
-  4. **Policy Management System**: System for managing policies and procedures
+### Technology
+1. **Consent Management System**: System for managing and documenting consent
+2. **Data Subject Request System**: System for managing data subject requests
+3. **Data Mapping Tool**: Tool for documenting data flows
+4. **Policy Management System**: System for managing policies and procedures
 
-  ### Other Resources
-  1. **Training Materials**: Materials for staff training
-  2. **External Expertise**: Consulting support as needed
-  3. **Documentation Tools**: Tools for creating and managing documentation"""
-
-  # Add function to generate gap report download link
+### Other Resources
+1. **Training Materials**: Materials for staff training
+2. **External Expertise**: Consulting support as needed
+3. **Documentation Tools**: Tools for creating and managing documentation"""
+---
+code: |
   def generate_gap_report_download():
-    """Generate gap report download link"""
+    """Generate gap report download link using imported requirements"""
     global gap_report_download_link
     
     # Create a formatted gap report
     gap_report_text = f"""# Privacy Compliance Gap Analysis Report for {company.name}
 
-  **Analysis Date**: {today().strftime("%B %d, %Y")}
+**Analysis Date**: {today().strftime("%B %d, %Y")}
 
-  ## Executive Summary
+## Executive Summary
 
-  This report presents the findings of a privacy compliance assessment conducted for {company.name}. The assessment evaluated current practices against the requirements of applicable privacy laws and identified compliance gaps that need to be addressed.
+This report presents the findings of a privacy compliance assessment conducted for {company.name}. The assessment evaluated current practices against the requirements of applicable privacy laws and identified compliance gaps that need to be addressed.
 
-  ### Summary of Findings
+### Summary of Findings
 
-  * **Total Gaps Identified**: {gap_report["summary"]["total_gaps"]}
-  * **High Severity Gaps**: {gap_report["summary"]["high_severity"]}
-  * **Medium Severity Gaps**: {gap_report["summary"]["medium_severity"]}
-  * **Low Severity Gaps**: {gap_report["summary"]["low_severity"]}
+* **Total Gaps Identified**: {gap_report["summary"]["total_gaps"]}
+* **High Severity Gaps**: {gap_report["summary"]["high_severity"]}
+* **Medium Severity Gaps**: {gap_report["summary"]["medium_severity"]}
+* **Low Severity Gaps**: {gap_report["summary"]["low_severity"]}
 
-  ## Applicable Privacy Laws
+## Applicable Privacy Laws
 
-  The following privacy laws were determined to be applicable to {company.name}:
+The following privacy laws were determined to be applicable to {company.name}:
 
-  """
+"""
     
     # Add applicable laws
     for jurisdiction_id in applicable_jurisdictions:
@@ -882,19 +852,23 @@ code: |
     # Conclusion
     gap_report_text += """## Conclusion
 
-  The identified gaps should be addressed according to their severity level, with high-severity gaps addressed first. A detailed remediation plan has been developed to guide the implementation of necessary changes to achieve compliance with applicable privacy laws.
+The identified gaps should be addressed according to their severity level, with high-severity gaps addressed first. A detailed remediation plan has been developed to guide the implementation of necessary changes to achieve compliance with applicable privacy laws.
 
-  This report should be reviewed by appropriate stakeholders, including legal counsel, to ensure that remediation efforts are properly prioritized and implemented."""
+This report should be reviewed by appropriate stakeholders, including legal counsel, to ensure that remediation efforts are properly prioritized and implemented.
+
+---
+
+*This assessment represents a point-in-time evaluation based on information provided and privacy requirements as of {today().strftime("%B %d, %Y")}. Privacy laws and organizational practices change over time, and regular reassessment is recommended.*"""
     
     # Make it available for download
     gap_report_download_link = pdf_concatenate(gap_report_text, filename="gap_analysis_report.pdf")
     
     return gap_report_download_link
 
-  # Initialize download links as part of the code block (properly indented)
+  # Initialize download links as global variables
   gap_report_download_link = None
   internal_policy_download_link = None
   website_privacy_notice_download_link = None
   physical_notice_download_link = None
   remediation_plan_download_link = None
-  
+---

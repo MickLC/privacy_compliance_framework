@@ -2,6 +2,11 @@
 ---
 # Jurisdiction registry - manages the repository of privacy laws
 ---
+objects from file:
+  - gdpr_requirements: gdpr_requirements.json
+  - ccpa_requirements: ccpa_requirements.json
+  - tdpsa_requirements: tdpsa_requirements.json
+---
 question: "Step 2: Jurisdictional Analysis"
 subquestion: |
   Based on your business profile, we'll now determine which privacy laws apply to your operations.
@@ -88,85 +93,41 @@ code: |
     global applicable_jurisdictions
     applicable_jurisdictions = []
     
-    log(f"=== JURISDICTION ANALYSIS DEBUG ===")
-    log(f"Company: {company.name}")
-    log(f"Revenue: ${company.annual_revenue:,.0f}")
-    log(f"Employees: {company.employee_count}")
-    log(f"States: {states_with_locations}")
-    log(f"California records: {california_records}")
-    log(f"Texas records: {texas_records}")
-    log(f"Serves EU: {serves_eu}")
-    log(f"EU establishment: {has_eu_establishment}")
-    log(f"Sells personal info: {sells_personal_info}")
-    
     # For each jurisdiction in the registry, check applicability
     for jurisdiction in jurisdiction_registry["jurisdictions"]:
       # Get the appropriate applicability function
       func_name = jurisdiction["applicability_function"]
       
       # Call the applicability function
-      is_applicable = globals()[func_name]()
-      log(f"{jurisdiction['id'].upper()} applicable: {is_applicable}")
-      
-      if is_applicable:
+      if globals()[func_name]():
         applicable_jurisdictions.append(jurisdiction["id"])
     
-    log(f"Final applicable jurisdictions: {applicable_jurisdictions}")
     return applicable_jurisdictions
   
   def is_gdpr_applicable():
     """Determine if GDPR applies"""
-    # GDPR applies if:
-    # 1. You serve EU customers/clients, OR
-    # 2. You have an EU establishment
     return serves_eu or has_eu_establishment
   
   def is_ccpa_applicable():
-    """Determine if CCPA/CPRA applies - FIXED LOGIC"""
-    # Must have California presence first
-    has_california_presence = ('California' in states_with_locations or california_records > 0)
-    
-    if not has_california_presence:
-      log("CCPA: No California presence")
-      return False
-    
-    # CCPA applies if you meet ANY of these thresholds:
-    # 1. Annual revenue >= $25M, OR
-    # 2. Process >= 100,000 CA consumer records annually, OR  
-    # 3. Process >= 50,000 CA consumer records AND sell personal info
-    
-    revenue_threshold = company.annual_revenue >= 25000000
-    high_volume_threshold = california_records >= 100000
-    medium_volume_sale_threshold = (california_records >= 50000 and sells_personal_info)
-    
-    log(f"CCPA checks - Revenue ${company.annual_revenue:,.0f} >= $25M: {revenue_threshold}")
-    log(f"CCPA checks - CA records {california_records} >= 100K: {high_volume_threshold}")
-    log(f"CCPA checks - CA records {california_records} >= 50K AND sells info {sells_personal_info}: {medium_volume_sale_threshold}")
-    
-    return revenue_threshold or high_volume_threshold or medium_volume_sale_threshold
+    """Determine if CCPA/CPRA applies"""
+    return ((company.annual_revenue >= 25000000 or 
+             california_records >= 100000 or
+             (california_records >= 50000 and sells_personal_info)) and
+            ('California' in states_with_locations or california_records > 0))
   
   def is_tdpsa_applicable():
-    """Determine if Texas TDPSA applies - FIXED LOGIC"""
-    # Must have Texas presence first
+    """Determine if Texas TDPSA applies - Enhanced with SBA size standards"""
+    # First check if business has Texas presence
     has_texas_presence = ('Texas' in states_with_locations or texas_records > 0)
     
     if not has_texas_presence:
-      log("TDPSA: No Texas presence")
       return False
     
-    # TDPSA applies if you meet data volume thresholds AND are not a small business
-    # Data thresholds: >= 100,000 TX consumer records OR >= 25,000 TX records + sell personal info
-    high_volume_threshold = texas_records >= 100000
-    medium_volume_sale_threshold = (texas_records >= 25000 and sells_personal_info)
-    
-    meets_data_thresholds = high_volume_threshold or medium_volume_sale_threshold
-    
-    log(f"TDPSA checks - TX records {texas_records} >= 100K: {high_volume_threshold}")
-    log(f"TDPSA checks - TX records {texas_records} >= 25K AND sells info {sells_personal_info}: {medium_volume_sale_threshold}")
-    log(f"TDPSA data thresholds met: {meets_data_thresholds}")
+    # Check data volume thresholds
+    meets_data_thresholds = (texas_records >= 100000 or 
+                            (texas_records >= 25000 and sells_personal_info))
     
     if not meets_data_thresholds:
-      log("TDPSA: Data thresholds not met")
       return False
     
     # Check if business qualifies as small business (exempt from TDPSA)
@@ -179,14 +140,11 @@ code: |
         company.annual_revenue
       )
       
-      log(f"TDPSA small business check: {is_small_business}")
-      
       # TDPSA applies if NOT a small business
       return not is_small_business
     else:
       # Fallback to simple check if NAICS data not available
       is_small_business = company.employee_count < 100 and company.annual_revenue < 10000000
-      log(f"TDPSA fallback small business check: {is_small_business}")
       return not is_small_business
   
   def is_hipaa_applicable():
@@ -200,8 +158,6 @@ code: |
     user_indicates_hipaa = (is_hipaa_covered_entity or 
                            is_hipaa_business_associate or 
                            processes_phi)
-    
-    log(f"HIPAA - NAICS suggests: {naics_suggests_hipaa}, User indicates: {user_indicates_hipaa}")
     
     # HIPAA applies if either NAICS suggests it OR user confirmed it
     return naics_suggests_hipaa or user_indicates_hipaa
@@ -217,8 +173,6 @@ code: |
     user_indicates_glba = (is_glba_financial_institution or 
                           (provides_financial_products and collects_npi))
     
-    log(f"GLBA - NAICS suggests: {naics_suggests_glba}, User indicates: {user_indicates_glba}")
-    
     # GLBA applies if either NAICS suggests it OR user confirmed it
     return naics_suggests_glba or user_indicates_glba
 ---
@@ -228,125 +182,15 @@ code: |
     global jurisdiction_requirements
     jurisdiction_requirements = {}
     
-    # For each applicable jurisdiction
+    # For each applicable jurisdiction, use the imported objects
     for jurisdiction_id in applicable_jurisdictions:
-      # Find the registry entry
-      jurisdiction_entry = next((j for j in jurisdiction_registry["jurisdictions"] if j["id"] == jurisdiction_id), None)
-      
-      if jurisdiction_entry:
-        # In production, load from external JSON file
-        # For demonstration, use placeholder data
-        if jurisdiction_id == "gdpr":
-          jurisdiction_requirements["gdpr"] = {
-            "categories": [
-              {"id": "transparency", "name": "Transparency Requirements"},
-              {"id": "individual_rights", "name": "Individual Rights"},
-              {"id": "lawful_basis", "name": "Lawful Basis for Processing"},
-              {"id": "data_protection", "name": "Data Protection Requirements"},
-              {"id": "accountability", "name": "Accountability Requirements"},
-              {"id": "data_transfers", "name": "International Data Transfers"}
-            ],
-            "requirements": [
-              # Transparency Requirements
-              {"id": "gdpr-trans-1", "category": "transparency", "description": "Privacy notice must be provided to data subjects", "severity": "high"},
-              {"id": "gdpr-trans-2", "category": "transparency", "description": "Privacy notice must be concise, transparent, intelligible and easily accessible", "severity": "medium"},
-              {"id": "gdpr-trans-3", "category": "transparency", "description": "Privacy notice must be written in clear and plain language", "severity": "medium"},
-              
-              # Individual Rights
-              {"id": "gdpr-rights-1", "category": "individual_rights", "description": "Right of access by the data subject", "severity": "high"},
-              {"id": "gdpr-rights-2", "category": "individual_rights", "description": "Right to rectification", "severity": "high"},
-              {"id": "gdpr-rights-3", "category": "individual_rights", "description": "Right to erasure ('right to be forgotten')", "severity": "high"},
-              {"id": "gdpr-rights-4", "category": "individual_rights", "description": "Right to restriction of processing", "severity": "high"},
-              {"id": "gdpr-rights-5", "category": "individual_rights", "description": "Right to data portability", "severity": "high"},
-              {"id": "gdpr-rights-6", "category": "individual_rights", "description": "Right to object", "severity": "high"},
-              
-              # Additional requirements would be included here
-            ]
-          }
-        elif jurisdiction_id == "ccpa":
-          jurisdiction_requirements["ccpa"] = {
-            "categories": [
-              {"id": "notice", "name": "Notice Requirements"},
-              {"id": "consumer_rights", "name": "Consumer Rights"},
-              {"id": "opt_out", "name": "Opt-Out Requirements"},
-              {"id": "data_security", "name": "Data Security Requirements"}
-            ],
-            "requirements": [
-              # Notice Requirements
-              {"id": "ccpa-notice-1", "category": "notice", "description": "Notice at collection of personal information", "severity": "high"},
-              {"id": "ccpa-notice-2", "category": "notice", "description": "Privacy policy covering CCPA requirements", "severity": "high"},
-              
-              # Consumer Rights
-              {"id": "ccpa-rights-1", "category": "consumer_rights", "description": "Right to know about personal information collected, disclosed, or sold", "severity": "high"},
-              {"id": "ccpa-rights-2", "category": "consumer_rights", "description": "Right to delete personal information", "severity": "high"},
-              {"id": "ccpa-rights-3", "category": "consumer_rights", "description": "Right to opt-out of sale of personal information", "severity": "high"},
-              {"id": "ccpa-rights-4", "category": "consumer_rights", "description": "Right to non-discrimination", "severity": "high"},
-              
-              # Additional requirements would be included here
-            ]
-          }
-        elif jurisdiction_id == "tdpsa":
-          jurisdiction_requirements["tdpsa"] = {
-            "categories": [
-              {"id": "transparency", "name": "Transparency Requirements"},
-              {"id": "consumer_rights", "name": "Consumer Rights"},
-              {"id": "data_processing", "name": "Data Processing Requirements"},
-              {"id": "sensitive_data", "name": "Sensitive Data Processing"}
-            ],
-            "requirements": [
-              # Transparency Requirements
-              {"id": "tdpsa-trans-1", "category": "transparency", "description": "Privacy notice must be reasonably accessible, clear, and conspicuous", "severity": "high"},
-              {"id": "tdpsa-trans-2", "category": "transparency", "description": "Privacy notice must describe categories of personal and sensitive data processed", "severity": "high"},
-              
-              # Consumer Rights
-              {"id": "tdpsa-rights-1", "category": "consumer_rights", "description": "Right to access personal data", "severity": "high"},
-              {"id": "tdpsa-rights-2", "category": "consumer_rights", "description": "Right to correct inaccurate personal data", "severity": "high"},
-              {"id": "tdpsa-rights-3", "category": "consumer_rights", "description": "Right to delete personal data", "severity": "high"},
-              {"id": "tdpsa-rights-4", "category": "consumer_rights", "description": "Right to data portability", "severity": "high"},
-              {"id": "tdpsa-rights-5", "category": "consumer_rights", "description": "Right to opt out of targeted advertising", "severity": "high"},
-              {"id": "tdpsa-rights-6", "category": "consumer_rights", "description": "Right to opt out of sale of personal data", "severity": "high"},
-              
-              # Additional requirements would be included here
-            ]
-          }
-        elif jurisdiction_id == "hipaa":
-          jurisdiction_requirements["hipaa"] = {
-            "categories": [
-              {"id": "privacy_rule", "name": "Privacy Rule Requirements"},
-              {"id": "security_rule", "name": "Security Rule Requirements"},
-              {"id": "breach_notification", "name": "Breach Notification Requirements"}
-            ],
-            "requirements": [
-              # Privacy Rule Requirements
-              {"id": "hipaa-privacy-1", "category": "privacy_rule", "description": "Notice of Privacy Practices", "severity": "high"},
-              {"id": "hipaa-privacy-2", "category": "privacy_rule", "description": "Minimum necessary use and disclosure of PHI", "severity": "high"},
-              
-              # Security Rule Requirements
-              {"id": "hipaa-security-1", "category": "security_rule", "description": "Administrative safeguards", "severity": "high"},
-              {"id": "hipaa-security-2", "category": "security_rule", "description": "Physical safeguards", "severity": "high"},
-              {"id": "hipaa-security-3", "category": "security_rule", "description": "Technical safeguards", "severity": "high"},
-              
-              # Additional requirements would be included here
-            ]
-          }
-        elif jurisdiction_id == "glba":
-          jurisdiction_requirements["glba"] = {
-            "categories": [
-              {"id": "privacy_notice", "name": "Privacy Notice Requirements"},
-              {"id": "safeguards", "name": "Safeguards Rule Requirements"}
-            ],
-            "requirements": [
-              # Privacy Notice Requirements
-              {"id": "glba-privacy-1", "category": "privacy_notice", "description": "Initial and annual privacy notices", "severity": "high"},
-              {"id": "glba-privacy-2", "category": "privacy_notice", "description": "Clear and conspicuous privacy notices", "severity": "high"},
-              
-              # Safeguards Rule Requirements
-              {"id": "glba-safeguards-1", "category": "safeguards", "description": "Information security program", "severity": "high"},
-              {"id": "glba-safeguards-2", "category": "safeguards", "description": "Risk assessment", "severity": "high"},
-              
-              # Additional requirements would be included here
-            ]
-          }
+      if jurisdiction_id == "gdpr":
+        jurisdiction_requirements["gdpr"] = gdpr_requirements
+      elif jurisdiction_id == "ccpa":
+        jurisdiction_requirements["ccpa"] = ccpa_requirements
+      elif jurisdiction_id == "tdpsa":
+        jurisdiction_requirements["tdpsa"] = tdpsa_requirements
+      # Note: HIPAA and GLBA would need their own JSON files if detailed requirements needed
     
     return jurisdiction_requirements
 ---

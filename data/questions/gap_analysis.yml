@@ -2,6 +2,11 @@
 ---
 # Gap analysis module - compares current practices to requirements
 ---
+objects from file:
+  - gdpr_requirements: gdpr_requirements.json
+  - ccpa_requirements: ccpa_requirements.json
+  - tdpsa_requirements: tdpsa_requirements.json
+---
 question: "Step 4: Gap Analysis"
 subquestion: |
   Now we'll compare your current privacy practices against the requirements of applicable laws.
@@ -28,14 +33,14 @@ code: |
       "technical_gaps": []
     }
     
-    # Analyze each applicable jurisdiction
+    # Analyze each applicable jurisdiction using imported requirements
     for jurisdiction_id in applicable_jurisdictions:
       analyze_jurisdiction_gaps(jurisdiction_id, gaps)
     
     return gaps
   
   def analyze_jurisdiction_gaps(jurisdiction_id, gaps):
-    """Analyze gaps for a specific jurisdiction"""
+    """Analyze gaps for a specific jurisdiction using imported data"""
     if jurisdiction_id == "gdpr":
       analyze_gdpr_gaps(gaps)
     elif jurisdiction_id == "ccpa":
@@ -48,91 +53,92 @@ code: |
       analyze_glba_gaps(gaps)
   
   def analyze_gdpr_gaps(gaps):
-    """Analyze GDPR-specific compliance gaps"""
-    # Policy gaps
-    if not has_existing_policy:
-      gaps["policy_gaps"].append({
-        "id": "gdpr-p-001",
-        "description": "No privacy policy exists",
-        "severity": "high",
-        "jurisdiction": "gdpr",
-        "remediation": "Create GDPR-compliant privacy policy"
-      })
+    """Analyze GDPR-specific compliance gaps using imported requirements"""
+    # Access GDPR requirements from imported object
+    gdpr_reqs = gdpr_requirements["requirements"]
     
-    # Operational gaps
+    # Check against transparency requirements
+    transparency_reqs = [req for req in gdpr_reqs if req["category"] == "transparency"]
+    for req in transparency_reqs:
+      if req["id"] == "gdpr-trans-1" and not has_existing_policy:
+        gaps["policy_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "gdpr",
+          "remediation": "Create GDPR-compliant privacy policy as required by " + req.get("articleReference", "GDPR")
+        })
+    
+    # Check against individual rights requirements
+    rights_reqs = [req for req in gdpr_reqs if req["category"] == "individual_rights"]
+    for req in rights_reqs:
+      if req["id"] == "gdpr-rights-1" and not has_access_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "gdpr",
+          "remediation": "Implement data subject access request process per " + req.get("articleReference", "GDPR")
+        })
+      elif req["id"] == "gdpr-rights-2" and not has_correction_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "gdpr",
+          "remediation": "Implement rectification process per " + req.get("articleReference", "GDPR")
+        })
+      elif req["id"] == "gdpr-rights-3" and not has_deletion_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "gdpr",
+          "remediation": "Implement right to erasure process per " + req.get("articleReference", "GDPR")
+        })
+      elif req["id"] == "gdpr-rights-5" and not has_portability_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "gdpr",
+          "remediation": "Implement data portability process per " + req.get("articleReference", "GDPR")
+        })
+      elif req["id"] == "gdpr-rights-6" and not has_objection_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "gdpr",
+          "remediation": "Implement objection process per " + req.get("articleReference", "GDPR")
+        })
+    
+    # Additional GDPR-specific checks
     if not documents_consent:
       gaps["operational_gaps"].append({
         "id": "gdpr-o-001",
         "description": "No system for documenting and storing consent",
         "severity": "high",
         "jurisdiction": "gdpr",
-        "remediation": "Implement consent management system"
+        "remediation": "Implement consent management system per GDPR Art. 7"
       })
     
-    # Check for individual rights processes
-    if not has_access_process:
-      gaps["operational_gaps"].append({
-        "id": "gdpr-o-002",
-        "description": "No process for handling data subject access requests",
-        "severity": "high",
-        "jurisdiction": "gdpr",
-        "remediation": "Implement data subject access request process"
-      })
-      
-    if not has_deletion_process:
-      gaps["operational_gaps"].append({
-        "id": "gdpr-o-003",
-        "description": "No process for handling right to erasure requests",
-        "severity": "high",
-        "jurisdiction": "gdpr",
-        "remediation": "Implement right to erasure process"
-      })
-      
-    if not has_portability_process:
-      gaps["operational_gaps"].append({
-        "id": "gdpr-o-004",
-        "description": "No process for handling data portability requests",
-        "severity": "high",
-        "jurisdiction": "gdpr",
-        "remediation": "Implement data portability process"
-      })
-      
-    if not has_correction_process:
-      gaps["operational_gaps"].append({
-        "id": "gdpr-o-005",
-        "description": "No process for handling rectification requests",
-        "severity": "high",
-        "jurisdiction": "gdpr",
-        "remediation": "Implement rectification process"
-      })
-      
-    if not has_objection_process:
-      gaps["operational_gaps"].append({
-        "id": "gdpr-o-006",
-        "description": "No process for handling objection requests",
-        "severity": "high",
-        "jurisdiction": "gdpr",
-        "remediation": "Implement objection process"
-      })
-    
-    # Check for international transfer safeguards if applicable
     if transfers_data_internationally and 'None currently in place' in international_transfer_safeguards:
       gaps["operational_gaps"].append({
         "id": "gdpr-o-007",
         "description": "No appropriate safeguards for international data transfers",
         "severity": "high",
         "jurisdiction": "gdpr",
-        "remediation": "Implement appropriate transfer mechanisms such as Standard Contractual Clauses (SCCs)"
+        "remediation": "Implement appropriate transfer mechanisms such as Standard Contractual Clauses (SCCs) per GDPR Art. 46"
       })
       
-    # Documentation gaps
     if not has_retention_policy:
       gaps["documentation_gaps"].append({
         "id": "gdpr-d-001",
         "description": "No written data retention policy",
         "severity": "medium",
         "jurisdiction": "gdpr",
-        "remediation": "Create data retention policy specifying retention periods for different categories of data"
+        "remediation": "Create data retention policy specifying retention periods per GDPR Art. 5(1)(e)"
       })
       
     if shares_with_third_parties and not has_dpas:
@@ -141,7 +147,7 @@ code: |
         "description": "No data processing agreements with third parties",
         "severity": "high",
         "jurisdiction": "gdpr",
-        "remediation": "Implement data processing agreements with all processors"
+        "remediation": "Implement data processing agreements with all processors per GDPR Art. 28"
       })
       
     if not has_breach_plan:
@@ -150,17 +156,16 @@ code: |
         "description": "No data breach response plan",
         "severity": "high",
         "jurisdiction": "gdpr",
-        "remediation": "Create data breach response plan with 72-hour notification procedure"
+        "remediation": "Create data breach response plan with 72-hour notification procedure per GDPR Art. 33"
       })
       
-    # Technical gaps
     if not uses_encryption:
       gaps["technical_gaps"].append({
         "id": "gdpr-t-001",
         "description": "No encryption for personal data",
         "severity": "high",
         "jurisdiction": "gdpr",
-        "remediation": "Implement encryption for personal data in transit and at rest"
+        "remediation": "Implement encryption for personal data in transit and at rest per GDPR Art. 32"
       })
       
     if not has_access_controls:
@@ -169,125 +174,132 @@ code: |
         "description": "No access controls for personal data",
         "severity": "high",
         "jurisdiction": "gdpr",
-        "remediation": "Implement role-based access controls for personal data"
+        "remediation": "Implement role-based access controls for personal data per GDPR Art. 32"
       })
   
   def analyze_ccpa_gaps(gaps):
-    """Analyze CCPA-specific compliance gaps"""
-    # Policy gaps
-    if not has_existing_policy:
-      gaps["policy_gaps"].append({
-        "id": "ccpa-p-001",
-        "description": "No privacy policy exists",
-        "severity": "high",
-        "jurisdiction": "ccpa",
-        "remediation": "Create CCPA-compliant privacy policy"
-      })
+    """Analyze CCPA-specific compliance gaps using imported requirements"""
+    # Access CCPA requirements from imported object
+    ccpa_reqs = ccpa_requirements["requirements"]
     
-    # Operational gaps
-    if sells_personal_info and not has_optout_sale_process:
-      gaps["operational_gaps"].append({
-        "id": "ccpa-o-001",
-        "description": "No process for consumers to opt-out of sale of personal information",
-        "severity": "high",
-        "jurisdiction": "ccpa",
-        "remediation": "Implement 'Do Not Sell My Personal Information' mechanism"
-      })
+    # Check against notice requirements
+    notice_reqs = [req for req in ccpa_reqs if req["category"] == "notice"]
+    for req in notice_reqs:
+      if req["id"] == "ccpa-notice-1" or req["id"] == "ccpa-notice-2":
+        if not has_existing_policy:
+          gaps["policy_gaps"].append({
+            "id": req["id"],
+            "description": req["description"],
+            "severity": req["severity"],
+            "jurisdiction": "ccpa",
+            "remediation": "Create CCPA-compliant privacy policy per " + req.get("articleReference", "CCPA")
+          })
+    
+    # Check against consumer rights requirements
+    rights_reqs = [req for req in ccpa_reqs if req["category"] == "consumer_rights"]
+    for req in rights_reqs:
+      if req["id"] == "ccpa-rights-1" and not has_access_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "ccpa",
+          "remediation": "Implement consumer access request process per " + req.get("articleReference", "CCPA")
+        })
+      elif req["id"] == "ccpa-rights-2" and not has_deletion_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "ccpa",
+          "remediation": "Implement deletion request process per " + req.get("articleReference", "CCPA")
+        })
+      elif req["id"] == "ccpa-rights-3" and sells_personal_info and not has_optout_sale_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "ccpa",
+          "remediation": "Implement 'Do Not Sell My Personal Information' mechanism per " + req.get("articleReference", "CCPA")
+        })
       
-    if not has_access_process:
-      gaps["operational_gaps"].append({
-        "id": "ccpa-o-002",
-        "description": "No process for handling consumer access requests",
-        "severity": "high",
-        "jurisdiction": "ccpa",
-        "remediation": "Implement consumer access request process"
-      })
-      
-    if not has_deletion_process:
-      gaps["operational_gaps"].append({
-        "id": "ccpa-o-003",
-        "description": "No process for handling deletion requests",
-        "severity": "high",
-        "jurisdiction": "ccpa",
-        "remediation": "Implement deletion request process"
-      })
-      
-    # Documentation gaps
     if not has_dsr_procedures:
       gaps["documentation_gaps"].append({
         "id": "ccpa-d-001",
         "description": "No documented procedures for handling consumer requests",
         "severity": "medium",
         "jurisdiction": "ccpa",
-        "remediation": "Create documented procedures for handling consumer requests"
+        "remediation": "Create documented procedures for handling consumer requests per CCPA regulations"
       })
   
   def analyze_tdpsa_gaps(gaps):
-    """Analyze TDPSA-specific compliance gaps"""
-    # Policy gaps
-    if not has_existing_policy:
-      gaps["policy_gaps"].append({
-        "id": "tdpsa-p-001",
-        "description": "No privacy policy exists",
-        "severity": "high",
-        "jurisdiction": "tdpsa",
-        "remediation": "Create TDPSA-compliant privacy policy"
-      })
+    """Analyze TDPSA-specific compliance gaps using imported requirements"""
+    # Access TDPSA requirements from imported object
+    tdpsa_reqs = tdpsa_requirements["requirements"]
     
-    # Operational gaps
-    if not has_access_process:
-      gaps["operational_gaps"].append({
-        "id": "tdpsa-o-001",
-        "description": "No process for consumers to access their personal information",
-        "severity": "high",
-        "jurisdiction": "tdpsa",
-        "remediation": "Implement consumer data access request process"
-      })
-      
-    if not has_correction_process:
-      gaps["operational_gaps"].append({
-        "id": "tdpsa-o-002",
-        "description": "No process for consumers to correct their personal information",
-        "severity": "high",
-        "jurisdiction": "tdpsa",
-        "remediation": "Implement correction request process"
-      })
-      
-    if not has_deletion_process:
-      gaps["operational_gaps"].append({
-        "id": "tdpsa-o-003",
-        "description": "No process for consumers to delete their personal information",
-        "severity": "high",
-        "jurisdiction": "tdpsa",
-        "remediation": "Implement deletion request process"
-      })
-      
-    if not has_portability_process:
-      gaps["operational_gaps"].append({
-        "id": "tdpsa-o-004",
-        "description": "No process for consumers to request portable data",
-        "severity": "high",
-        "jurisdiction": "tdpsa",
-        "remediation": "Implement data portability process"
-      })
-      
-    if not has_optout_targeting_process:
-      gaps["operational_gaps"].append({
-        "id": "tdpsa-o-005",
-        "description": "No process for consumers to opt-out of targeted advertising",
-        "severity": "high",
-        "jurisdiction": "tdpsa",
-        "remediation": "Implement opt-out process for targeted advertising"
-      })
-      
-    if sells_personal_info and not has_optout_sale_process:
-      gaps["operational_gaps"].append({
-        "id": "tdpsa-o-006",
-        "description": "No process for consumers to opt-out of sale of personal information",
-        "severity": "high",
-        "jurisdiction": "tdpsa",
-        "remediation": "Implement opt-out process for sale of personal information"
-      })
+    # Check against transparency requirements
+    transparency_reqs = [req for req in tdpsa_reqs if req["category"] == "transparency"]
+    for req in transparency_reqs:
+      if (req["id"] == "tdpsa-trans-1" or req["id"] == "tdpsa-trans-2") and not has_existing_policy:
+        gaps["policy_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "tdpsa",
+          "remediation": "Create TDPSA-compliant privacy policy per " + req.get("articleReference", "TDPSA")
+        })
+    
+    # Check against consumer rights requirements
+    rights_reqs = [req for req in tdpsa_reqs if req["category"] == "consumer_rights"]
+    for req in rights_reqs:
+      if req["id"] == "tdpsa-rights-1" and not has_access_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "tdpsa",
+          "remediation": "Implement consumer data access request process per " + req.get("articleReference", "TDPSA")
+        })
+      elif req["id"] == "tdpsa-rights-2" and not has_correction_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "tdpsa",
+          "remediation": "Implement correction request process per " + req.get("articleReference", "TDPSA")
+        })
+      elif req["id"] == "tdpsa-rights-3" and not has_deletion_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "tdpsa",
+          "remediation": "Implement deletion request process per " + req.get("articleReference", "TDPSA")
+        })
+      elif req["id"] == "tdpsa-rights-4" and not has_portability_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "tdpsa",
+          "remediation": "Implement data portability process per " + req.get("articleReference", "TDPSA")
+        })
+      elif req["id"] == "tdpsa-rights-5" and not has_optout_targeting_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "tdpsa",
+          "remediation": "Implement opt-out process for targeted advertising per " + req.get("articleReference", "TDPSA")
+        })
+      elif req["id"] == "tdpsa-rights-6" and sells_personal_info and not has_optout_sale_process:
+        gaps["operational_gaps"].append({
+          "id": req["id"],
+          "description": req["description"],
+          "severity": req["severity"],
+          "jurisdiction": "tdpsa",
+          "remediation": "Implement opt-out process for sale of personal information per " + req.get("articleReference", "TDPSA")
+        })
   
   def analyze_hipaa_gaps(gaps):
     """Analyze HIPAA-specific compliance gaps"""
@@ -302,7 +314,7 @@ code: |
         "description": "No Notice of Privacy Practices (NPP)",
         "severity": "high",
         "jurisdiction": "hipaa",
-        "remediation": "Create HIPAA-compliant Notice of Privacy Practices"
+        "remediation": "Create HIPAA-compliant Notice of Privacy Practices per 45 CFR 164.520"
       })
     
     # Operational gaps
@@ -312,7 +324,7 @@ code: |
         "description": "No designated Privacy Officer",
         "severity": "high",
         "jurisdiction": "hipaa",
-        "remediation": "Designate a Privacy Officer"
+        "remediation": "Designate a Privacy Officer per 45 CFR 164.530(a)"
       })
       
     if not has_security_officer:
@@ -321,7 +333,7 @@ code: |
         "description": "No designated Security Officer",
         "severity": "high",
         "jurisdiction": "hipaa",
-        "remediation": "Designate a Security Officer"
+        "remediation": "Designate a Security Officer per 45 CFR 164.308(a)(2)"
       })
       
     if not recent_hipaa_risk_assessment:
@@ -330,7 +342,7 @@ code: |
         "description": "No recent HIPAA Security Risk Assessment",
         "severity": "high",
         "jurisdiction": "hipaa",
-        "remediation": "Conduct a comprehensive HIPAA Security Risk Assessment"
+        "remediation": "Conduct a comprehensive HIPAA Security Risk Assessment per 45 CFR 164.308(a)(1)"
       })
       
     if not has_baas:
@@ -339,43 +351,7 @@ code: |
         "description": "No Business Associate Agreements (BAAs) with vendors who access PHI",
         "severity": "high",
         "jurisdiction": "hipaa",
-        "remediation": "Implement BAAs with all vendors who access PHI"
-      })
-      
-    if not has_authorization_process:
-      gaps["operational_gaps"].append({
-        "id": "hipaa-o-004",
-        "description": "No process for authorizations for uses and disclosures of PHI",
-        "severity": "high",
-        "jurisdiction": "hipaa",
-        "remediation": "Implement authorization process for uses and disclosures of PHI"
-      })
-      
-    if not has_accounting_disclosures:
-      gaps["operational_gaps"].append({
-        "id": "hipaa-o-005",
-        "description": "No process for accounting of disclosures",
-        "severity": "high",
-        "jurisdiction": "hipaa",
-        "remediation": "Implement process for accounting of disclosures"
-      })
-      
-    if not has_sanctions_policy:
-      gaps["documentation_gaps"].append({
-        "id": "hipaa-d-002",
-        "description": "No sanctions policy for privacy/security violations",
-        "severity": "medium",
-        "jurisdiction": "hipaa",
-        "remediation": "Create sanctions policy for privacy/security violations"
-      })
-      
-    if not has_emergency_access:
-      gaps["documentation_gaps"].append({
-        "id": "hipaa-d-003",
-        "description": "No documented emergency access procedure",
-        "severity": "medium",
-        "jurisdiction": "hipaa",
-        "remediation": "Create documented emergency access procedure"
+        "remediation": "Implement BAAs with all vendors who access PHI per 45 CFR 164.502(e)"
       })
   
   def analyze_glba_gaps(gaps):
@@ -391,7 +367,7 @@ code: |
         "description": "No initial privacy notices provided to customers",
         "severity": "high",
         "jurisdiction": "glba",
-        "remediation": "Create and distribute initial privacy notices to customers"
+        "remediation": "Create and distribute initial privacy notices to customers per 16 CFR 313.4"
       })
       
     if not provides_annual_notices:
@@ -400,7 +376,7 @@ code: |
         "description": "No annual privacy notices provided to customers",
         "severity": "high",
         "jurisdiction": "glba",
-        "remediation": "Create and distribute annual privacy notices to customers"
+        "remediation": "Create and distribute annual privacy notices to customers per 16 CFR 313.5"
       })
     
     # Operational gaps
@@ -410,53 +386,7 @@ code: |
         "description": "No information security program as required by the Safeguards Rule",
         "severity": "high",
         "jurisdiction": "glba",
-        "remediation": "Implement information security program compliant with the Safeguards Rule"
-      })
-      
-    if not has_designated_individual:
-      gaps["operational_gaps"].append({
-        "id": "glba-o-002",
-        "description": "No designated individual to implement and supervise information security program",
-        "severity": "high",
-        "jurisdiction": "glba",
-        "remediation": "Designate qualified individual to implement and supervise information security program"
-      })
-      
-    if not conducted_safeguards_risk_assessment:
-      gaps["operational_gaps"].append({
-        "id": "glba-o-003",
-        "description": "No risk assessment of information security program",
-        "severity": "high",
-        "jurisdiction": "glba",
-        "remediation": "Conduct risk assessment of information security program"
-      })
-      
-    # Documentation gaps
-    if not has_written_safeguards:
-      gaps["documentation_gaps"].append({
-        "id": "glba-d-001",
-        "description": "No written policies and procedures for information security program",
-        "severity": "high",
-        "jurisdiction": "glba",
-        "remediation": "Create written policies and procedures for information security program"
-      })
-      
-    if not tests_safeguards:
-      gaps["operational_gaps"].append({
-        "id": "glba-o-004",
-        "description": "No monitoring and testing of information security program effectiveness",
-        "severity": "medium",
-        "jurisdiction": "glba",
-        "remediation": "Implement monitoring and testing of information security program"
-      })
-      
-    if not requires_provider_safeguards:
-      gaps["operational_gaps"].append({
-        "id": "glba-o-005",
-        "description": "No requirements for service providers to maintain appropriate safeguards",
-        "severity": "high",
-        "jurisdiction": "glba",
-        "remediation": "Implement requirements for service providers to maintain appropriate safeguards"
+        "remediation": "Implement information security program compliant with the Safeguards Rule per 16 CFR 314"
       })
   
   def generate_gap_report():

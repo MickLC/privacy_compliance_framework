@@ -3,321 +3,72 @@
 objects:
   - company: DAObject
 ---
-# NAICS Data Management System - Using Local JSON File
+objects from file:
+  - naics_data: naics.json
+---
+# NAICS Data Management System - Now using objects from file
 code: |
-  import json
-  from datetime import datetime, timedelta
-  
-  def load_naics_data():
-    """Load NAICS data from local JSON file with proper error handling"""
-    # Check if we already have data in this session
-    if defined('naics_data_cache') and defined('naics_cache_timestamp'):
-      try:
-        cache_time = datetime.fromisoformat(naics_cache_timestamp)
-        if datetime.now() - cache_time < timedelta(hours=2):  # 2-hour cache
-          log(f"Using session-cached NAICS data ({naics_data_cache.get('record_count', 0)} codes)")
-          return naics_data_cache
-      except Exception as e:
-        log(f"Cache validation error: {e}")
-    
-    # Load from local JSON file
-    log("Loading NAICS data from local JSON file...")
-    fresh_data = load_naics_from_file()
-    
-    if fresh_data and len(fresh_data.get('naics_codes', {})) > 10:
-      # Store in session variables only if successful
-      naics_data_cache = fresh_data
-      naics_cache_timestamp = datetime.now().isoformat()
-      log(f"Successfully cached {fresh_data['record_count']} NAICS codes")
-      return fresh_data
-    
-    # Final fallback with minimal data
-    log("Using minimal fallback NAICS data")
-    fallback_data = get_minimal_fallback_naics_data()
-    
-    # Cache fallback data too
-    naics_data_cache = fallback_data
-    naics_cache_timestamp = datetime.now().isoformat()
-    
-    return fallback_data
-  
-  def load_naics_from_file():
-    """Load NAICS data from local naics.json file"""
-    try:
-      # Try multiple methods to locate the naics.json file
-      naics_file_path = None
-      
-      # Method 1: Direct path using path_and_mimetype
-      try:
-        naics_file_path = path_and_mimetype('naics.json')[0]
-        log(f"Found naics.json using path_and_mimetype: {naics_file_path}")
-      except Exception as e:
-        log(f"path_and_mimetype failed: {e}")
-      
-      # Method 2: Try data/sources/naics.json
-      if not naics_file_path:
-        try:
-          import os
-          possible_paths = [
-            'data/sources/naics.json',
-            'sources/naics.json', 
-            'naics.json'
-          ]
-          for path in possible_paths:
-            if os.path.exists(path):
-              naics_file_path = path
-              log(f"Found naics.json at: {naics_file_path}")
-              break
-        except Exception as e:
-          log(f"OS path search failed: {e}")
-      
-      # Method 3: Try using docassemble's static file functions
-      if not naics_file_path:
-        try:
-          from docassemble.base.util import static_filename
-          naics_file_path = static_filename('naics.json')
-          log(f"Found naics.json using static_filename: {naics_file_path}")
-        except Exception as e:
-          log(f"static_filename failed: {e}")
-      
-      if not naics_file_path:
-        log("Could not locate naics.json file using any method")
-        return None
-      
-      # Read and parse the file
-      with open(naics_file_path, 'r', encoding='utf-8') as f:
-        naics_raw_data = json.load(f)
-      
-      log(f"Successfully loaded NAICS JSON with {len(naics_raw_data)} records")
-      
-      # Process data efficiently
-      processed_data = process_naics_data_efficiently(naics_raw_data)
-      
-      if processed_data:
-        log(f"Successfully processed {processed_data['record_count']} NAICS codes")
-        return processed_data
-      else:
-        log("Data processing failed")
-        return None
-        
-    except FileNotFoundError:
-      log("naics.json file not found")
-      return None
-    except json.JSONDecodeError as e:
-      log(f"JSON parsing error: {e}")
-      return None
-    except Exception as e:
-      log(f"Unexpected error during NAICS file loading: {e}")
-      return None
-  
-  def process_naics_data_efficiently(naics_raw_data):
-    """Process NAICS data efficiently to avoid memory issues"""
-    try:
-      processed_data = {
-        'timestamp': datetime.now().isoformat(),
-        'source': 'local_file',
-        'record_count': 0,
-        'naics_codes': {}
-      }
-      
-      # Process in batches to manage memory
-      batch_size = 1000
-      processed_count = 0
-      
-      for i in range(0, len(naics_raw_data), batch_size):
-        batch = naics_raw_data[i:i + batch_size]
-        
-        for item in batch:
-          code = str(item.get('id', '')).strip()
-          
-          # Only process valid 6-digit NAICS codes
-          if code and len(code) == 6 and code.isdigit():
-            description = str(item.get('description', '')).strip()
-            
-            # Skip if no description or empty description
-            if not description or description == '':
-              continue
-            
-            # Truncate very long descriptions to save memory
-            if len(description) > 150:
-              description = description[:147] + "..."
-            
-            # Get size standards with proper conversion
-            revenue_limit = item.get('revenueLimit')
-            if revenue_limit is not None:
-              # Revenue limit is in millions, convert to actual dollars
-              revenue_limit_dollars = float(revenue_limit) * 1000000
-            else:
-              revenue_limit_dollars = None
-            
-            processed_data['naics_codes'][code] = {
-              'code': code,
-              'description': description,
-              'sector_id': str(item.get('sectorId', '')),
-              'sector_description': str(item.get('sectorDescription', '')),
-              'subsector_id': str(item.get('subsectorId', '')),
-              'subsector_description': str(item.get('subsectorDescription', '')),
-              'size_standards': {
-                'revenue_limit': revenue_limit_dollars,
-                'employee_limit': item.get('employeeCountLimit'),
-                'asset_limit': item.get('assetLimit')
-              }
-            }
-            processed_count += 1
-        
-        # Log progress every 1000 records
-        if processed_count > 0 and processed_count % 1000 == 0:
-          log(f"Processed {processed_count} NAICS codes...")
-      
-      processed_data['record_count'] = processed_count
-      
-      # Validate we got a reasonable amount of data
-      if processed_count < 50:
-        log(f"Warning: Only processed {processed_count} codes, data may be incomplete")
-        return None
-      
-      log(f"Successfully processed {processed_count} total NAICS codes")
-      return processed_data
-      
-    except Exception as e:
-      log(f"Error processing NAICS data: {e}")
-      return None
-  
-  def get_minimal_fallback_naics_data():
-    """Minimal fallback NAICS data for essential industries"""
-    return {
-      'timestamp': datetime.now().isoformat(),
-      'source': 'minimal_fallback',
-      'record_count': 30,
-      'naics_codes': {
-        # Legal Services
-        '541110': {
-          'code': '541110', 'description': 'Offices of Lawyers',
-          'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services',
-          'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
-        
-        # Technology Services
-        '541511': {
-          'code': '541511', 'description': 'Custom Computer Programming Services',
-          'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services',
-          'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
-        '518210': {
-          'code': '518210', 'description': 'Data Processing, Hosting, and Related Services',
-          'sector_id': '51', 'sector_description': 'Information',
-          'subsector_id': '518', 'subsector_description': 'Data Processing, Hosting, and Related Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
-        
-        # Healthcare
-        '621111': {
-          'code': '621111', 'description': 'Offices of Physicians (except Mental Health Specialists)',
-          'sector_id': '62', 'sector_description': 'Health Care and Social Assistance',
-          'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 500, 'asset_limit': None}
-        },
-        '622110': {
-          'code': '622110', 'description': 'General Medical and Surgical Hospitals',
-          'sector_id': '62', 'sector_description': 'Health Care and Social Assistance',
-          'subsector_id': '622', 'subsector_description': 'Hospitals',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
-        
-        # Financial Services
-        '522110': {
-          'code': '522110', 'description': 'Commercial Banking',
-          'sector_id': '52', 'sector_description': 'Finance and Insurance',
-          'subsector_id': '522', 'subsector_description': 'Credit Intermediation and Related Activities',
-          'size_standards': {'revenue_limit': 550000000, 'employee_limit': None, 'asset_limit': None}
-        },
-        '523110': {
-          'code': '523110', 'description': 'Investment Banking and Securities Dealing',
-          'sector_id': '52', 'sector_description': 'Finance and Insurance',
-          'subsector_id': '523', 'subsector_description': 'Securities, Commodity Contracts, and Other Financial Investments',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
-        '524210': {
-          'code': '524210', 'description': 'Insurance Agencies and Brokerages',
-          'sector_id': '52', 'sector_description': 'Finance and Insurance',
-          'subsector_id': '524', 'subsector_description': 'Insurance Carriers and Related Activities',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 500, 'asset_limit': None}
-        },
-        
-        # Professional Services
-        '541211': {
-          'code': '541211', 'description': 'Offices of Certified Public Accountants',
-          'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services',
-          'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
-        
-        # Retail
-        '445110': {
-          'code': '445110', 'description': 'Supermarkets and Other Grocery (except Convenience) Stores',
-          'sector_id': '44', 'sector_description': 'Retail Trade',
-          'subsector_id': '445', 'subsector_description': 'Food and Beverage Stores',
-          'size_standards': {'revenue_limit': 30000000, 'employee_limit': None, 'asset_limit': None}
-        },
-        
-        # Manufacturing
-        '334111': {
-          'code': '334111', 'description': 'Electronic Computer Manufacturing',
-          'sector_id': '33', 'sector_description': 'Manufacturing',
-          'subsector_id': '334', 'subsector_description': 'Computer and Electronic Product Manufacturing',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
-        
-        # Other/Catch-all
-        '999999': {
-          'code': '999999', 'description': 'Other - Please specify in additional information',
-          'sector_id': '99', 'sector_description': 'Other',
-          'subsector_id': '999', 'subsector_description': 'Other',
-          'size_standards': {'revenue_limit': 10000000, 'employee_limit': 100, 'asset_limit': None}
-        }
-      }
-    }
-  
   def get_naics_choices_for_dropdown():
-    """Convert NAICS data to dropdown choices format"""
-    naics_data = load_naics_data()
-    
-    choices = []
-    for code, info in naics_data['naics_codes'].items():
-      description = info['description']
-      # Truncate long descriptions for dropdown
-      if len(description) > 80:
-        description = description[:77] + "..."
-      
-      choices.append((code, f"{code}: {description}"))
-    
-    # Sort by description for easier searching
-    choices.sort(key=lambda x: x[1])
-    
-    return choices
-  
-  def get_safe_naics_choices():
-    """Get NAICS choices with proper error handling and search filtering"""
+    """Convert NAICS data from imported file to dropdown choices format"""
     try:
-      # Check if we have loaded NAICS choices
-      if defined('naics_choices') and len(naics_choices) > 0:
-        # Apply search filter if provided
-        if defined('naics_search_term') and naics_search_term:
-          return filter_naics_choices(naics_search_term, naics_choices)
-        else:
-          return naics_choices
+      choices = []
+      
+      # Access the imported NAICS data
+      if hasattr(naics_data, 'naics_codes'):
+        naics_codes = naics_data.naics_codes
+      elif isinstance(naics_data, dict) and 'naics_codes' in naics_data:
+        naics_codes = naics_data['naics_codes']
+      elif isinstance(naics_data, list):
+        # If naics_data is a list of NAICS records
+        naics_codes = {}
+        for item in naics_data:
+          if 'id' in item and 'description' in item:
+            naics_codes[item['id']] = item
       else:
-        # Return emergency fallback choices
-        log("Using emergency fallback NAICS choices")
-        return emergency_naics_choices
+        log(f"Unexpected naics_data structure: {type(naics_data)}")
+        return get_fallback_naics_choices()
+      
+      for code, info in naics_codes.items():
+        if isinstance(info, dict):
+          description = info.get('description', 'No description available')
+        else:
+          description = str(info)
+        
+        # Truncate long descriptions
+        if len(description) > 100:
+          description = description[:97] + "..."
+        
+        choices.append((code, f"{code}: {description}"))
+      
+      # Sort by description
+      choices.sort(key=lambda x: x[1])
+      
+      log(f"Successfully loaded {len(choices)} NAICS choices from imported data")
+      return choices
+      
     except Exception as e:
-      log(f"Error in get_safe_naics_choices: {e}")
-      return emergency_naics_choices
+      log(f"Error processing imported NAICS data: {e}")
+      return get_fallback_naics_choices()
+  
+  def get_fallback_naics_choices():
+    """Fallback NAICS choices if file loading fails"""
+    return [
+      ('541110', '541110: Offices of Lawyers'),
+      ('541511', '541511: Custom Computer Programming Services'),
+      ('541512', '541512: Computer Systems Design Services'),
+      ('621111', '621111: Offices of Physicians (except Mental Health Specialists)'),
+      ('621210', '621210: Offices of Dentists'),
+      ('522110', '522110: Commercial Banking'),
+      ('523110', '523110: Investment Banking and Securities Dealing'),
+      ('524113', '524113: Direct Life Insurance Carriers'),
+      ('541211', '541211: Offices of Certified Public Accountants'),
+      ('445110', '445110: Supermarkets and Other Grocery Stores'),
+      ('722511', '722511: Full-Service Restaurants'),
+      ('999999', '999999: Other - Please specify in additional information')
+    ]
   
   def get_industry_from_naics(naics_code):
-    """Determine broad industry category from NAICS code using sector info"""
+    """Determine broad industry category from NAICS code using imported data"""
     if not naics_code:
       return "Other"
     
@@ -326,11 +77,23 @@ code: |
       naics_code = str(naics_code).split(':')[0].strip()
     
     try:
-      naics_data = load_naics_data()
+      # Access the imported NAICS data
+      if hasattr(naics_data, 'naics_codes'):
+        naics_codes = naics_data.naics_codes
+      elif isinstance(naics_data, dict) and 'naics_codes' in naics_data:
+        naics_codes = naics_data['naics_codes']
+      elif isinstance(naics_data, list):
+        # Convert list to dict for lookup
+        naics_codes = {}
+        for item in naics_data:
+          if 'id' in item:
+            naics_codes[item['id']] = item
+      else:
+        raise ValueError("Unexpected naics_data structure")
       
-      if naics_code in naics_data['naics_codes']:
-        naics_info = naics_data['naics_codes'][naics_code]
-        sector_desc = naics_info.get('sector_description', '')
+      if naics_code in naics_codes:
+        naics_info = naics_codes[naics_code]
+        sector_desc = naics_info.get('sectorDescription', '') if isinstance(naics_info, dict) else ''
         
         # Map sector descriptions to simplified categories
         sector_mapping = {
@@ -377,26 +140,44 @@ code: |
     return fallback_mapping.get(sector, 'Other')
   
   def is_small_business_under_tdpsa(naics_code, employee_count, annual_revenue):
-    """Determine if business qualifies as small business under TDPSA using SBA size standards"""
+    """Determine if business qualifies as small business under TDPSA using imported SBA size standards"""
     try:
-      naics_data = load_naics_data()
-      
       # Extract just the code
       if ':' in str(naics_code):
         naics_code = str(naics_code).split(':')[0].strip()
       
-      if naics_code not in naics_data['naics_codes']:
+      # Access the imported NAICS data
+      if hasattr(naics_data, 'naics_codes'):
+        naics_codes = naics_data.naics_codes
+      elif isinstance(naics_data, dict) and 'naics_codes' in naics_data:
+        naics_codes = naics_data['naics_codes']
+      elif isinstance(naics_data, list):
+        # Convert list to dict for lookup
+        naics_codes = {}
+        for item in naics_data:
+          if 'id' in item:
+            naics_codes[item['id']] = item
+      else:
+        raise ValueError("Unexpected naics_data structure")
+      
+      if naics_code not in naics_codes:
         log(f"NAICS code {naics_code} not found, using TDPSA general standards")
         # TDPSA general small business exemption: < 100 employees AND < $10M revenue
         return employee_count < 100 and annual_revenue < 10000000
       
-      naics_info = naics_data['naics_codes'][naics_code]
-      size_standards = naics_info['size_standards']
+      naics_info = naics_codes[naics_code]
       
-      # Get SBA size standards
-      employee_limit = size_standards.get('employee_limit')
-      revenue_limit = size_standards.get('revenue_limit') 
-      asset_limit = size_standards.get('asset_limit')
+      # Get SBA size standards from imported data
+      if isinstance(naics_info, dict):
+        employee_limit = naics_info.get('employeeCountLimit')
+        revenue_limit = naics_info.get('revenueLimit')
+        
+        # Convert revenue limit from millions to actual dollars if needed
+        if revenue_limit and revenue_limit < 1000:  # Assuming values under 1000 are in millions
+          revenue_limit = revenue_limit * 1000000
+      else:
+        employee_limit = None
+        revenue_limit = None
       
       # SBA considers you small if you're UNDER the limit
       # We need to check if business qualifies as small under SBA standards
@@ -407,10 +188,6 @@ code: |
       
       if revenue_limit:
         sba_qualifies_as_small = sba_qualifies_as_small and (annual_revenue <= revenue_limit)
-      
-      if asset_limit:
-        # Asset limit would need to be provided by user - for now ignore
-        pass
       
       # For TDPSA, also apply the statutory small business definition
       tdpsa_qualifies_as_small = employee_count < 100 and annual_revenue < 10000000
@@ -428,7 +205,7 @@ code: |
       return employee_count < 100 and annual_revenue < 10000000
   
   def is_hipaa_applicable_by_naics(naics_code):
-    """Check if NAICS code indicates HIPAA applicability"""
+    """Check if NAICS code indicates HIPAA applicability using imported data"""
     if not naics_code:
       return False
     
@@ -437,11 +214,23 @@ code: |
       naics_code = str(naics_code).split(':')[0].strip()
     
     try:
-      naics_data = load_naics_data()
+      # Access the imported NAICS data
+      if hasattr(naics_data, 'naics_codes'):
+        naics_codes = naics_data.naics_codes
+      elif isinstance(naics_data, dict) and 'naics_codes' in naics_data:
+        naics_codes = naics_data['naics_codes']
+      elif isinstance(naics_data, list):
+        # Convert list to dict for lookup
+        naics_codes = {}
+        for item in naics_data:
+          if 'id' in item:
+            naics_codes[item['id']] = item
+      else:
+        raise ValueError("Unexpected naics_data structure")
       
-      if naics_code in naics_data['naics_codes']:
-        naics_info = naics_data['naics_codes'][naics_code]
-        sector_desc = naics_info.get('sector_description', '')
+      if naics_code in naics_codes:
+        naics_info = naics_codes[naics_code]
+        sector_desc = naics_info.get('sectorDescription', '') if isinstance(naics_info, dict) else ''
         
         # Healthcare sector indicates potential HIPAA applicability
         return 'Health Care' in sector_desc
@@ -455,7 +244,7 @@ code: |
     return naics_prefix in healthcare_subsectors
   
   def is_glba_applicable_by_naics(naics_code):
-    """Check if NAICS code indicates GLBA applicability"""  
+    """Check if NAICS code indicates GLBA applicability using imported data"""  
     if not naics_code:
       return False
     
@@ -464,11 +253,23 @@ code: |
       naics_code = str(naics_code).split(':')[0].strip()
     
     try:
-      naics_data = load_naics_data()
+      # Access the imported NAICS data
+      if hasattr(naics_data, 'naics_codes'):
+        naics_codes = naics_data.naics_codes
+      elif isinstance(naics_data, dict) and 'naics_codes' in naics_data:
+        naics_codes = naics_data['naics_codes']
+      elif isinstance(naics_data, list):
+        # Convert list to dict for lookup
+        naics_codes = {}
+        for item in naics_data:
+          if 'id' in item:
+            naics_codes[item['id']] = item
+      else:
+        raise ValueError("Unexpected naics_data structure")
       
-      if naics_code in naics_data['naics_codes']:
-        naics_info = naics_data['naics_codes'][naics_code]
-        sector_desc = naics_info.get('sector_description', '')
+      if naics_code in naics_codes:
+        naics_info = naics_codes[naics_code]
+        sector_desc = naics_info.get('sectorDescription', '') if isinstance(naics_info, dict) else ''
         
         # Finance and Insurance sector indicates GLBA applicability
         return 'Finance and Insurance' in sector_desc
@@ -480,46 +281,12 @@ code: |
     financial_subsectors = ['521', '522', '523', '524', '525']
     naics_prefix = str(naics_code)[:3]
     return naics_prefix in financial_subsectors
-  
-  def filter_naics_choices(search_term, choices):
-    """Filter NAICS choices based on search term"""
-    if not search_term or len(search_term) < 2:
-      return choices
-    
-    search_lower = search_term.lower()
-    filtered = []
-    
-    for code, description in choices:
-      if (search_lower in code.lower() or 
-          search_lower in description.lower()):
-        filtered.append((code, description))
-    
-    return filtered[:50]  # Limit for performance
 ---
-# Initialize NAICS system safely with enhanced debugging
+# Initialize NAICS system
 code: |
-  # Load NAICS data once per session
-  if not defined('naics_system_initialized'):
-    log("=== INITIALIZING NAICS SYSTEM ===")
-    
-    # Get choices for dropdown (this handles caching internally)
-    try:
-      naics_choices = get_naics_choices_for_dropdown()
-      log(f"NAICS system initialized successfully with {len(naics_choices)} codes")
-      
-      # Log first few choices for debugging
-      if len(naics_choices) > 0:
-        log(f"Sample NAICS choices: {naics_choices[:3]}")
-      else:
-        log("WARNING: No NAICS choices loaded!")
-        
-    except Exception as e:
-      log(f"ERROR initializing NAICS system: {e}")
-      # Initialize with empty list to prevent further errors
-      naics_choices = []
-    
-    # Mark as initialized
-    naics_system_initialized = True
+  # Get choices for dropdown using imported data
+  naics_choices = get_naics_choices_for_dropdown()
+  log(f"NAICS system initialized with {len(naics_choices)} codes from imported data")
 ---
 # Business information introduction
 question: "Step 1: Business Information"
@@ -533,10 +300,10 @@ subquestion: |
   
   The process will take approximately 10-15 minutes.
 
-continue button field: show_business_information_intro
+continue button field: business_profile_complete
 continue button label: "Let's get started"
 ---
-# Step 1a: Basic business information
+# Step 1: Basic business information
 question: "Step 1a: Basic Business Information"
 subquestion: |
   Let's start with your basic business information.
@@ -551,28 +318,12 @@ fields:
     required: True
 continue button field: basic_business_info_complete
 ---
-# Emergency fallback NAICS choices
-code: |
-  emergency_naics_choices = [
-    ('541110', '541110: Offices of Lawyers'),
-    ('541511', '541511: Custom Computer Programming Services'), 
-    ('621111', '621111: Offices of Physicians (except Mental Health)'),
-    ('522110', '522110: Commercial Banking'),
-    ('999999', '999999: Other - Please specify in description')
-  ]
----
-# Step 1b: Enhanced NAICS selection with search capabilities and error handling
+# Enhanced NAICS selection with imported data
 question: "Step 1b: Industry Classification" 
 subquestion: |
   Select your primary business activity from the NAICS codes:
   
   **Tip**: You can type to search for your industry (e.g., "legal services", "software", "retail")
-  
-  % if defined('naics_choices') and len(naics_choices) > 0:
-  *System loaded ${len(naics_choices)} NAICS codes from database*
-  % else:
-  **⚠️ Note**: NAICS database is loading... If you don't see options below, the system will use fallback data.
-  % endif
 
 fields:
   - Search for your industry: naics_search_term
@@ -582,16 +333,15 @@ fields:
   - Primary Business Activity (NAICS Code): company.naics_code
     required: True
     datatype: combobox
-    choices: 
-      code: get_safe_naics_choices()
+    choices: naics_choices
     help: |
       Select the NAICS code that best describes your primary business activity.
 
 continue button field: naics_selection_complete
 ---
-# CRITICAL: Set industry and format display values AFTER NAICS selection
+# Set industry and format display values AFTER NAICS selection
 code: |
-  # This code block runs after NAICS selection is complete
+  # Set industry based on NAICS selection
   if defined('naics_selection_complete') and naics_selection_complete and defined('company.naics_code') and company.naics_code:
     company.industry = get_industry_from_naics(company.naics_code)
     
@@ -616,8 +366,8 @@ code: |
   else:
     company_revenue_display = "Not specified"
 ---
-# Step 1c: Business profile confirmation
-question: "Step 1c: Business Profile Summary"
+# Industry confirmation and additional fields
+question: Business Profile Complete
 subquestion: |
   **Company**: ${ company.name }  
   **NAICS Code**: ${ company_naics_display }  
@@ -634,7 +384,7 @@ fields:
     help: |
       Any additional information about your business activities that might affect privacy compliance requirements.
 
-continue button field: business_profile_complete
+continue button field: show_business_information_intro
 ---
 # Geographic and operational scope questions
 question: Geographic and Operational Scope
@@ -707,11 +457,9 @@ fields:
   - "Approximately how many California residents' personal information do you process annually?": california_records
     datatype: integer
     help: Include customers, employees, vendors, etc.
-    default: 0
   - "Approximately how many Texas residents' personal information do you process annually?": texas_records
     datatype: integer
     help: Include customers, employees, vendors, etc.
-    default: 0
   - "Do you sell personal information to third parties?": sells_personal_info
     datatype: yesnowide
     help: This includes sharing for advertising, marketing lists, or other commercial purposes
