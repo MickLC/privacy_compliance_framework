@@ -3,6 +3,80 @@
 objects:
   - company: DAObject
 ---
+# Initialize all variables to prevent 'null' errors
+code: |
+  # Initialize all business assessment variables
+  if not defined('business_profile_complete'):
+    business_profile_complete = False
+  if not defined('basic_business_info_complete'):
+    basic_business_info_complete = False
+  if not defined('naics_selection_complete'):
+    naics_selection_complete = False
+  if not defined('business_profile_confirmed'):
+    business_profile_confirmed = False
+  if not defined('geographic_scope_complete'):
+    geographic_scope_complete = False
+  if not defined('healthcare_questions_complete'):
+    healthcare_questions_complete = False
+  if not defined('financial_questions_complete'):
+    financial_questions_complete = False
+  
+  # Initialize company object attributes
+  if not defined('company.name'):
+    company.name = ''
+  if not defined('company.employee_count'):
+    company.employee_count = 0
+  if not defined('company.annual_revenue'):
+    company.annual_revenue = 0
+  if not defined('company.naics_code'):
+    company.naics_code = ''
+  if not defined('company.industry'):
+    company.industry = 'Other'
+  if not defined('company.description'):
+    company.description = ''
+  
+  # Initialize geographic variables
+  if not defined('business_has_website'):
+    business_has_website = False
+  if not defined('business_has_physical_location'):
+    business_has_physical_location = False
+  if not defined('states_with_locations'):
+    states_with_locations = []
+  if not defined('serves_eu'):
+    serves_eu = False
+  if not defined('has_eu_establishment'):
+    has_eu_establishment = False
+  if not defined('california_records'):
+    california_records = 0
+  if not defined('texas_records'):
+    texas_records = 0
+  if not defined('sells_personal_info'):
+    sells_personal_info = False
+  
+  # Initialize healthcare variables
+  if not defined('is_hipaa_covered_entity'):
+    is_hipaa_covered_entity = False
+  if not defined('is_hipaa_business_associate'):
+    is_hipaa_business_associate = False
+  if not defined('processes_phi'):
+    processes_phi = False
+  
+  # Initialize financial variables
+  if not defined('is_glba_financial_institution'):
+    is_glba_financial_institution = False
+  if not defined('provides_financial_products'):
+    provides_financial_products = False
+  if not defined('collects_npi'):
+    collects_npi = False
+  
+  # Initialize display variables
+  if not defined('company_naics_display'):
+    company_naics_display = 'Not selected'
+  if not defined('company_employee_display'):
+    company_employee_display = 'Not specified'
+  if not defined('company_revenue_display'):
+    company_revenue_display = 'Not specified'
+---
 modules:
   - requests
   - threading
