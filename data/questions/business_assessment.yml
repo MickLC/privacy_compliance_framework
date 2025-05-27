@@ -8,6 +8,7 @@ objects from file:
 ---
 # NAICS Data Management System - Now using objects from file
 code: |
+code: |
   def get_naics_choices_for_dropdown():
     """Convert NAICS data from imported file to dropdown choices format"""
     try:
@@ -66,6 +67,21 @@ code: |
       ('722511', '722511: Full-Service Restaurants'),
       ('999999', '999999: Other - Please specify in additional information')
     ]
+  
+  def filter_naics_choices(search_term, choices):
+    """Filter NAICS choices based on search term"""
+    if not search_term or len(search_term) < 2:
+      return choices
+    
+    search_lower = search_term.lower()
+    filtered = []
+    
+    for code, description in choices:
+      if (search_lower in code.lower() or 
+          search_lower in description.lower()):
+        filtered.append((code, description))
+    
+    return filtered[:50]  # Limit for performance
   
   def get_industry_from_naics(naics_code):
     """Determine broad industry category from NAICS code using imported data"""
