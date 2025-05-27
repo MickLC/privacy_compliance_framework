@@ -352,9 +352,8 @@ fields:
       Start typing to filter the list below. You can search by industry name or NAICS code.
   - Primary Business Activity (NAICS Code): company.naics_code
     required: True
-    datatype: combobox
-    choices:
-      code: get_naics_choices_for_dropdown()
+    choices: code |
+      get_naics_choices_for_dropdown()
     help: |
       Select the NAICS code that best describes your primary business activity.
 
