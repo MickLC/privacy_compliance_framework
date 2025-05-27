@@ -44,11 +44,51 @@ code: |
   def load_naics_from_file():
     """Load NAICS data from local naics.json file"""
     try:
-      # Read the local naics.json file from data/sources
-      with open(path_and_mimetype('naics.json')[0], 'r', encoding='utf-8') as f:
+      # Try multiple methods to locate the naics.json file
+      naics_file_path = None
+      
+      # Method 1: Direct path using path_and_mimetype
+      try:
+        naics_file_path = path_and_mimetype('naics.json')[0]
+        log(f"Found naics.json using path_and_mimetype: {naics_file_path}")
+      except Exception as e:
+        log(f"path_and_mimetype failed: {e}")
+      
+      # Method 2: Try data/sources/naics.json
+      if not naics_file_path:
+        try:
+          import os
+          possible_paths = [
+            'data/sources/naics.json',
+            'sources/naics.json', 
+            'naics.json'
+          ]
+          for path in possible_paths:
+            if os.path.exists(path):
+              naics_file_path = path
+              log(f"Found naics.json at: {naics_file_path}")
+              break
+        except Exception as e:
+          log(f"OS path search failed: {e}")
+      
+      # Method 3: Try using docassemble's static file functions
+      if not naics_file_path:
+        try:
+          from docassemble.base.util import static_filename
+          naics_file_path = static_filename('naics.json')
+          log(f"Found naics.json using static_filename: {naics_file_path}")
+        except Exception as e:
+          log(f"static_filename failed: {e}")
+      
+      if not naics_file_path:
+        log("Could not locate naics.json file using any method")
+        return None
+      
+      # Read and parse the file
+      with open(naics_file_path, 'r', encoding='utf-8') as f:
         naics_raw_data = json.load(f)
       
-      log(f"Loaded NAICS JSON with {len(naics_raw_data)} records")
+      log(f"Successfully loaded NAICS JSON with {len(naics_raw_data)} records")
       
       # Process data efficiently
       processed_data = process_naics_data_efficiently(naics_raw_data)
@@ -61,7 +101,7 @@ code: |
         return None
         
     except FileNotFoundError:
-      log("naics.json file not found in data/sources")
+      log("naics.json file not found")
       return None
     except json.JSONDecodeError as e:
       log(f"JSON parsing error: {e}")
@@ -438,19 +478,30 @@ code: |
     
     return filtered[:50]  # Limit for performance
 ---
-# Initialize NAICS system safely
+# Initialize NAICS system safely with enhanced debugging
 code: |
   # Load NAICS data once per session
   if not defined('naics_system_initialized'):
-    log("Initializing NAICS system...")
+    log("=== INITIALIZING NAICS SYSTEM ===")
     
     # Get choices for dropdown (this handles caching internally)
-    naics_choices = get_naics_choices_for_dropdown()
+    try:
+      naics_choices = get_naics_choices_for_dropdown()
+      log(f"NAICS system initialized successfully with {len(naics_choices)} codes")
+      
+      # Log first few choices for debugging
+      if len(naics_choices) > 0:
+        log(f"Sample NAICS choices: {naics_choices[:3]}")
+      else:
+        log("WARNING: No NAICS choices loaded!")
+        
+    except Exception as e:
+      log(f"ERROR initializing NAICS system: {e}")
+      # Initialize with empty list to prevent further errors
+      naics_choices = []
     
     # Mark as initialized
     naics_system_initialized = True
-    
-    log(f"NAICS system initialized with {len(naics_choices)} codes")
 ---
 # Business information introduction
 question: "Step 1: Business Information"
@@ -482,12 +533,18 @@ fields:
     required: True
 continue button field: basic_business_info_complete
 ---
-# Step 1b: Enhanced NAICS selection with search capabilities
+# Step 1b: Enhanced NAICS selection with search capabilities and error handling
 question: "Step 1b: Industry Classification" 
 subquestion: |
   Select your primary business activity from the NAICS codes:
   
   **Tip**: You can type to search for your industry (e.g., "legal services", "software", "retail")
+  
+  % if defined('naics_choices') and len(naics_choices) > 0:
+  *System loaded ${len(naics_choices)} NAICS codes from database*
+  % else:
+  **⚠️ Note**: NAICS database is loading... If you don't see options below, the system will use fallback data.
+  % endif
 
 fields:
   - Search for your industry: naics_search_term
@@ -499,7 +556,20 @@ fields:
     datatype: combobox
     choices: 
       code: |
-        filter_naics_choices(naics_search_term, naics_choices) if defined('naics_search_term') and naics_search_term else naics_choices
+        if defined('naics_choices') and len(naics_choices) > 0:
+          if defined('naics_search_term') and naics_search_term:
+            filter_naics_choices(naics_search_term, naics_choices)
+          else:
+            naics_choices
+        else:
+          # Emergency fallback choices if system fails
+          [
+            ('541110', '541110: Offices of Lawyers'),
+            ('541511', '541511: Custom Computer Programming Services'), 
+            ('621111', '621111: Offices of Physicians (except Mental Health)'),
+            ('522110', '522110: Commercial Banking'),
+            ('999999', '999999: Other - Please specify in description')
+          ]
     help: |
       Select the NAICS code that best describes your primary business activity.
 
