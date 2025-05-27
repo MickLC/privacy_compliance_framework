@@ -4,7 +4,7 @@ objects:
   - company: DAObject
 ---
 code: |
-  naics_data= objects_from_file("naics.json")
+  naics_data = objects_from_file("naics.json")
 ---
 # NAICS Data Management System - Now using objects from file
 code: |
