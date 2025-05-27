@@ -29,28 +29,28 @@ code: |
   # Load jurisdiction registry
   load_jurisdiction_registry()
   
-  # Main interview flow
+  # Main interview flow - Step by step
   show_intro_screen
-  basic_business_info_complete    # Step 1a
-  naics_selection_complete        # Step 1b - ADD THIS LINE
+  
+  # Step 1: Business Assessment
   show_business_information_intro
   
-  # Determine applicable jurisdictions
+  # Step 2: Jurisdictional Analysis  
   applicable_jurisdictions = determine_applicable_jurisdictions()
   load_requirements_for_jurisdictions()
   applicable_law_continue
   
-  # Document current practices
+  # Step 3: Current Practices - trigger intro then wait for completion
   show_current_practices_intro
-  document_current_practices()
+  # Wait for all current practices to be documented
+  wait_for_current_practices_complete
   
-  # Perform gap analysis
+  # Step 4: Gap Analysis - trigger intro then wait for completion
   show_gap_analysis_intro
-  compliance_gaps = perform_gap_analysis()
-  gap_report = generate_gap_report()
-  continue_gap_summary
+  # Wait for gap analysis to complete
+  wait_for_gap_analysis_complete
   
-  # Generate documents
+  # Step 5: Document Generation
   show_document_generation_intro
   if generate_internal_policy:
     internal_policy = generate_internal_policy_document()
@@ -62,6 +62,25 @@ code: |
     remediation_plan_doc = create_remediation_plan()
   
   final_screen
+---
+# Wait for current practices completion
+code: |
+  wait_for_current_practices_complete = (
+    existing_policies_complete and
+    data_handling_practices_complete and
+    individual_rights_complete and
+    security_practices_complete and
+    hipaa_practices_complete and
+    glba_practices_complete
+  )
+---
+# Wait for gap analysis completion  
+code: |
+  wait_for_gap_analysis_complete = (
+    compliance_gaps is not None and
+    gap_report is not None and
+    continue_gap_summary
+  )
 ---
 question: |
   Privacy Compliance Framework

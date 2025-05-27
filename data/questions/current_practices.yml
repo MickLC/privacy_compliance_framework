@@ -10,34 +10,6 @@ subquestion: |
 continue button field: show_current_practices_intro
 continue button label: "Let's get started"
 ---
-code: |
-  def document_current_practices():
-    """Collect and document current privacy practices"""
-    # This function orchestrates the collection of current practices
-    # It calls various screens and builds a complete picture of practices
-    
-    # Collect information about existing policies
-    existing_policies_complete = True
-    
-    # Collect information about data handling practices
-    data_handling_practices_complete = True
-    
-    # Collect information about individual rights handling
-    individual_rights_complete = True
-    
-    # Collect information about security practices
-    security_practices_complete = True
-    
-    # If HIPAA applies, collect HIPAA-specific information
-    if 'hipaa' in applicable_jurisdictions:
-      hipaa_practices_complete = True
-    
-    # If GLBA applies, collect GLBA-specific information
-    if 'glba' in applicable_jurisdictions:
-      glba_practices_complete = True
-    
-    return True
----
 # Existing policies screen
 question: Existing Privacy Documentation
 fields:
@@ -57,7 +29,7 @@ fields:
   - note: |
       
 continue button field: existing_policies_complete
-continue button label: "Let's go"
+continue button label: "Continue"
 ---
 # Data handling practices screen
 question: Data Handling Practices
@@ -103,7 +75,7 @@ fields:
   - note: |
       
 continue button field: data_handling_practices_complete
-continue button label: "Let's go"
+continue button label: "Continue"
 ---
 # Individual rights screen
 question: Individual Rights Practices
@@ -135,7 +107,7 @@ fields:
   - note: |
       
 continue button field: individual_rights_complete
-continue button label: "Let's go"
+continue button label: "Continue"
 ---
 # Security practices screen
 question: Security Practices
@@ -176,7 +148,7 @@ fields:
   - note: |
       
 continue button field: security_practices_complete
-continue button label: "Let's go"
+continue button label: "Continue"
 ---
 # HIPAA-specific practices screen
 question: HIPAA Compliance Practices
@@ -205,7 +177,7 @@ fields:
   - note: |
       
 continue button field: hipaa_practices_complete
-continue button label: "Let's go"
+continue button label: "Continue"
 ---
 # For showing HIPAA questions conditionally
 code: |
@@ -239,7 +211,7 @@ fields:
   - note: |
       
 continue button field: glba_practices_complete
-continue button label: "Let's go"
+continue button label: "Continue"
 ---
 # For showing GLBA questions conditionally
 code: |
