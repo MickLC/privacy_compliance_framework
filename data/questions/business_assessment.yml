@@ -297,11 +297,16 @@ code: |
     naics_prefix = str(naics_code)[:3]
     return naics_prefix in financial_subsectors
 ---
-# Initialize NAICS system
+# Initialize NAICS system - CORRECTED
 code: |
-  # Get choices for dropdown using imported data
-  naics_choices = get_naics_choices_for_dropdown()
-  log(f"NAICS system initialized with {len(naics_choices)} codes from imported data")
+  # Test NAICS system initialization but don't assign to variable
+  try:
+    test_choices = get_naics_choices_for_dropdown()
+    log(f"NAICS system initialized with {len(test_choices)} codes from imported data")
+    naics_system_ready = True
+  except Exception as e:
+    log(f"NAICS initialization failed: {e}")
+    naics_system_ready = False
 ---
 # Business information introduction
 question: "Step 1: Business Information"
@@ -348,7 +353,8 @@ fields:
   - Primary Business Activity (NAICS Code): company.naics_code
     required: True
     datatype: combobox
-    choices: naics_choices
+    choices:
+      code: get_naics_choices_for_dropdown()
     help: |
       Select the NAICS code that best describes your primary business activity.
 
