@@ -8,7 +8,6 @@ objects from file:
 ---
 # NAICS Data Management System - Now using objects from file
 code: |
-code: |
   def get_naics_choices_for_dropdown():
     """Convert NAICS data from imported file to dropdown choices format"""
     try:
