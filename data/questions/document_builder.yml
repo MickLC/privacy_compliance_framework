@@ -53,7 +53,7 @@ code: |
     }
     
     # Use template from imported data or create basic template
-    template = """# Internal Privacy Policy for {company_name}
+    template = '''# Internal Privacy Policy for {company_name}
 
 ## Effective Date: {effective_date}
 
@@ -97,7 +97,7 @@ This policy addresses requirements from the following privacy laws applicable to
 
 ## 10. Policy Governance
 
-{policy_governance}"""
+{policy_governance}'''
     
     # Format the template with context
     internal_policy = template.format(**context)
