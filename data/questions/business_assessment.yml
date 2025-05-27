@@ -3,38 +3,36 @@
 objects:
   - company: DAObject
 ---
-# NAICS Data Management System - Complete implementation
+# NAICS Data Management System - Session-based caching (no file permissions needed)
 code: |
   import json
-  import os
   from datetime import datetime, timedelta
   
-  def get_naics_cache_path():
-    """Get the path for NAICS cache file"""
-    return 'naics_cache.json'
-  
-  def is_naics_cache_valid(cache_days=30):
-    """Check if NAICS cache is valid"""
-    cache_file = get_naics_cache_path()
+  def load_naics_data():
+    """Load NAICS data using session variables for caching"""
+    # Check if we already have data in this session
+    if defined('naics_data_cache') and defined('naics_cache_timestamp'):
+      cache_time = datetime.fromisoformat(naics_cache_timestamp)
+      if datetime.now() - cache_time < timedelta(hours=4):  # Cache for 4 hours per session
+        log(f"Using session-cached NAICS data ({naics_data_cache.get('record_count', 0)} codes)")
+        return naics_data_cache
     
-    try:
-      if os.path.exists(cache_file):
-        with open(cache_file, 'r') as f:
-          cache_data = json.load(f)
-        
-        if 'timestamp' in cache_data:
-          cache_time = datetime.fromisoformat(cache_data['timestamp'])
-          if datetime.now() - cache_time < timedelta(days=cache_days):
-            return True, cache_data
-        
-      return False, None
-      
-    except Exception as e:
-      log(f"Error checking NAICS cache: {e}")
-      return False, None
+    # Download fresh data
+    log("Downloading fresh NAICS data for this session...")
+    fresh_data = download_naics_data_to_session()
+    
+    if fresh_data:
+      # Store in session variables
+      naics_data_cache = fresh_data
+      naics_cache_timestamp = datetime.now().isoformat()
+      return fresh_data
+    
+    # Fallback
+    log("Using fallback NAICS data")
+    return get_fallback_naics_data()
   
-  def download_and_cache_naics_data():
-    """Download NAICS data and cache it locally"""
+  def download_naics_data_to_session():
+    """Download NAICS data for session storage only"""
     try:
       # Import requests locally to avoid pickle issues
       import requests
@@ -81,12 +79,7 @@ code: |
               'footnote': item.get('footnote')
             }
         
-        # Save to cache
-        cache_file = get_naics_cache_path()
-        with open(cache_file, 'w') as f:
-          json.dump(processed_data, f, indent=2)
-        
-        log(f"Cached {len(processed_data['naics_codes'])} NAICS codes")
+        log(f"Downloaded {len(processed_data['naics_codes'])} NAICS codes")
         return processed_data
         
       else:
@@ -96,26 +89,6 @@ code: |
     except Exception as e:
       log(f"Error downloading NAICS data: {e}")
       return None
-  
-  def load_naics_data():
-    """Load NAICS data from cache or download fresh"""
-    # Check cache first
-    cache_valid, cache_data = is_naics_cache_valid(cache_days=30)
-    
-    if cache_valid:
-      log(f"Using cached NAICS data ({cache_data['record_count']} codes)")
-      return cache_data
-    
-    # Download fresh data
-    log("Cache expired or missing, downloading fresh NAICS data...")
-    fresh_data = download_and_cache_naics_data()
-    
-    if fresh_data:
-      return fresh_data
-    
-    # Fallback to minimal dataset
-    log("Using fallback NAICS data")
-    return get_fallback_naics_data()
   
   def get_fallback_naics_data():
     """Fallback NAICS data with key industries using real structure"""
