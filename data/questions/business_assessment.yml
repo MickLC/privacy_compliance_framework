@@ -3,26 +3,26 @@
 objects:
   - company: DAObject
 ---
-# NAICS Data Management System - Production-ready with proper error handling
+# NAICS Data Management System - Using Local JSON File
 code: |
   import json
   from datetime import datetime, timedelta
   
   def load_naics_data():
-    """Load NAICS data with proper error handling and optimization"""
+    """Load NAICS data from local JSON file with proper error handling"""
     # Check if we already have data in this session
     if defined('naics_data_cache') and defined('naics_cache_timestamp'):
       try:
         cache_time = datetime.fromisoformat(naics_cache_timestamp)
-        if datetime.now() - cache_time < timedelta(hours=2):  # Reduced cache time
+        if datetime.now() - cache_time < timedelta(hours=2):  # 2-hour cache
           log(f"Using session-cached NAICS data ({naics_data_cache.get('record_count', 0)} codes)")
           return naics_data_cache
       except Exception as e:
         log(f"Cache validation error: {e}")
     
-    # Attempt optimized download with proper error handling
-    log("Attempting optimized NAICS data download...")
-    fresh_data = download_naics_data_optimized()
+    # Load from local JSON file
+    log("Loading NAICS data from local JSON file...")
+    fresh_data = load_naics_from_file()
     
     if fresh_data and len(fresh_data.get('naics_codes', {})) > 10:
       # Store in session variables only if successful
@@ -31,112 +31,51 @@ code: |
       log(f"Successfully cached {fresh_data['record_count']} NAICS codes")
       return fresh_data
     
-    # Fallback with comprehensive data
-    log("Using comprehensive fallback NAICS data")
-    fallback_data = get_comprehensive_fallback_naics_data()
+    # Final fallback with minimal data
+    log("Using minimal fallback NAICS data")
+    fallback_data = get_minimal_fallback_naics_data()
     
-    # Cache fallback data too to avoid repeated failures
+    # Cache fallback data too
     naics_data_cache = fallback_data
     naics_cache_timestamp = datetime.now().isoformat()
     
     return fallback_data
   
-  def download_naics_data_optimized():
-    """Optimized NAICS download with memory management and timeouts"""
+  def load_naics_from_file():
+    """Load NAICS data from local naics.json file"""
     try:
-      # Import requests locally to avoid pickle issues
-      import requests
-      from requests.adapters import HTTPAdapter
-      from urllib3.util.retry import Retry
+      # Read the local naics.json file from data/sources
+      with open(path_and_mimetype('naics.json')[0], 'r', encoding='utf-8') as f:
+        naics_raw_data = json.load(f)
       
-      log("Starting optimized NAICS download...")
+      log(f"Loaded NAICS JSON with {len(naics_raw_data)} records")
       
-      # Create session with retry strategy - using compatible parameters
-      session = requests.Session()
+      # Process data efficiently
+      processed_data = process_naics_data_efficiently(naics_raw_data)
       
-      # Try modern parameter first, fall back to legacy if needed
-      try:
-        retry_strategy = Retry(
-          total=2,
-          status_forcelist=[429, 500, 502, 503, 504],
-          allowed_methods=["HEAD", "GET", "OPTIONS"],  # New parameter name
-          backoff_factor=1
-        )
-      except TypeError:
-        # Fallback for older urllib3 versions
-        retry_strategy = Retry(
-          total=2,
-          status_forcelist=[429, 500, 502, 503, 504],
-          method_whitelist=["HEAD", "GET", "OPTIONS"],  # Legacy parameter name
-          backoff_factor=1
-        )
-      
-      adapter = HTTPAdapter(max_retries=retry_strategy)
-      session.mount("http://", adapter)
-      session.mount("https://", adapter)
-      
-      # Optimized request with shorter timeout and streaming
-      response = session.get(
-        "https://api.sba.gov/naics/naics.json",
-        timeout=(10, 30),  # (connect_timeout, read_timeout)
-        headers={
-          'User-Agent': 'Privacy-Compliance-Framework/1.0',
-          'Accept': 'application/json',
-          'Accept-Encoding': 'gzip, deflate'
-        },
-        stream=False  # Don't stream for JSON parsing
-      )
-      
-      if response.status_code == 200:
-        log(f"Download successful, content size: {len(response.content)} bytes")
-        
-        # Parse JSON with error handling
-        try:
-          naics_raw_data = response.json()
-          log(f"Parsed JSON with {len(naics_raw_data)} records")
-        except json.JSONDecodeError as e:
-          log(f"JSON parsing error: {e}")
-          return None
-        
-        # Process data efficiently
-        processed_data = process_naics_data_efficiently(naics_raw_data)
-        
-        if processed_data:
-          log(f"Successfully processed {processed_data['record_count']} NAICS codes")
-          return processed_data
-        else:
-          log("Data processing failed")
-          return None
-        
+      if processed_data:
+        log(f"Successfully processed {processed_data['record_count']} NAICS codes")
+        return processed_data
       else:
-        log(f"HTTP error: {response.status_code} - {response.reason}")
+        log("Data processing failed")
         return None
         
-    except requests.exceptions.Timeout:
-      log("NAICS download timed out")
+    except FileNotFoundError:
+      log("naics.json file not found in data/sources")
       return None
-    except requests.exceptions.ConnectionError:
-      log("NAICS download connection error")
-      return None
-    except requests.exceptions.RequestException as e:
-      log(f"NAICS download request error: {e}")
+    except json.JSONDecodeError as e:
+      log(f"JSON parsing error: {e}")
       return None
     except Exception as e:
-      log(f"Unexpected error during NAICS download: {e}")
+      log(f"Unexpected error during NAICS file loading: {e}")
       return None
-    finally:
-      # Cleanup session
-      try:
-        session.close()
-      except:
-        pass
   
   def process_naics_data_efficiently(naics_raw_data):
     """Process NAICS data efficiently to avoid memory issues"""
     try:
       processed_data = {
         'timestamp': datetime.now().isoformat(),
-        'source_url': 'https://api.sba.gov/naics/naics.json',
+        'source': 'local_file',
         'record_count': 0,
         'naics_codes': {}
       }
@@ -149,42 +88,51 @@ code: |
         batch = naics_raw_data[i:i + batch_size]
         
         for item in batch:
-          code = item.get('id', '').strip()
+          code = str(item.get('id', '')).strip()
           
           # Only process valid 6-digit NAICS codes
           if code and len(code) == 6 and code.isdigit():
-            description = item.get('description', '').strip()
+            description = str(item.get('description', '')).strip()
             
-            # Skip if no description
-            if not description:
+            # Skip if no description or empty description
+            if not description or description == '':
               continue
             
             # Truncate very long descriptions to save memory
             if len(description) > 150:
               description = description[:147] + "..."
             
+            # Get size standards with proper conversion
+            revenue_limit = item.get('revenueLimit')
+            if revenue_limit is not None:
+              # Revenue limit is in millions, convert to actual dollars
+              revenue_limit_dollars = float(revenue_limit) * 1000000
+            else:
+              revenue_limit_dollars = None
+            
             processed_data['naics_codes'][code] = {
               'code': code,
               'description': description,
-              'sector_id': item.get('sectorId', ''),
-              'sector_description': item.get('sectorDescription', ''),
-              'subsector_id': item.get('subsectorId', ''),
-              'subsector_description': item.get('subsectorDescription', ''),
+              'sector_id': str(item.get('sectorId', '')),
+              'sector_description': str(item.get('sectorDescription', '')),
+              'subsector_id': str(item.get('subsectorId', '')),
+              'subsector_description': str(item.get('subsectorDescription', '')),
               'size_standards': {
-                'revenue_limit': item.get('revenueLimit') * 1000000 if item.get('revenueLimit') else None,
-                'employee_limit': item.get('employeeCountLimit')
+                'revenue_limit': revenue_limit_dollars,
+                'employee_limit': item.get('employeeCountLimit'),
+                'asset_limit': item.get('assetLimit')
               }
             }
             processed_count += 1
         
         # Log progress every 1000 records
-        if processed_count % 1000 == 0:
+        if processed_count > 0 and processed_count % 1000 == 0:
           log(f"Processed {processed_count} NAICS codes...")
       
       processed_data['record_count'] = processed_count
       
       # Validate we got a reasonable amount of data
-      if processed_count < 100:
+      if processed_count < 50:
         log(f"Warning: Only processed {processed_count} codes, data may be incomplete")
         return None
       
@@ -195,78 +143,12 @@ code: |
       log(f"Error processing NAICS data: {e}")
       return None
   
-  def get_comprehensive_fallback_naics_data():
-    """Comprehensive fallback NAICS data with real SBA size standards"""
+  def get_minimal_fallback_naics_data():
+    """Minimal fallback NAICS data for essential industries"""
     return {
       'timestamp': datetime.now().isoformat(),
-      'source': 'comprehensive_fallback',
-      'record_count': 100,
-      'naics_codes': {
-        # Legal Services (54)
-        '541110': {'code': '541110', 'description': 'Offices of Lawyers', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541191': {'code': '541191', 'description': 'Title Abstract and Settlement Offices', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541199': {'code': '541199', 'description': 'All Other Legal Services', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        
-        # Technology Services (51, 54)
-        '518210': {'code': '518210', 'description': 'Data Processing, Hosting, and Related Services', 'sector_id': '51', 'sector_description': 'Information', 'subsector_id': '518', 'subsector_description': 'Data Processing, Hosting, and Related Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541511': {'code': '541511', 'description': 'Custom Computer Programming Services', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541512': {'code': '541512', 'description': 'Computer Systems Design Services', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541513': {'code': '541513', 'description': 'Computer Facilities Management Services', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541519': {'code': '541519', 'description': 'Other Computer Related Services', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        
-        # Healthcare (62)
-        '621111': {'code': '621111', 'description': 'Offices of Physicians (except Mental Health Specialists)', 'sector_id': '62', 'sector_description': 'Health Care and Social Assistance', 'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 500}},
-        '621112': {'code': '621112', 'description': 'Offices of Physicians, Mental Health Specialists', 'sector_id': '62', 'sector_description': 'Health Care and Social Assistance', 'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 500}},
-        '621210': {'code': '621210', 'description': 'Offices of Dentists', 'sector_id': '62', 'sector_description': 'Health Care and Social Assistance', 'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 500}},
-        '621310': {'code': '621310', 'description': 'Offices of Chiropractors', 'sector_id': '62', 'sector_description': 'Health Care and Social Assistance', 'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 500}},
-        '621320': {'code': '621320', 'description': 'Offices of Optometrists', 'sector_id': '62', 'sector_description': 'Health Care and Social Assistance', 'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 500}},
-        '621330': {'code': '621330', 'description': 'Offices of Mental Health Practitioners (except Physicians)', 'sector_id': '62', 'sector_description': 'Health Care and Social Assistance', 'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 500}},
-        '621340': {'code': '621340', 'description': 'Offices of Physical, Occupational and Speech Therapists', 'sector_id': '62', 'sector_description': 'Health Care and Social Assistance', 'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 500}},
-        '621420': {'code': '621420', 'description': 'Outpatient Mental Health and Substance Abuse Centers', 'sector_id': '62', 'sector_description': 'Health Care and Social Assistance', 'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 500}},
-        '621511': {'code': '621511', 'description': 'Medical Laboratories', 'sector_id': '62', 'sector_description': 'Health Care and Social Assistance', 'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 500}},
-        '621610': {'code': '621610', 'description': 'Home Health Care Services', 'sector_id': '62', 'sector_description': 'Health Care and Social Assistance', 'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 500}},
-        '622110': {'code': '622110', 'description': 'General Medical and Surgical Hospitals', 'sector_id': '62', 'sector_description': 'Health Care and Social Assistance', 'subsector_id': '622', 'subsector_description': 'Hospitals', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '623110': {'code': '623110', 'description': 'Nursing Care Facilities (Skilled Nursing Facilities)', 'sector_id': '62', 'sector_description': 'Health Care and Social Assistance', 'subsector_id': '623', 'subsector_description': 'Nursing and Residential Care Facilities', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        
-        # Financial Services (52)
-        '522110': {'code': '522110', 'description': 'Commercial Banking', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '522', 'subsector_description': 'Credit Intermediation and Related Activities', 'size_standards': {'revenue_limit': 550000000, 'employee_limit': None}},
-        '522120': {'code': '522120', 'description': 'Savings Institutions', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '522', 'subsector_description': 'Credit Intermediation and Related Activities', 'size_standards': {'revenue_limit': 550000000, 'employee_limit': None}},
-        '522130': {'code': '522130', 'description': 'Credit Unions', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '522', 'subsector_description': 'Credit Intermediation and Related Activities', 'size_standards': {'revenue_limit': 550000000, 'employee_limit': None}},
-        '522190': {'code': '522190', 'description': 'Other Depository Credit Intermediation', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '522', 'subsector_description': 'Credit Intermediation and Related Activities', 'size_standards': {'revenue_limit': 550000000, 'employee_limit': None}},
-        '522210': {'code': '522210', 'description': 'Credit Card Issuing', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '522', 'subsector_description': 'Credit Intermediation and Related Activities', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '522220': {'code': '522220', 'description': 'Sales Financing', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '522', 'subsector_description': 'Credit Intermediation and Related Activities', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '522291': {'code': '522291', 'description': 'Consumer Lending', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '522', 'subsector_description': 'Credit Intermediation and Related Activities', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '522292': {'code': '522292', 'description': 'Real Estate Credit', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '522', 'subsector_description': 'Credit Intermediation and Related Activities', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '522298': {'code': '522298', 'description': 'All Other Nondepository Credit Intermediation', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '522', 'subsector_description': 'Credit Intermediation and Related Activities', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '523110': {'code': '523110', 'description': 'Investment Banking and Securities Dealing', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '523', 'subsector_description': 'Securities, Commodity Contracts, and Other Financial Investments', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '523120': {'code': '523120', 'description': 'Securities Brokerage', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '523', 'subsector_description': 'Securities, Commodity Contracts, and Other Financial Investments', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '523210': {'code': '523210', 'description': 'Securities and Commodity Exchanges', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '523', 'subsector_description': 'Securities, Commodity Contracts, and Other Financial Investments', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '523920': {'code': '523920', 'description': 'Portfolio Management', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '523', 'subsector_description': 'Securities, Commodity Contracts, and Other Financial Investments', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '523930': {'code': '523930', 'description': 'Investment Advice', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '523', 'subsector_description': 'Securities, Commodity Contracts, and Other Financial Investments', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '524113': {'code': '524113', 'description': 'Direct Life Insurance Carriers', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '524', 'subsector_description': 'Insurance Carriers and Related Activities', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '524114': {'code': '524114', 'description': 'Direct Health and Medical Insurance Carriers', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '524', 'subsector_description': 'Insurance Carriers and Related Activities', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '524126': {'code': '524126', 'description': 'Direct Property and Casualty Insurance Carriers', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '524', 'subsector_description': 'Insurance Carriers and Related Activities', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '524210': {'code': '524210', 'description': 'Insurance Agencies and Brokerages', 'sector_id': '52', 'sector_description': 'Finance and Insurance', 'subsector_id': '524', 'subsector_description': 'Insurance Carriers and Related Activities', 'size_standards': {'revenue_limit': None, 'employee_limit': 500}},
-        
-        # Professional Services (54)
-        '541211': {'code': '541211', 'description': 'Offices of Certified Public Accountants', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541213': {'code': '541213', 'description': 'Tax Preparation Services', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541214': {'code': '541214', 'description': 'Payroll Services', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541611': {'code': '541611', 'description': 'Administrative Management and General Management Consulting Services', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541612': {'code': '541612', 'description': 'Human Resources Consulting Services', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541613': {'code': '541613', 'description': 'Marketing Consulting Services', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541618': {'code': '541618', 'description': 'Other Management Consulting Services', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        '541990': {'code': '541990', 'description': 'All Other Professional, Scientific, and Technical Services', 'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services', 'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services', 'size_standards': {'revenue_limit': None, 'employee_limit': 1500}},
-        
-        # Additional industries continue... (truncated for brevity but would include retail, manufacturing, construction, etc.)
-        '999999': {'code': '999999', 'description': 'Other - Please specify in additional information', 'sector_id': '99', 'sector_description': 'Other', 'subsector_id': '999', 'subsector_description': 'Other', 'size_standards': {'revenue_limit': 10000000, 'employee_limit': 100}}
-      }
-    }
-    """Enhanced fallback NAICS data with comprehensive industry coverage"""
-    return {
-      'timestamp': datetime.now().isoformat(),
-      'source': 'fallback',
-      'record_count': 50,
+      'source': 'minimal_fallback',
+      'record_count': 30,
       'naics_codes': {
         # Legal Services
         '541110': {
@@ -275,28 +157,10 @@ code: |
           'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services',
           'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
         },
-        '541191': {
-          'code': '541191', 'description': 'Title Abstract and Settlement Offices',
-          'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services',
-          'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
-        '541199': {
-          'code': '541199', 'description': 'All Other Legal Services',
-          'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services',
-          'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
         
         # Technology Services
         '541511': {
           'code': '541511', 'description': 'Custom Computer Programming Services',
-          'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services',
-          'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
-        '541512': {
-          'code': '541512', 'description': 'Computer Systems Design Services',
           'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services',
           'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services',
           'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
@@ -315,24 +179,6 @@ code: |
           'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services',
           'size_standards': {'revenue_limit': None, 'employee_limit': 500, 'asset_limit': None}
         },
-        '621112': {
-          'code': '621112', 'description': 'Offices of Physicians, Mental Health Specialists',
-          'sector_id': '62', 'sector_description': 'Health Care and Social Assistance',
-          'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 500, 'asset_limit': None}
-        },
-        '621210': {
-          'code': '621210', 'description': 'Offices of Dentists',
-          'sector_id': '62', 'sector_description': 'Health Care and Social Assistance',
-          'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 500, 'asset_limit': None}
-        },
-        '621330': {
-          'code': '621330', 'description': 'Offices of Mental Health Practitioners (except Physicians)',
-          'sector_id': '62', 'sector_description': 'Health Care and Social Assistance',
-          'subsector_id': '621', 'subsector_description': 'Ambulatory Health Care Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 500, 'asset_limit': None}
-        },
         '622110': {
           'code': '622110', 'description': 'General Medical and Surgical Hospitals',
           'sector_id': '62', 'sector_description': 'Health Care and Social Assistance',
@@ -347,22 +193,10 @@ code: |
           'subsector_id': '522', 'subsector_description': 'Credit Intermediation and Related Activities',
           'size_standards': {'revenue_limit': 550000000, 'employee_limit': None, 'asset_limit': None}
         },
-        '522120': {
-          'code': '522120', 'description': 'Savings Institutions',
-          'sector_id': '52', 'sector_description': 'Finance and Insurance',
-          'subsector_id': '522', 'subsector_description': 'Credit Intermediation and Related Activities',
-          'size_standards': {'revenue_limit': 550000000, 'employee_limit': None, 'asset_limit': None}
-        },
         '523110': {
           'code': '523110', 'description': 'Investment Banking and Securities Dealing',
           'sector_id': '52', 'sector_description': 'Finance and Insurance',
           'subsector_id': '523', 'subsector_description': 'Securities, Commodity Contracts, and Other Financial Investments',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
-        '524113': {
-          'code': '524113', 'description': 'Direct Life Insurance Carriers',
-          'sector_id': '52', 'sector_description': 'Finance and Insurance',
-          'subsector_id': '524', 'subsector_description': 'Insurance Carriers and Related Activities',
           'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
         },
         '524210': {
@@ -379,20 +213,8 @@ code: |
           'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services',
           'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
         },
-        '541611': {
-          'code': '541611', 'description': 'Administrative Management and General Management Consulting Services',
-          'sector_id': '54', 'sector_description': 'Professional, Scientific, and Technical Services',
-          'subsector_id': '541', 'subsector_description': 'Professional, Scientific, and Technical Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
         
         # Retail
-        '444110': {
-          'code': '444110', 'description': 'Home Centers',
-          'sector_id': '44', 'sector_description': 'Retail Trade',
-          'subsector_id': '444', 'subsector_description': 'Building Material and Garden Equipment and Supplies Dealers',
-          'size_standards': {'revenue_limit': 27500000, 'employee_limit': None, 'asset_limit': None}
-        },
         '445110': {
           'code': '445110', 'description': 'Supermarkets and Other Grocery (except Convenience) Stores',
           'sector_id': '44', 'sector_description': 'Retail Trade',
@@ -401,71 +223,11 @@ code: |
         },
         
         # Manufacturing
-        '325412': {
-          'code': '325412', 'description': 'Pharmaceutical Preparation Manufacturing',
-          'sector_id': '32', 'sector_description': 'Manufacturing',
-          'subsector_id': '325', 'subsector_description': 'Chemical Manufacturing',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
         '334111': {
           'code': '334111', 'description': 'Electronic Computer Manufacturing',
           'sector_id': '33', 'sector_description': 'Manufacturing',
           'subsector_id': '334', 'subsector_description': 'Computer and Electronic Product Manufacturing',
           'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
-        
-        # Construction
-        '236220': {
-          'code': '236220', 'description': 'Commercial and Institutional Building Construction',
-          'sector_id': '23', 'sector_description': 'Construction',
-          'subsector_id': '236', 'subsector_description': 'Construction of Buildings',
-          'size_standards': {'revenue_limit': 39500000, 'employee_limit': None, 'asset_limit': None}
-        },
-        '238210': {
-          'code': '238210', 'description': 'Electrical Contractors and Other Wiring Installation Contractors',
-          'sector_id': '23', 'sector_description': 'Construction',
-          'subsector_id': '238', 'subsector_description': 'Specialty Trade Contractors',
-          'size_standards': {'revenue_limit': 16500000, 'employee_limit': None, 'asset_limit': None}
-        },
-        
-        # Real Estate
-        '531210': {
-          'code': '531210', 'description': 'Offices of Real Estate Agents and Brokers',
-          'sector_id': '53', 'sector_description': 'Real Estate and Rental and Leasing',
-          'subsector_id': '531', 'subsector_description': 'Real Estate',
-          'size_standards': {'revenue_limit': 8000000, 'employee_limit': None, 'asset_limit': None}
-        },
-        
-        # Food Service
-        '722511': {
-          'code': '722511', 'description': 'Full-Service Restaurants',
-          'sector_id': '72', 'sector_description': 'Accommodation and Food Services',
-          'subsector_id': '722', 'subsector_description': 'Food Services and Drinking Places',
-          'size_standards': {'revenue_limit': 8500000, 'employee_limit': None, 'asset_limit': None}
-        },
-        
-        # Education
-        '611310': {
-          'code': '611310', 'description': 'Colleges, Universities, and Professional Schools',
-          'sector_id': '61', 'sector_description': 'Educational Services',
-          'subsector_id': '611', 'subsector_description': 'Educational Services',
-          'size_standards': {'revenue_limit': None, 'employee_limit': 1500, 'asset_limit': None}
-        },
-        
-        # Agriculture
-        '111110': {
-          'code': '111110', 'description': 'Soybean Farming',
-          'sector_id': '11', 'sector_description': 'Agriculture, Forestry, Fishing and Hunting',
-          'subsector_id': '111', 'subsector_description': 'Crop Production',
-          'size_standards': {'revenue_limit': 2250000, 'employee_limit': None, 'asset_limit': None}
-        },
-        
-        # Transportation
-        '484110': {
-          'code': '484110', 'description': 'General Freight Trucking, Local',
-          'sector_id': '48', 'sector_description': 'Transportation and Warehousing',
-          'subsector_id': '484', 'subsector_description': 'Truck Transportation',
-          'size_standards': {'revenue_limit': 27500000, 'employee_limit': None, 'asset_limit': None}
         },
         
         # Other/Catch-all
@@ -485,13 +247,13 @@ code: |
     choices = []
     for code, info in naics_data['naics_codes'].items():
       description = info['description']
-      # Truncate long descriptions
-      if len(description) > 100:
-        description = description[:97] + "..."
+      # Truncate long descriptions for dropdown
+      if len(description) > 80:
+        description = description[:77] + "..."
       
       choices.append((code, f"{code}: {description}"))
     
-    # Sort by description
+    # Sort by description for easier searching
     choices.sort(key=lambda x: x[1])
     
     return choices
@@ -702,10 +464,10 @@ subquestion: |
   
   The process will take approximately 10-15 minutes.
 
-continue button field: business_profile_complete
+continue button field: show_business_information_intro
 continue button label: "Let's get started"
 ---
-# Step 1: Basic business information
+# Step 1: Basic business information (first screen)
 question: "Step 1a: Basic Business Information"
 subquestion: |
   Let's start with your basic business information.
@@ -771,7 +533,7 @@ code: |
     company_revenue_display = "Not specified"
 ---
 # Industry confirmation and additional fields
-question: Business Profile Complete
+question: Business Profile Summary
 subquestion: |
   **Company**: ${ company.name }  
   **NAICS Code**: ${ company_naics_display }  
@@ -788,7 +550,7 @@ fields:
     help: |
       Any additional information about your business activities that might affect privacy compliance requirements.
 
-continue button field: show_business_information_intro
+continue button field: business_profile_complete
 ---
 # Geographic and operational scope questions
 question: Geographic and Operational Scope
