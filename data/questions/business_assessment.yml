@@ -67,21 +67,6 @@ code: |
       ('999999', '999999: Other - Please specify in additional information')
     ]
   
-  def filter_naics_choices(search_term, choices):
-    """Filter NAICS choices based on search term"""
-    if not search_term or len(search_term) < 2:
-      return choices
-    
-    search_lower = search_term.lower()
-    filtered = []
-    
-    for code, description in choices:
-      if (search_lower in code.lower() or 
-          search_lower in description.lower()):
-        filtered.append((code, description))
-    
-    return filtered[:50]  # Limit for performance
-  
   def get_industry_from_naics(naics_code):
     """Determine broad industry category from NAICS code using imported data"""
     if not naics_code:
@@ -297,17 +282,6 @@ code: |
     naics_prefix = str(naics_code)[:3]
     return naics_prefix in financial_subsectors
 ---
-# Initialize NAICS system - CORRECTED
-code: |
-  # Test NAICS system initialization but don't assign to variable
-  try:
-    test_choices = get_naics_choices_for_dropdown()
-    log(f"NAICS system initialized with {len(test_choices)} codes from imported data")
-    naics_system_ready = True
-  except Exception as e:
-    log(f"NAICS initialization failed: {e}")
-    naics_system_ready = False
----
 # Business information introduction
 question: "Step 1: Business Information"
 subquestion: |
@@ -320,10 +294,9 @@ subquestion: |
   
   The process will take approximately 10-15 minutes.
 
-continue button field: business_profile_complete
-continue button label: "Let's get started"
+continue button field: show_business_information_intro
 ---
-# Step 1: Basic business information
+# Step 1a: Basic business information
 question: "Step 1a: Basic Business Information"
 subquestion: |
   Let's start with your basic business information.
@@ -338,7 +311,7 @@ fields:
     required: True
 continue button field: basic_business_info_complete
 ---
-# Enhanced NAICS selection with imported data
+# Step 1b: Enhanced NAICS selection with imported data
 question: "Step 1b: Industry Classification" 
 subquestion: |
   Select your primary business activity from the NAICS codes:
@@ -361,7 +334,7 @@ continue button field: naics_selection_complete
 ---
 # Set industry and format display values AFTER NAICS selection
 code: |
-  # Set industry based on NAICS selection
+  # This code block runs after NAICS selection is complete
   if defined('naics_selection_complete') and naics_selection_complete and defined('company.naics_code') and company.naics_code:
     company.industry = get_industry_from_naics(company.naics_code)
     
@@ -386,8 +359,8 @@ code: |
   else:
     company_revenue_display = "Not specified"
 ---
-# Industry confirmation and additional fields
-question: Business Profile Complete
+# Step 1c: Industry confirmation and additional fields
+question: "Step 1c: Business Profile Complete"
 subquestion: |
   **Company**: ${ company.name }  
   **NAICS Code**: ${ company_naics_display }  
@@ -404,10 +377,10 @@ fields:
     help: |
       Any additional information about your business activities that might affect privacy compliance requirements.
 
-continue button field: show_business_information_intro
+continue button field: business_profile_complete
 ---
-# Geographic and operational scope questions
-question: Geographic and Operational Scope
+# Step 1d: Geographic and operational scope questions
+question: "Step 1d: Geographic and Operational Scope"
 subquestion: |
   Now let's determine your geographic and operational scope to identify applicable privacy laws.
 
@@ -538,4 +511,24 @@ code: |
     is_glba_financial_institution = False
     provides_financial_products = False
     collects_npi = False
+---
+# CRITICAL: Workflow dependency enforcement
+code: |
+  # Ensure proper sequential completion of business assessment steps
+  
+  # Step 1a must complete before anything else
+  if not defined('basic_business_info_complete') or not basic_business_info_complete:
+    need(basic_business_info_complete)
+  
+  # Step 1b (NAICS) must complete after Step 1a
+  if basic_business_info_complete and (not defined('naics_selection_complete') or not naics_selection_complete):
+    need(naics_selection_complete)
+  
+  # Step 1c (profile confirmation) must complete after Step 1b
+  if naics_selection_complete and (not defined('business_profile_complete') or not business_profile_complete):
+    need(business_profile_complete)
+  
+  # Step 1d (geographic scope) must complete after Step 1c
+  if business_profile_complete and (not defined('geographic_scope_complete') or not geographic_scope_complete):
+    need(geographic_scope_complete)
 ---
