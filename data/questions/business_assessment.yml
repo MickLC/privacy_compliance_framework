@@ -1,4 +1,4 @@
-# modules/business_assessment.yml - Optimized Business Assessment Module
+# modules/business_assessment.yml - Business Assessment Module
 ---
 objects:
   - company: DAObject
@@ -6,54 +6,15 @@ objects:
 modules:
   - requests
   - threading
+  - json
+  - os
 ---
-# Business information introduction
-question: "Step 1: Business Information"
-subquestion: |
-  Let's start by gathering some basic information about your business.
-  
-  This information will help us:
-  - Determine which privacy laws apply to your organization
-  - Assess your compliance requirements
-  - Generate appropriate documentation
-  
-  The process will take approximately 10-15 minutes.
-
-continue button field: business_profile_complete
-continue button label: "Let's get started"
----
-# Step 1: Basic business information (no API dependency)
-question: "Step 1a: Basic Business Information"
-subquestion: |
-  Let's start with your basic business information while we prepare the industry classification options.
-fields:
-  - Company Name: company.name
-    required: True
-  - Number of Employees: company.employee_count
-    datatype: integer
-    required: True
-  - Annual Revenue (USD): company.annual_revenue
-    datatype: currency
-    required: True
-continue button field: basic_business_info_complete
----
-# Background loading of NAICS data
-code: |
-  # Initialize loading status if not already set
-  if not defined('naics_loading_status'):
-    naics_loading_status = "not_started"
-  
-  # Ensure naics_choices is always defined
-  if not defined('naics_choices'):
-    naics_choices = []
----
-# NAICS data processing functions (MUST be defined before being called)
+# ALL FUNCTION DEFINITIONS FIRST - This fixes the "function not defined" errors
 code: |
   import json
   import os
   from datetime import datetime, timedelta
----
-code: |  
+  
   def get_cached_naics_choices(cache_days=7):
     """Get NAICS choices from local cache if fresh"""
     cache_file = 'naics_choices_cache.json'
@@ -74,8 +35,7 @@ code: |
       log(f"Error reading NAICS cache: {e}")
     
     return None
----
-code: |
+  
   def cache_naics_choices(choices):
     """Cache NAICS choices locally"""
     cache_file = 'naics_choices_cache.json'
@@ -94,8 +54,7 @@ code: |
       
     except Exception as e:
       log(f"Error caching NAICS choices: {e}")
----
-code: |
+  
   def get_naics_choices_optimized():
     """Download the complete NAICS file (static dataset, not API)"""
     try:
@@ -106,14 +65,12 @@ code: |
         'User-Agent': 'Privacy-Compliance-Framework/1.0'
       }
       
-      log(f"Downloading from: https://api.sba.gov/naics/naics.json")
-      
       # Use reasonable timeout for 4MB file download
       response = requests.get(
         "https://api.sba.gov/naics/naics.json",
         headers=headers,
-        timeout=30,  # 30 seconds should be enough for 4MB
-        stream=False  # Don't stream since we need the whole file anyway
+        timeout=30,
+        stream=False
       )
       
       log(f"=== DOWNLOAD STATUS: {response.status_code}, SIZE: {len(response.content)} bytes ===")
@@ -160,8 +117,7 @@ code: |
     except Exception as e:
       log(f"=== ERROR DOWNLOADING NAICS FILE: {e} ===")
       return None
----
-code: |
+  
   def filter_naics_choices(search_term):
     """Filter NAICS choices based on search term"""
     if not search_term or len(search_term) < 2:
@@ -177,9 +133,8 @@ code: |
         filtered.append((code, description))
     
     # Limit results for performance
-    return filtered[:100]  # Show max 100 results
----
-code: |
+    return filtered[:100]
+  
   def get_enhanced_fallback_naics_choices():
     """Enhanced fallback with more comprehensive industry coverage"""
     log("Using enhanced fallback NAICS choices")
@@ -195,7 +150,6 @@ code: |
       ("541513", "541513: Computer Facilities Management Services"),
       ("541519", "541519: Other Computer Related Services"),
       ("518210", "518210: Data Processing, Hosting, and Related Services"),
-      ("541715", "541715: Research and Development in the Physical, Engineering, and Life Sciences"),
       
       # Professional Services
       ("541211", "541211: Offices of Certified Public Accountants"),
@@ -231,14 +185,9 @@ code: |
       ("522298", "522298: All Other Nondepository Credit Intermediation"),
       ("523110", "523110: Investment Banking and Securities Dealing"),
       ("523120", "523120: Securities Brokerage"),
-      ("523130", "523130: Commodity Contracts Dealing"),
-      ("523140", "523140: Commodity Contracts Brokerage"),
       ("523210", "523210: Securities and Commodity Exchanges"),
-      ("523910", "523910: Miscellaneous Intermediation"),
       ("523920", "523920: Portfolio Management"),
       ("523930", "523930: Investment Advice"),
-      ("523991", "523991: Trust, Fiduciary, and Custody Activities"),
-      ("523999", "523999: Miscellaneous Financial Investment Activities"),
       ("524113", "524113: Direct Life Insurance Carriers"),
       ("524114", "524114: Direct Health and Medical Insurance Carriers"),
       ("524126", "524126: Direct Property and Casualty Insurance Carriers"),
@@ -246,7 +195,6 @@ code: |
       
       # Retail
       ("441110", "441110: New Car Dealers"),
-      ("441120", "441120: Used Car Dealers"),
       ("442110", "442110: Furniture Stores"),
       ("443142", "443142: Electronics Stores"),
       ("444110", "444110: Home Centers"),
@@ -258,68 +206,36 @@ code: |
       ("452112", "452112: Discount Department Stores"),
       
       # Manufacturing
-      ("311111", "311111: Dog and Cat Food Manufacturing"),
-      ("311119", "311119: Other Animal Food Manufacturing"),
-      ("312111", "312111: Soft Drink Manufacturing"),
-      ("321113", "321113: Sawmills"),
       ("325412", "325412: Pharmaceutical Preparation Manufacturing"),
       ("334111", "334111: Electronic Computer Manufacturing"),
-      ("334220", "334220: Radio and Television Broadcasting and Wireless Communications Equipment Manufacturing"),
       ("336111", "336111: Automobile Manufacturing"),
       
       # Construction
       ("236115", "236115: New Single-Family Housing Construction (except For-Sale Builders)"),
-      ("236116", "236116: New Multifamily Housing Construction (except For-Sale Builders)"),
-      ("236117", "236117: New Housing For-Sale Builders"),
-      ("236118", "236118: Residential Remodelers"),
-      ("236210", "236210: Industrial Building Construction"),
       ("236220", "236220: Commercial and Institutional Building Construction"),
       ("238110", "238110: Poured Concrete Foundation and Structure Contractors"),
-      ("238120", "238120: Structural Steel and Precast Concrete Contractors"),
-      ("238130", "238130: Framing Contractors"),
-      ("238140", "238140: Masonry Contractors"),
-      ("238150", "238150: Glass and Glazing Contractors"),
-      ("238160", "238160: Roofing Contractors"),
-      ("238170", "238170: Siding Contractors"),
       ("238210", "238210: Electrical Contractors and Other Wiring Installation Contractors"),
       ("238220", "238220: Plumbing, Heating, and Air-Conditioning Contractors"),
       
       # Real Estate
       ("531110", "531110: Lessors of Residential Buildings and Dwellings"),
-      ("531120", "531120: Lessors of Nonresidential Buildings (except Miniwarehouses)"),
       ("531210", "531210: Offices of Real Estate Agents and Brokers"),
       ("531311", "531311: Residential Property Managers"),
-      ("531312", "531312: Nonresidential Property Managers"),
-      ("531320", "531320: Offices of Real Estate Appraisers"),
-      ("531390", "531390: Other Activities Related to Real Estate"),
       
       # Education
       ("611110", "611110: Elementary and Secondary Schools"),
-      ("611210", "611210: Junior Colleges"),
       ("611310", "611310: Colleges, Universities, and Professional Schools"),
       ("611420", "611420: Computer Training"),
-      ("611430", "611430: Professional and Management Development Training"),
-      ("611511", "611511: Cosmetology and Barber Schools"),
-      ("611512", "611512: Flight Training"),
-      ("611513", "611513: Apprenticeship Training"),
-      ("611519", "611519: Other Technical and Trade Schools"),
-      ("611610", "611610: Fine Arts Schools"),
       ("611691", "611691: Exam Preparation and Tutoring"),
-      ("611692", "611692: Automobile Driving Schools"),
-      ("611699", "611699: All Other Miscellaneous Schools and Instruction"),
       
       # Food Service
       ("722511", "722511: Full-Service Restaurants"),
       ("722513", "722513: Limited-Service Restaurants"),
-      ("722514", "722514: Cafeterias, Grill Buffets, and Buffets"),
-      ("722515", "722515: Snack and Nonalcoholic Beverage Bars"),
       
-      # Other Common Industries
-      ("541990", "541990: All Other Professional, Scientific, and Technical Services"),
+      # Other
       ("999999", "999999: Other - Please specify in additional information")
     ]
----
-code: |
+  
   def get_industry_from_naics(naics_code):
     """Derive broad industry category from NAICS code"""
     if not naics_code or len(str(naics_code)) < 2:
@@ -335,148 +251,110 @@ code: |
       sector = naics_str[:2]
       
       naics_to_industry = {
-        "62": "Healthcare",  # Health Care and Social Assistance
-        "52": "Financial Services",  # Finance and Insurance
-        "51": "Technology",  # Information
-        "54": "Professional Services",  # Professional, Scientific, and Technical Services
-        "44": "Retail",  # Retail Trade
-        "45": "Retail",  # Retail Trade
-        "61": "Education",  # Educational Services
-        "31": "Manufacturing",  # Manufacturing
-        "32": "Manufacturing",  # Manufacturing  
-        "33": "Manufacturing",  # Manufacturing
-        "23": "Construction",  # Construction
-        "53": "Real Estate",  # Real Estate and Rental and Leasing
-        "72": "Food Service",  # Accommodation and Food Services
+        "62": "Healthcare",
+        "52": "Financial Services",
+        "51": "Technology",
+        "54": "Professional Services",
+        "44": "Retail",
+        "45": "Retail",
+        "61": "Education",
+        "31": "Manufacturing",
+        "32": "Manufacturing",
+        "33": "Manufacturing",
+        "23": "Construction",
+        "53": "Real Estate",
+        "72": "Food Service",
       }
       
       return naics_to_industry.get(sector, "Other")
     
     return "Other"
+  
+  def load_naics_data_async():
+    """Load NAICS data in background with comprehensive error handling"""
+    global naics_loading_status, naics_choices, naics_load_error
+    
+    naics_loading_status = "loading"
+    naics_load_error = None
+    
+    try:
+      log("Starting NAICS data load...")
+      
+      # Try to get from cache first (cache for 7 days since it's a static file)
+      cached_choices = get_cached_naics_choices(cache_days=7)
+      if cached_choices:
+        naics_choices = cached_choices
+        naics_loading_status = "complete"
+        log(f"Loaded {len(naics_choices)} NAICS codes from cache")
+        return
+      
+      # Only download the large file if cache is empty/expired
+      log("Cache miss - attempting to download NAICS file...")
+      api_choices = get_naics_choices_optimized()
+      
+      if api_choices and len(api_choices) > 100:
+        naics_choices = api_choices
+        cache_naics_choices(api_choices)
+        naics_loading_status = "complete"
+        log(f"Downloaded and cached {len(naics_choices)} NAICS codes")
+      else:
+        # Fallback to static choices
+        naics_choices = get_enhanced_fallback_naics_choices()
+        naics_loading_status = "fallback"
+        log(f"Using fallback NAICS choices ({len(naics_choices)} codes)")
+        
+    except Exception as e:
+      log(f"Error loading NAICS data: {e}")
+      naics_choices = get_enhanced_fallback_naics_choices()
+      naics_loading_status = "error"
+      naics_load_error = str(e)
 ---
+# Initialize variables - This prevents undefined variable errors
 code: |
-  def load_naics_data_async():
-    """Load NAICS data in background with comprehensive error handling"""
-    global naics_loading_status, naics_choices, naics_load_error
-    
-    naics_loading_status = "loading"
-    naics_load_error = None
-    
-    try:
-      log("Starting NAICS data load...")
-      
-      # Try to get from cache first (cache for 7 days since it's a static file)
-      cached_choices = get_cached_naics_choices(cache_days=7)
-      if cached_choices:
-        naics_choices = cached_choices
-        naics_loading_status = "complete"
-        log(f"Loaded {len(naics_choices)} NAICS codes from cache")
-        return
-      
-      # Only download the large file if cache is empty/expired
-      log("Cache miss - attempting to download NAICS file...")
-      api_choices = get_naics_choices_optimized()
-      
-      if api_choices and len(api_choices) > 100:
-        naics_choices = api_choices
-        cache_naics_choices(api_choices)
-        naics_loading_status = "complete"
-        log(f"Downloaded and cached {len(naics_choices)} NAICS codes")
-      else:
-        # Fallback to static choices
-        naics_choices = get_enhanced_fallback_naics_choices()
-        naics_loading_status = "fallback"
-        log(f"Using fallback NAICS choices ({len(naics_choices)} codes)")
-        
-    except Exception as e:
-      log(f"Error loading NAICS data: {e}")
-      naics_choices = get_enhanced_fallback_naics_choices()
-      naics_loading_status = "error"
-      naics_load_error = str(e)
-
+  # Initialize loading status if not already set
+  if not defined('naics_loading_status'):
+    naics_loading_status = "not_started"
+  
+  # Ensure naics_choices is always defined
+  if not defined('naics_choices'):
+    naics_choices = get_enhanced_fallback_naics_choices()
+  
   # Trigger background loading when basic info is complete
-  if basic_business_info_complete and not defined('naics_loading_triggered'):
+  if defined('basic_business_info_complete') and basic_business_info_complete and not defined('naics_loading_triggered'):
     log("=== TRIGGERING NAICS DATA LOAD ===")
     load_naics_data_async()
     naics_loading_triggered = True
-    log(f"=== NAICS LOAD COMPLETE. Status: {naics_loading_status}, Choices count: {len(naics_choices) if defined('naics_choices') else 'undefined'} ===")
-    if not naics_code or len(str(naics_code)) < 2:
-      return "Other"
-    
-    # Convert to string and extract just the code if it's in "code: description" format
-    naics_str = str(naics_code)
-    if ':' in naics_str:
-      naics_str = naics_str.split(':')[0].strip()
-    
-    # Map NAICS sectors to broad industry categories
-    if len(naics_str) >= 2:
-      sector = naics_str[:2]
-      
-      naics_to_industry = {
-        "62": "Healthcare",  # Health Care and Social Assistance
-        "52": "Financial Services",  # Finance and Insurance
-        "51": "Technology",  # Information
-        "54": "Professional Services",  # Professional, Scientific, and Technical Services
-        "44": "Retail",  # Retail Trade
-        "45": "Retail",  # Retail Trade
-        "61": "Education",  # Educational Services
-        "31": "Manufacturing",  # Manufacturing
-        "32": "Manufacturing",  # Manufacturing  
-        "33": "Manufacturing",  # Manufacturing
-        "23": "Construction",  # Construction
-        "53": "Real Estate",  # Real Estate and Rental and Leasing
-        "72": "Food Service",  # Accommodation and Food Services
-      }
-      
-      return naics_to_industry.get(sector, "Other")
-    
-    return "Other"
+    log(f"=== NAICS LOAD COMPLETE. Status: {naics_loading_status}, Choices count: {len(naics_choices)} ===")
+---
+# Business information introduction
+question: "Step 1: Business Information"
+subquestion: |
+  Let's start by gathering some basic information about your business.
+  
+  This information will help us:
+  - Determine which privacy laws apply to your organization
+  - Assess your compliance requirements
+  - Generate appropriate documentation
+  
+  The process will take approximately 10-15 minutes.
 
-  def load_naics_data_async():
-    """Load NAICS data in background with comprehensive error handling"""
-    global naics_loading_status, naics_choices, naics_load_error
-    
-    naics_loading_status = "loading"
-    naics_load_error = None
-    
-    try:
-      log("Starting NAICS data load...")
-      
-      # Try to get from cache first (cache for 7 days since it's a static file)
-      cached_choices = get_cached_naics_choices(cache_days=7)
-      if cached_choices:
-        naics_choices = cached_choices
-        naics_loading_status = "complete"
-        log(f"Loaded {len(naics_choices)} NAICS codes from cache")
-        return
-      
-      # Only download the large file if cache is empty/expired
-      log("Cache miss - attempting to download NAICS file...")
-      api_choices = get_naics_choices_optimized()
-      
-      if api_choices and len(api_choices) > 100:
-        naics_choices = api_choices
-        cache_naics_choices(api_choices)
-        naics_loading_status = "complete"
-        log(f"Downloaded and cached {len(naics_choices)} NAICS codes")
-      else:
-        # Fallback to static choices
-        naics_choices = get_enhanced_fallback_naics_choices()
-        naics_loading_status = "fallback"
-        log(f"Using fallback NAICS choices ({len(naics_choices)} codes)")
-        
-    except Exception as e:
-      log(f"Error loading NAICS data: {e}")
-      naics_choices = get_enhanced_fallback_naics_choices()
-      naics_loading_status = "error"
-      naics_load_error = str(e)
-
-  # Trigger background loading when basic info is complete
-  if basic_business_info_complete and not defined('naics_loading_triggered'):
-    log("=== TRIGGERING NAICS DATA LOAD ===")
-    load_naics_data_async()
-    naics_loading_triggered = True
-    log(f"=== NAICS LOAD COMPLETE. Status: {naics_loading_status}, Choices count: {len(naics_choices) if defined('naics_choices') else 'undefined'} ===")
+continue button field: business_profile_complete
+continue button label: "Let's get started"
+---
+# Step 1: Basic business information (no API dependency)
+question: "Step 1a: Basic Business Information"
+subquestion: |
+  Let's start with your basic business information while we prepare the industry classification options.
+fields:
+  - Company Name: company.name
+    required: True
+  - Number of Employees: company.employee_count
+    datatype: integer
+    required: True
+  - Annual Revenue (USD): company.annual_revenue
+    datatype: currency
+    required: True
+continue button field: basic_business_info_complete
 ---
 # Loading screen with progress indication
 question: "Preparing Industry Classifications..."
@@ -514,10 +392,9 @@ continue button label: |
   % else:
   Continue
   % endif
-show if: basic_business_info_complete
 ---
 # Enhanced NAICS selection with search capabilities
-question: "Step 1b: Industry Classification"
+question: "Step 1b: Industry Classification" 
 subquestion: |
   % if naics_loading_status == "complete":
   Select your primary business activity from the current SBA NAICS codes:
@@ -548,15 +425,14 @@ fields:
       % endif
 
 continue button field: naics_selection_complete
-show if: naics_loading_status != "loading"
 ---
 # Set industry and format display values AFTER NAICS selection
 code: |
   # Set industry based on NAICS selection
-  if naics_selection_complete and defined('company.naics_code') and company.naics_code:
+  if defined('naics_selection_complete') and naics_selection_complete and defined('company.naics_code') and company.naics_code:
     company.industry = get_industry_from_naics(company.naics_code)
     
-    # Now format the display values AFTER we know NAICS is set
+    # Format the display values
     naics_str = str(company.naics_code).strip()
     if ':' in naics_str:
       company_naics_display = naics_str.split(':')[0].strip()
@@ -576,124 +452,6 @@ code: |
     company_revenue_display = "${:,.0f}".format(float(company.annual_revenue))
   else:
     company_revenue_display = "Not specified"
----
-      ("523920", "523920: Portfolio Management"),
-      ("523930", "523930: Investment Advice"),
-      ("523991", "523991: Trust, Fiduciary, and Custody Activities"),
-      ("523999", "523999: Miscellaneous Financial Investment Activities"),
-      ("524113", "524113: Direct Life Insurance Carriers"),
-      ("524114", "524114: Direct Health and Medical Insurance Carriers"),
-      ("524126", "524126: Direct Property and Casualty Insurance Carriers"),
-      ("524210", "524210: Insurance Agencies and Brokerages"),
-      
-      # Retail
-      ("441110", "441110: New Car Dealers"),
-      ("441120", "441120: Used Car Dealers"),
-      ("442110", "442110: Furniture Stores"),
-      ("443142", "443142: Electronics Stores"),
-      ("444110", "444110: Home Centers"),
-      ("445110", "445110: Supermarkets and Other Grocery (except Convenience) Stores"),
-      ("446110", "446110: Pharmacies and Drug Stores"),
-      ("448110", "448110: Men's Clothing Stores"),
-      ("448120", "448120: Women's Clothing Stores"),
-      ("451110", "451110: Sporting Goods Stores"),
-      ("452112", "452112: Discount Department Stores"),
-      
-      # Manufacturing
-      ("311111", "311111: Dog and Cat Food Manufacturing"),
-      ("311119", "311119: Other Animal Food Manufacturing"),
-      ("312111", "312111: Soft Drink Manufacturing"),
-      ("321113", "321113: Sawmills"),
-      ("325412", "325412: Pharmaceutical Preparation Manufacturing"),
-      ("334111", "334111: Electronic Computer Manufacturing"),
-      ("334220", "334220: Radio and Television Broadcasting and Wireless Communications Equipment Manufacturing"),
-      ("336111", "336111: Automobile Manufacturing"),
-      
-      # Construction
-      ("236115", "236115: New Single-Family Housing Construction (except For-Sale Builders)"),
-      ("236116", "236116: New Multifamily Housing Construction (except For-Sale Builders)"),
-      ("236117", "236117: New Housing For-Sale Builders"),
-      ("236118", "236118: Residential Remodelers"),
-      ("236210", "236210: Industrial Building Construction"),
-      ("236220", "236220: Commercial and Institutional Building Construction"),
-      ("238110", "238110: Poured Concrete Foundation and Structure Contractors"),
-      ("238120", "238120: Structural Steel and Precast Concrete Contractors"),
-      ("238130", "238130: Framing Contractors"),
-      ("238140", "238140: Masonry Contractors"),
-      ("238150", "238150: Glass and Glazing Contractors"),
-      ("238160", "238160: Roofing Contractors"),
-      ("238170", "238170: Siding Contractors"),
-      ("238210", "238210: Electrical Contractors and Other Wiring Installation Contractors"),
-      ("238220", "238220: Plumbing, Heating, and Air-Conditioning Contractors"),
-      
-      # Real Estate
-      ("531110", "531110: Lessors of Residential Buildings and Dwellings"),
-      ("531120", "531120: Lessors of Nonresidential Buildings (except Miniwarehouses)"),
-      ("531210", "531210: Offices of Real Estate Agents and Brokers"),
-      ("531311", "531311: Residential Property Managers"),
-      ("531312", "531312: Nonresidential Property Managers"),
-      ("531320", "531320: Offices of Real Estate Appraisers"),
-      ("531390", "531390: Other Activities Related to Real Estate"),
-      
-      # Education
-      ("611110", "611110: Elementary and Secondary Schools"),
-      ("611210", "611210: Junior Colleges"),
-      ("611310", "611310: Colleges, Universities, and Professional Schools"),
-      ("611420", "611420: Computer Training"),
-      ("611430", "611430: Professional and Management Development Training"),
-      ("611511", "611511: Cosmetology and Barber Schools"),
-      ("611512", "611512: Flight Training"),
-      ("611513", "611513: Apprenticeship Training"),
-      ("611519", "611519: Other Technical and Trade Schools"),
-      ("611610", "611610: Fine Arts Schools"),
-      ("611691", "611691: Exam Preparation and Tutoring"),
-      ("611692", "611692: Automobile Driving Schools"),
-      ("611699", "611699: All Other Miscellaneous Schools and Instruction"),
-      
-      # Food Service
-      ("722511", "722511: Full-Service Restaurants"),
-      ("722513", "722513: Limited-Service Restaurants"),
-      ("722514", "722514: Cafeterias, Grill Buffets, and Buffets"),
-      ("722515", "722515: Snack and Nonalcoholic Beverage Bars"),
-      
-      # Other Common Industries
-      ("541990", "541990: All Other Professional, Scientific, and Technical Services"),
-      ("999999", "999999: Other - Please specify in additional information")
-    ]
-  
-  def get_industry_from_naics(naics_code):
-    """Derive broad industry category from NAICS code"""
-    if not naics_code or len(str(naics_code)) < 2:
-      return "Other"
-    
-    # Convert to string and extract just the code if it's in "code: description" format
-    naics_str = str(naics_code)
-    if ':' in naics_str:
-      naics_str = naics_str.split(':')[0].strip()
-    
-    # Map NAICS sectors to broad industry categories
-    if len(naics_str) >= 2:
-      sector = naics_str[:2]
-      
-      naics_to_industry = {
-        "62": "Healthcare",  # Health Care and Social Assistance
-        "52": "Financial Services",  # Finance and Insurance
-        "51": "Technology",  # Information
-        "54": "Professional Services",  # Professional, Scientific, and Technical Services
-        "44": "Retail",  # Retail Trade
-        "45": "Retail",  # Retail Trade
-        "61": "Education",  # Educational Services
-        "31": "Manufacturing",  # Manufacturing
-        "32": "Manufacturing",  # Manufacturing  
-        "33": "Manufacturing",  # Manufacturing
-        "23": "Construction",  # Construction
-        "53": "Real Estate",  # Real Estate and Rental and Leasing
-        "72": "Food Service",  # Accommodation and Food Services
-      }
-      
-      return naics_to_industry.get(sector, "Other")
-    
-    return "Other"
 ---
 # Industry confirmation and additional fields
 question: Business Profile Complete
@@ -718,4 +476,137 @@ fields:
       Any additional information about your business activities that might affect privacy compliance requirements.
 
 continue button field: show_business_information_intro
+---
+# Geographic and operational scope questions
+question: Geographic and Operational Scope
+subquestion: |
+  Now let's determine your geographic and operational scope to identify applicable privacy laws.
+
+fields:
+  - "Does your business have a website?": business_has_website
+    datatype: yesnowide
+  - "Does your business have physical locations where customers visit?": business_has_physical_location
+    datatype: yesnowide
+  - "In which states/provinces do you have business locations?": states_with_locations
+    datatype: checkboxes
+    choices:
+      - Alabama
+      - Alaska
+      - Arizona
+      - Arkansas
+      - California
+      - Colorado
+      - Connecticut
+      - Delaware
+      - Florida
+      - Georgia
+      - Hawaii
+      - Idaho
+      - Illinois
+      - Indiana
+      - Iowa
+      - Kansas
+      - Kentucky
+      - Louisiana
+      - Maine
+      - Maryland
+      - Massachusetts
+      - Michigan
+      - Minnesota
+      - Mississippi
+      - Missouri
+      - Montana
+      - Nebraska
+      - Nevada
+      - New Hampshire
+      - New Jersey
+      - New Mexico
+      - New York
+      - North Carolina
+      - North Dakota
+      - Ohio
+      - Oklahoma
+      - Oregon
+      - Pennsylvania
+      - Rhode Island
+      - South Carolina
+      - South Dakota
+      - Tennessee
+      - Texas
+      - Utah
+      - Vermont
+      - Virginia
+      - Washington
+      - West Virginia
+      - Wisconsin
+      - Wyoming
+    none of the above: False
+  - "Do you serve customers or clients in the European Union?": serves_eu
+    datatype: yesnowide
+  - "Do you have an establishment (office, subsidiary, etc.) in the EU?": has_eu_establishment
+    datatype: yesnowide
+  - "Approximately how many California residents' personal information do you process annually?": california_records
+    datatype: integer
+    help: Include customers, employees, vendors, etc.
+  - "Approximately how many Texas residents' personal information do you process annually?": texas_records
+    datatype: integer
+    help: Include customers, employees, vendors, etc.
+  - "Do you sell personal information to third parties?": sells_personal_info
+    datatype: yesnowide
+    help: This includes sharing for advertising, marketing lists, or other commercial purposes
+continue button field: geographic_scope_complete
+---
+# Healthcare-specific questions (conditional)
+question: Healthcare Industry Questions
+subquestion: |
+  Since you're in the healthcare industry, we need to assess HIPAA applicability.
+fields:
+  - "Are you a HIPAA covered entity (healthcare provider, health plan, or healthcare clearinghouse)?": is_hipaa_covered_entity
+    datatype: yesnowide
+    help: Covered entities are directly regulated by HIPAA
+  - "Are you a business associate of a HIPAA covered entity?": is_hipaa_business_associate
+    datatype: yesnowide
+    help: Business associates provide services to covered entities and handle PHI
+  - "Do you process protected health information (PHI)?": processes_phi
+    datatype: yesnowide
+    help: PHI includes individually identifiable health information
+continue button field: healthcare_questions_complete
+---
+# Financial services questions (conditional)
+question: Financial Services Industry Questions
+subquestion: |
+  Since you're in the financial services industry, we need to assess GLBA applicability.
+fields:
+  - "Are you a financial institution as defined by GLBA?": is_glba_financial_institution
+    datatype: yesnowide
+    help: Banks, credit unions, securities firms, insurance companies, etc.
+  - "Do you provide financial products or services to consumers?": provides_financial_products
+    datatype: yesnowide
+    help: Loans, investments, insurance, financial advice, etc.
+  - "Do you collect nonpublic personal information from customers?": collects_npi
+    datatype: yesnowide
+    help: Information not publicly available, such as account numbers, income, credit history
+continue button field: financial_questions_complete
+---
+# Conditional logic for industry-specific questions
+code: |
+  # Healthcare questions only if healthcare industry
+  if company.industry == "Healthcare":
+    healthcare_questions_complete
+  else:
+    healthcare_questions_complete = True
+    # Set default values for healthcare variables
+    is_hipaa_covered_entity = False
+    is_hipaa_business_associate = False
+    processes_phi = False
+  
+  # Financial services questions only if financial industry
+  if company.industry == "Financial Services":
+    financial_questions_complete
+  else:
+    financial_questions_complete = True
+    # Set default values for financial variables
+    is_glba_financial_institution = False
+    provides_financial_products = False
+    collects_npi = False
 ---
