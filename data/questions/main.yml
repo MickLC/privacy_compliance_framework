@@ -91,6 +91,7 @@ subquestion: |
   
   **Company**: ${ company.name }  
   **Industry**: ${ company.industry }  
+  **NAICS Code**: ${ company_naics_display }
   
   **Applicable Laws**: 
   % if applicable_jurisdictions:
@@ -119,6 +120,20 @@ subquestion: |
   % endif
   % if generate_remediation_plan and defined('remediation_plan_download_link'):
   [Download Remediation Plan](${ remediation_plan_download_link })
+  % endif
+  
+  ## Key Insights
+  
+  % if "tdpsa" in applicable_jurisdictions:
+  * **TDPSA Compliance**: Your business does not qualify for the small business exemption under SBA size standards for NAICS code ${ company_naics_display }.
+  % endif
+  
+  % if "hipaa" in applicable_jurisdictions:
+  * **HIPAA Compliance**: Your healthcare industry classification indicates HIPAA requirements may apply.
+  % endif
+  
+  % if "glba" in applicable_jurisdictions:
+  * **GLBA Compliance**: Your financial services classification indicates GLBA requirements may apply.
   % endif
   
   ## Next Steps

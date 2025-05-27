@@ -55,30 +55,30 @@ code: |
             "requirements_file": "tdpsa_requirements.json",
             "applicability_function": "is_tdpsa_applicable"
           },
-        {
-          "id": "hipaa",
-          "name": "Health Insurance Portability and Accountability Act",
-          "short_name": "HIPAA",
-          "region": "United States",
-          "type": "sectoral",
-          "effective_date": "2003-04-14",
-          "latest_amendment": "2013-03-26",
-          "requirements_file": "hipaa_requirements.json",
-          "applicability_function": "is_hipaa_applicable"
-        },
-        {
-          "id": "glba",
-          "name": "Gramm-Leach-Bliley Act",
-          "short_name": "GLBA",
-          "region": "United States",
-          "type": "sectoral",
-          "effective_date": "1999-11-12",
-          "latest_amendment": "2022-10-27",
-          "requirements_file": "glba_requirements.json",
-          "applicability_function": "is_glba_applicable"
-        }
-      ]
-    }
+          {
+            "id": "hipaa",
+            "name": "Health Insurance Portability and Accountability Act",
+            "short_name": "HIPAA",
+            "region": "United States",
+            "type": "sectoral",
+            "effective_date": "2003-04-14",
+            "latest_amendment": "2013-03-26",
+            "requirements_file": "hipaa_requirements.json",
+            "applicability_function": "is_hipaa_applicable"
+          },
+          {
+            "id": "glba",
+            "name": "Gramm-Leach-Bliley Act",
+            "short_name": "GLBA",
+            "region": "United States",
+            "type": "sectoral",
+            "effective_date": "1999-11-12",
+            "latest_amendment": "2022-10-27",
+            "requirements_file": "glba_requirements.json",
+            "applicability_function": "is_glba_applicable"
+          }
+        ]
+      }
     
     return jurisdiction_registry
 ---
@@ -111,30 +111,65 @@ code: |
             ('California' in states_with_locations or california_records > 0))
   
   def is_tdpsa_applicable():
-    """Determine if Texas TDPSA applies"""
-    # Check if Texas small business exemption applies
-    is_small_business = company.employee_count < 100 and company.annual_revenue < 10000000
+    """Determine if Texas TDPSA applies - Enhanced with SBA size standards"""
+    # First check if business has Texas presence
+    has_texas_presence = ('Texas' in states_with_locations or texas_records > 0)
     
-    return (('Texas' in states_with_locations or texas_records > 0) and 
-            not is_small_business and 
-            (texas_records >= 100000 or 
-            (texas_records >= 25000 and sells_personal_info)))
+    if not has_texas_presence:
+      return False
+    
+    # Check data volume thresholds
+    meets_data_thresholds = (texas_records >= 100000 or 
+                            (texas_records >= 25000 and sells_personal_info))
+    
+    if not meets_data_thresholds:
+      return False
+    
+    # Check if business qualifies as small business (exempt from TDPSA)
+    if (defined('company.naics_code') and defined('company.employee_count') and 
+        defined('company.annual_revenue')):
+      
+      is_small_business = is_small_business_under_tdpsa(
+        company.naics_code, 
+        company.employee_count, 
+        company.annual_revenue
+      )
+      
+      # TDPSA applies if NOT a small business
+      return not is_small_business
+    else:
+      # Fallback to simple check if NAICS data not available
+      is_small_business = company.employee_count < 100 and company.annual_revenue < 10000000
+      return not is_small_business
   
   def is_hipaa_applicable():
-    """Determine if HIPAA applies"""
-    # Only check if the company is in healthcare
-    if company.industry != "Healthcare":
-      return False
+    """Determine if HIPAA applies - Enhanced with NAICS code analysis"""
+    # First check NAICS code indication
+    naics_suggests_hipaa = False
+    if defined('company.naics_code') and company.naics_code:
+      naics_suggests_hipaa = is_hipaa_applicable_by_naics(company.naics_code)
     
-    return is_hipaa_covered_entity or is_hipaa_business_associate or processes_phi
+    # Combine NAICS indication with user responses
+    user_indicates_hipaa = (is_hipaa_covered_entity or 
+                           is_hipaa_business_associate or 
+                           processes_phi)
+    
+    # HIPAA applies if either NAICS suggests it OR user confirmed it
+    return naics_suggests_hipaa or user_indicates_hipaa
   
   def is_glba_applicable():
-    """Determine if GLBA applies"""
-    # Only check if the company is in financial services
-    if company.industry != "Financial Services":
-      return False
+    """Determine if GLBA applies - Enhanced with NAICS code analysis"""
+    # First check NAICS code indication
+    naics_suggests_glba = False
+    if defined('company.naics_code') and company.naics_code:
+      naics_suggests_glba = is_glba_applicable_by_naics(company.naics_code)
     
-    return is_glba_financial_institution or (provides_financial_products and collects_npi)
+    # Combine NAICS indication with user responses
+    user_indicates_glba = (is_glba_financial_institution or 
+                          (provides_financial_products and collects_npi))
+    
+    # GLBA applies if either NAICS suggests it OR user confirmed it
+    return naics_suggests_glba or user_indicates_glba
 ---
 code: |
   def load_requirements_for_jurisdictions():
@@ -276,9 +311,21 @@ subquestion: |
   % for jurisdiction_id in applicable_jurisdictions:
   * **${ next((j["name"] for j in jurisdiction_registry["jurisdictions"] if j["id"] == jurisdiction_id), jurisdiction_id) }**
   % endfor
+  
+  % if "tdpsa" in applicable_jurisdictions:
+  **Note**: TDPSA applicability was determined using SBA size standards for your NAICS code (${ company_naics_display }).
+  % endif
+  
+  % if "hipaa" in applicable_jurisdictions and defined('company.naics_code'):
+  **Note**: HIPAA applicability was indicated by your healthcare industry classification.
+  % endif
+  
+  % if "glba" in applicable_jurisdictions and defined('company.naics_code'):
+  **Note**: GLBA applicability was indicated by your financial services industry classification.
+  % endif
   % endif
   
   These laws will determine the requirements for your privacy documentation and practices.
 continue button field: applicable_law_continue
-continue button label: "Let's go"
+continue button label: "Continue to Current Practices Assessment"
 ---
