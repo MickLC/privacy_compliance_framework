@@ -40,6 +40,9 @@ code: |
   # Step 1: Business Assessment
   show_business_information_intro
   
+  # Step 1b: NAICS selection
+  naics_selection_complete
+
   # Step 2: Jurisdictional Analysis  
   applicable_jurisdictions = determine_applicable_jurisdictions()
   load_requirements_for_jurisdictions()
