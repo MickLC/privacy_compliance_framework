@@ -3,8 +3,8 @@
 objects:
   - company: DAObject
 ---
-objects from file:
-  - naics_data: naics.json
+code: |
+  naics_data= objects_from_file("naics.json")
 ---
 # NAICS Data Management System - Now using objects from file
 code: |
