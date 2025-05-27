@@ -31,6 +31,8 @@ code: |
   
   # Main interview flow
   show_intro_screen
+  basic_business_info_complete    # Step 1a
+  naics_selection_complete        # Step 1b - ADD THIS LINE
   show_business_information_intro
   
   # Determine applicable jurisdictions
