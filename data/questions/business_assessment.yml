@@ -467,7 +467,7 @@ subquestion: |
 continue button field: show_business_information_intro
 continue button label: "Let's get started"
 ---
-# Step 1: Basic business information (first screen)
+# Step 1a: Basic business information
 question: "Step 1a: Basic Business Information"
 subquestion: |
   Let's start with your basic business information.
@@ -482,7 +482,7 @@ fields:
     required: True
 continue button field: basic_business_info_complete
 ---
-# Enhanced NAICS selection with search capabilities
+# Step 1b: Enhanced NAICS selection with search capabilities
 question: "Step 1b: Industry Classification" 
 subquestion: |
   Select your primary business activity from the NAICS codes:
@@ -505,9 +505,9 @@ fields:
 
 continue button field: naics_selection_complete
 ---
-# Set industry and format display values AFTER NAICS selection
+# CRITICAL: Set industry and format display values AFTER NAICS selection
 code: |
-  # Set industry based on NAICS selection
+  # This code block runs after NAICS selection is complete
   if defined('naics_selection_complete') and naics_selection_complete and defined('company.naics_code') and company.naics_code:
     company.industry = get_industry_from_naics(company.naics_code)
     
@@ -532,8 +532,8 @@ code: |
   else:
     company_revenue_display = "Not specified"
 ---
-# Industry confirmation and additional fields
-question: Business Profile Summary
+# Step 1c: Business profile confirmation
+question: "Step 1c: Business Profile Summary"
 subquestion: |
   **Company**: ${ company.name }  
   **NAICS Code**: ${ company_naics_display }  
@@ -623,9 +623,11 @@ fields:
   - "Approximately how many California residents' personal information do you process annually?": california_records
     datatype: integer
     help: Include customers, employees, vendors, etc.
+    default: 0
   - "Approximately how many Texas residents' personal information do you process annually?": texas_records
     datatype: integer
     help: Include customers, employees, vendors, etc.
+    default: 0
   - "Do you sell personal information to third parties?": sells_personal_info
     datatype: yesnowide
     help: This includes sharing for advertising, marketing lists, or other commercial purposes

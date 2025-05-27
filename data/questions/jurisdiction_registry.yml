@@ -88,41 +88,85 @@ code: |
     global applicable_jurisdictions
     applicable_jurisdictions = []
     
+    log(f"=== JURISDICTION ANALYSIS DEBUG ===")
+    log(f"Company: {company.name}")
+    log(f"Revenue: ${company.annual_revenue:,.0f}")
+    log(f"Employees: {company.employee_count}")
+    log(f"States: {states_with_locations}")
+    log(f"California records: {california_records}")
+    log(f"Texas records: {texas_records}")
+    log(f"Serves EU: {serves_eu}")
+    log(f"EU establishment: {has_eu_establishment}")
+    log(f"Sells personal info: {sells_personal_info}")
+    
     # For each jurisdiction in the registry, check applicability
     for jurisdiction in jurisdiction_registry["jurisdictions"]:
       # Get the appropriate applicability function
       func_name = jurisdiction["applicability_function"]
       
       # Call the applicability function
-      if globals()[func_name]():
+      is_applicable = globals()[func_name]()
+      log(f"{jurisdiction['id'].upper()} applicable: {is_applicable}")
+      
+      if is_applicable:
         applicable_jurisdictions.append(jurisdiction["id"])
     
+    log(f"Final applicable jurisdictions: {applicable_jurisdictions}")
     return applicable_jurisdictions
   
   def is_gdpr_applicable():
     """Determine if GDPR applies"""
+    # GDPR applies if:
+    # 1. You serve EU customers/clients, OR
+    # 2. You have an EU establishment
     return serves_eu or has_eu_establishment
   
   def is_ccpa_applicable():
-    """Determine if CCPA/CPRA applies"""
-    return ((company.annual_revenue >= 25000000 or 
-             california_records >= 100000 or
-             (california_records >= 50000 and sells_personal_info)) and
-            ('California' in states_with_locations or california_records > 0))
+    """Determine if CCPA/CPRA applies - FIXED LOGIC"""
+    # Must have California presence first
+    has_california_presence = ('California' in states_with_locations or california_records > 0)
+    
+    if not has_california_presence:
+      log("CCPA: No California presence")
+      return False
+    
+    # CCPA applies if you meet ANY of these thresholds:
+    # 1. Annual revenue >= $25M, OR
+    # 2. Process >= 100,000 CA consumer records annually, OR  
+    # 3. Process >= 50,000 CA consumer records AND sell personal info
+    
+    revenue_threshold = company.annual_revenue >= 25000000
+    high_volume_threshold = california_records >= 100000
+    medium_volume_sale_threshold = (california_records >= 50000 and sells_personal_info)
+    
+    log(f"CCPA checks - Revenue ${company.annual_revenue:,.0f} >= $25M: {revenue_threshold}")
+    log(f"CCPA checks - CA records {california_records} >= 100K: {high_volume_threshold}")
+    log(f"CCPA checks - CA records {california_records} >= 50K AND sells info {sells_personal_info}: {medium_volume_sale_threshold}")
+    
+    return revenue_threshold or high_volume_threshold or medium_volume_sale_threshold
   
   def is_tdpsa_applicable():
-    """Determine if Texas TDPSA applies - Enhanced with SBA size standards"""
-    # First check if business has Texas presence
+    """Determine if Texas TDPSA applies - FIXED LOGIC"""
+    # Must have Texas presence first
     has_texas_presence = ('Texas' in states_with_locations or texas_records > 0)
     
     if not has_texas_presence:
+      log("TDPSA: No Texas presence")
       return False
     
-    # Check data volume thresholds
-    meets_data_thresholds = (texas_records >= 100000 or 
-                            (texas_records >= 25000 and sells_personal_info))
+    # TDPSA applies if you meet data volume thresholds AND are not a small business
+    # Data thresholds: >= 100,000 TX consumer records OR >= 25,000 TX records + sell personal info
+    high_volume_threshold = texas_records >= 100000
+    medium_volume_sale_threshold = (texas_records >= 25000 and sells_personal_info)
+    
+    meets_data_thresholds = high_volume_threshold or medium_volume_sale_threshold
+    
+    log(f"TDPSA checks - TX records {texas_records} >= 100K: {high_volume_threshold}")
+    log(f"TDPSA checks - TX records {texas_records} >= 25K AND sells info {sells_personal_info}: {medium_volume_sale_threshold}")
+    log(f"TDPSA data thresholds met: {meets_data_thresholds}")
     
     if not meets_data_thresholds:
+      log("TDPSA: Data thresholds not met")
       return False
     
     # Check if business qualifies as small business (exempt from TDPSA)
@@ -135,11 +179,14 @@ code: |
         company.annual_revenue
       )
       
+      log(f"TDPSA small business check: {is_small_business}")
+      
       # TDPSA applies if NOT a small business
       return not is_small_business
     else:
       # Fallback to simple check if NAICS data not available
       is_small_business = company.employee_count < 100 and company.annual_revenue < 10000000
+      log(f"TDPSA fallback small business check: {is_small_business}")
       return not is_small_business
   
   def is_hipaa_applicable():
@@ -154,6 +201,8 @@ code: |
                            is_hipaa_business_associate or 
                            processes_phi)
     
+    log(f"HIPAA - NAICS suggests: {naics_suggests_hipaa}, User indicates: {user_indicates_hipaa}")
+    
     # HIPAA applies if either NAICS suggests it OR user confirmed it
     return naics_suggests_hipaa or user_indicates_hipaa
   
@@ -167,6 +216,8 @@ code: |
     # Combine NAICS indication with user responses
     user_indicates_glba = (is_glba_financial_institution or 
                           (provides_financial_products and collects_npi))
+    
+    log(f"GLBA - NAICS suggests: {naics_suggests_glba}, User indicates: {user_indicates_glba}")
     
     # GLBA applies if either NAICS suggests it OR user confirmed it
     return naics_suggests_glba or user_indicates_glba
