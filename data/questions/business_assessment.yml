@@ -298,6 +298,24 @@ code: |
     
     return choices
   
+  def get_safe_naics_choices():
+    """Get NAICS choices with proper error handling and search filtering"""
+    try:
+      # Check if we have loaded NAICS choices
+      if defined('naics_choices') and len(naics_choices) > 0:
+        # Apply search filter if provided
+        if defined('naics_search_term') and naics_search_term:
+          return filter_naics_choices(naics_search_term, naics_choices)
+        else:
+          return naics_choices
+      else:
+        # Return emergency fallback choices
+        log("Using emergency fallback NAICS choices")
+        return emergency_naics_choices
+    except Exception as e:
+      log(f"Error in get_safe_naics_choices: {e}")
+      return emergency_naics_choices
+  
   def get_industry_from_naics(naics_code):
     """Determine broad industry category from NAICS code using sector info"""
     if not naics_code:
@@ -533,6 +551,16 @@ fields:
     required: True
 continue button field: basic_business_info_complete
 ---
+# Emergency fallback NAICS choices
+code: |
+  emergency_naics_choices = [
+    ('541110', '541110: Offices of Lawyers'),
+    ('541511', '541511: Custom Computer Programming Services'), 
+    ('621111', '621111: Offices of Physicians (except Mental Health)'),
+    ('522110', '522110: Commercial Banking'),
+    ('999999', '999999: Other - Please specify in description')
+  ]
+---
 # Step 1b: Enhanced NAICS selection with search capabilities and error handling
 question: "Step 1b: Industry Classification" 
 subquestion: |
@@ -555,21 +583,7 @@ fields:
     required: True
     datatype: combobox
     choices: 
-      code: |
-        if defined('naics_choices') and len(naics_choices) > 0:
-          if defined('naics_search_term') and naics_search_term:
-            filter_naics_choices(naics_search_term, naics_choices)
-          else:
-            naics_choices
-        else:
-          # Emergency fallback choices if system fails
-          [
-            ('541110', '541110: Offices of Lawyers'),
-            ('541511', '541511: Custom Computer Programming Services'), 
-            ('621111', '621111: Offices of Physicians (except Mental Health)'),
-            ('522110', '522110: Commercial Banking'),
-            ('999999', '999999: Other - Please specify in description')
-          ]
+      code: get_safe_naics_choices()
     help: |
       Select the NAICS code that best describes your primary business activity.
 
