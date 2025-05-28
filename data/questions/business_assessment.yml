@@ -7,55 +7,73 @@ objects:
 initial: True
 code: |
   import json
-  import os
   
   def load_naics_data():
     """Load NAICS data from JSON file"""
     try:
-      # Try to load from data/sources folder
+      # Try to load the file
       naics_file = path_and_mimetype('naics.json')[0]
       with open(naics_file, 'r') as f:
         naics_data = json.load(f)
-      log(f"Successfully loaded NAICS data from file: {len(naics_data)} codes")
+      
+      log(f"Successfully loaded NAICS file with {len(naics_data)} entries")
+      
+      # Verify the structure of first few entries
+      if len(naics_data) > 0:
+        first_entry = naics_data[0]
+        log(f"First entry keys: {list(first_entry.keys())}")
+        log(f"First entry ID: {first_entry.get('id')}")
+        log(f"First entry description: {first_entry.get('description')}")
+      
       return naics_data
+      
     except Exception as e:
       log(f"Error loading NAICS data: {e}")
       return []
   
-  # Load NAICS data once at startup
+  # Global variable to store NAICS data
   naics_data = load_naics_data()
 ---
 code: |
   def get_naics_choices_for_dropdown():
     """Convert NAICS data to dropdown choices format"""
+    log(f"Creating NAICS choices from {len(naics_data)} entries")
+    
+    choices = []
+    
     try:
-      choices = []
+      for item in naics_data:
+        if isinstance(item, dict) and 'id' in item and 'description' in item:
+          naics_code = str(item['id'])  # Ensure it's a string
+          description = str(item['description'])
+          
+          # Truncate long descriptions
+          if len(description) > 80:
+            description = description[:77] + "..."
+          
+          choice_text = f"{naics_code}: {description}"
+          choices.append((naics_code, choice_text))
       
-      if isinstance(naics_data, list):
-        for item in naics_data:
-          if isinstance(item, dict) and 'id' in item and 'description' in item:
-            naics_code = item['id']
-            description = item['description']
-            
-            # Truncate long descriptions
-            if len(description) > 100:
-              description = description[:97] + "..."
-            
-            choices.append((naics_code, f"{naics_code}: {description}"))
+      # Sort by NAICS code
+      choices.sort(key=lambda x: x[0])
       
-      # Sort by description
-      choices.sort(key=lambda x: x[1])
+      log(f"Created {len(choices)} NAICS choices")
       
-      log(f"Successfully created {len(choices)} NAICS choices")
-      return choices
-      
+      # If we have choices, return them
+      if len(choices) > 0:
+        return choices
+      else:
+        log("No choices created, falling back to default set")
+        return get_fallback_naics_choices()
+        
     except Exception as e:
-      log(f"Error processing NAICS data: {e}")
+      log(f"Error creating NAICS choices: {e}")
       return get_fallback_naics_choices()
   
   def get_fallback_naics_choices():
     """Fallback NAICS choices if file loading fails"""
     return [
+      ('111110', '111110: Soybean Farming'),
       ('541110', '541110: Offices of Lawyers'),
       ('541511', '541511: Custom Computer Programming Services'),
       ('541512', '541512: Computer Systems Design Services'),
@@ -82,7 +100,7 @@ code: |
     try:
       # Find the NAICS entry in our data
       for item in naics_data:
-        if isinstance(item, dict) and item.get('id') == naics_code:
+        if isinstance(item, dict) and str(item.get('id')) == str(naics_code):
           sector_desc = item.get('sectorDescription', '')
           
           # Map sector descriptions to simplified categories
@@ -114,7 +132,7 @@ code: |
     except Exception as e:
       log(f"Error getting industry from NAICS: {e}")
     
-    # Fallback to sector-based mapping
+    # Fallback to sector-based mapping using first 2 digits
     sector = str(naics_code)[:2] if len(str(naics_code)) >= 2 else ""
     fallback_mapping = {
       '11': 'Agriculture', '21': 'Mining', '22': 'Utilities', '23': 'Construction',
@@ -139,7 +157,7 @@ code: |
       # Find the NAICS entry
       naics_info = None
       for item in naics_data:
-        if isinstance(item, dict) and item.get('id') == naics_code:
+        if isinstance(item, dict) and str(item.get('id')) == str(naics_code):
           naics_info = item
           break
       
@@ -148,15 +166,15 @@ code: |
         # TDPSA general small business exemption: < 100 employees AND < $10M revenue
         return employee_count < 100 and annual_revenue < 10000000
       
-      # Get SBA size standards
+      # Get SBA size standards from the JSON
       employee_limit = naics_info.get('employeeCountLimit')
       revenue_limit = naics_info.get('revenueLimit')
       
-      # Convert revenue limit from millions to actual dollars if needed
-      if revenue_limit and revenue_limit < 1000:  # Assuming values under 1000 are in millions
+      # Convert revenue limit from millions to actual dollars
+      if revenue_limit and revenue_limit < 1000:  # Values are in millions
         revenue_limit = revenue_limit * 1000000
       
-      # SBA considers you small if you're UNDER the limit
+      # SBA considers you small if you're AT OR UNDER the limit
       sba_qualifies_as_small = True
       
       if employee_limit:
