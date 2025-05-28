@@ -3,122 +3,21 @@
 objects:
   - company: DAObject
 ---
-# Load NAICS data from JSON file with comprehensive debugging
-initial: True
-code: |
-  import json
-  
-  def load_naics_data():
-    """Load NAICS data from JSON file with comprehensive debugging"""
-    log("=== STARTING NAICS DATA LOADING ===")
-    
-    try:
-      # Try to load the file
-      log("Attempting to load naics.json using path_and_mimetype...")
-      naics_file = path_and_mimetype('naics.json')[0]
-      log(f"File path resolved to: {naics_file}")
-      
-      with open(naics_file, 'r') as f:
-        file_content = f.read()
-        
-      log(f"File content length: {len(file_content)} characters")
-      log(f"First 500 characters: {file_content[:500]}")
-      
-      naics_data = json.loads(file_content)
-      log(f"JSON parsed successfully. Type: {type(naics_data)}")
-      log(f"Data length: {len(naics_data) if hasattr(naics_data, '__len__') else 'No length attribute'}")
-      
-      if isinstance(naics_data, list) and len(naics_data) > 0:
-        log(f"First entry: {naics_data[0]}")
-        log(f"First entry type: {type(naics_data[0])}")
-        if isinstance(naics_data[0], dict):
-          log(f"First entry keys: {list(naics_data[0].keys())}")
-          log(f"First entry 'id': {naics_data[0].get('id')}")
-          log(f"First entry 'description': {naics_data[0].get('description')}")
-      
-      log(f"=== NAICS DATA LOADING SUCCESSFUL: {len(naics_data)} entries ===")
-      return naics_data
-      
-    except Exception as e:
-      log(f"=== ERROR LOADING NAICS DATA: {e} ===")
-      import traceback
-      log(f"Traceback: {traceback.format_exc()}")
-      return []
-  
-  # Global variable to store NAICS data
-  naics_data = load_naics_data()
-  log(f"Global naics_data set to: {type(naics_data)} with length {len(naics_data) if hasattr(naics_data, '__len__') else 'No length'}")
----
 code: |
   def get_naics_choices_for_dropdown():
-    """Load NAICS data trying multiple file locations"""
-    log("=== STARTING NAICS CHOICES CREATION WITH MULTI-PATH LOADING ===")
-    
+    """Load NAICS data and convert to dropdown choices format"""
     import json
-    import os
     
-    # Try multiple locations for the naics.json file
-    file_locations = [
-      # Standard sources location
-      ('path_and_mimetype', lambda: path_and_mimetype('naics.json')[0]),
-      # Try data/sources specifically
-      ('sources path', lambda: path_and_mimetype('data/sources/naics.json')[0]),
-      # Try static filename
-      ('static_filename', lambda: static_filename('naics.json')),
-      # Try current directory variations
-      ('direct path', lambda: './naics.json'),
-      ('absolute sources', lambda: '/usr/share/docassemble/files/playgroundstatic/3/PrivacyDocumentFramework/data/sources/naics.json'),
-    ]
-    
-    naics_data = None
-    successful_method = None
-    
-    for method_name, path_func in file_locations:
-      try:
-        log(f"Trying method: {method_name}")
-        file_path = path_func()
-        log(f"File path: {file_path}")
-        
-        # Check if file exists
-        if os.path.exists(file_path):
-          log(f"File exists at: {file_path}")
-          
-          with open(file_path, 'r') as f:
-            file_content = f.read()
-            
-          log(f"File content length: {len(file_content)} characters")
-          
-          if len(file_content) > 0:
-            log(f"First 200 characters: {file_content[:200]}")
-            
-            naics_data = json.loads(file_content)
-            log(f"JSON parsed successfully. Type: {type(naics_data)}, Length: {len(naics_data)}")
-            
-            if len(naics_data) > 0:
-              successful_method = method_name
-              log(f"Successfully loaded {len(naics_data)} entries using {method_name}")
-              break
-            else:
-              log(f"File loaded but contains no data using {method_name}")
-          else:
-            log(f"File is empty using {method_name}")
-        else:
-          log(f"File does not exist at: {file_path}")
-          
-      except Exception as e:
-        log(f"Method {method_name} failed: {e}")
-    
-    # If we couldn't load any data, use fallback
-    if not naics_data or len(naics_data) == 0:
-      log("All file loading methods failed - using fallback choices")
-      return get_fallback_naics_choices()
-    
-    # Process the loaded data into choices
     try:
-      log(f"Processing {len(naics_data)} entries into choices...")
+      # Load from sources folder
+      naics_file = path_and_mimetype('data/sources/naics.json')[0]
       
+      with open(naics_file, 'r') as f:
+        naics_data = json.load(f)
+      
+      # Process the data into choices
       choices = []
-      for i, item in enumerate(naics_data):
+      for item in naics_data:
         if isinstance(item, dict) and 'id' in item and 'description' in item:
           naics_code = str(item['id'])
           description = str(item['description'])
@@ -129,23 +28,17 @@ code: |
           
           choice_text = f"{naics_code}: {description}"
           choices.append((naics_code, choice_text))
-          
-          if i < 3:  # Log first 3 for verification
-            log(f"Choice {i}: {choice_text}")
       
       # Sort by NAICS code
       choices.sort(key=lambda x: x[0])
       
-      log(f"Successfully created {len(choices)} NAICS choices using {successful_method}")
-      return choices
+      return choices if len(choices) > 0 else get_fallback_naics_choices()
       
-    except Exception as e:
-      log(f"Error processing NAICS data: {e}")
+    except Exception:
       return get_fallback_naics_choices()
   
   def get_fallback_naics_choices():
     """Fallback NAICS choices if file loading fails"""
-    log("Using fallback NAICS choices")
     return [
       ('111110', '111110: Soybean Farming'),
       ('541110', '541110: Offices of Lawyers'),
@@ -161,8 +54,6 @@ code: |
       ('722511', '722511: Full-Service Restaurants'),
       ('999999', '999999: Other - Please specify in additional information')
     ]
-    log(f"Returning {len(fallback_choices)} fallback choices")
-    return fallback_choices
   
   def get_industry_from_naics(naics_code):
     """Determine broad industry category from NAICS code"""
@@ -174,7 +65,13 @@ code: |
       naics_code = str(naics_code).split(':')[0].strip()
     
     try:
-      # Find the NAICS entry in our data
+      # Load NAICS data to find industry mapping
+      import json
+      naics_file = path_and_mimetype('data/sources/naics.json')[0]
+      with open(naics_file, 'r') as f:
+        naics_data = json.load(f)
+      
+      # Find the NAICS entry
       for item in naics_data:
         if isinstance(item, dict) and str(item.get('id')) == str(naics_code):
           sector_desc = item.get('sectorDescription', '')
@@ -205,8 +102,8 @@ code: |
           
           return sector_mapping.get(sector_desc, 'Other')
       
-    except Exception as e:
-      log(f"Error getting industry from NAICS: {e}")
+    except Exception:
+      pass
     
     # Fallback to sector-based mapping using first 2 digits
     sector = str(naics_code)[:2] if len(str(naics_code)) >= 2 else ""
@@ -230,6 +127,12 @@ code: |
       if ':' in str(naics_code):
         naics_code = str(naics_code).split(':')[0].strip()
       
+      # Load NAICS data to get size standards
+      import json
+      naics_file = path_and_mimetype('data/sources/naics.json')[0]
+      with open(naics_file, 'r') as f:
+        naics_data = json.load(f)
+      
       # Find the NAICS entry
       naics_info = None
       for item in naics_data:
@@ -238,7 +141,6 @@ code: |
           break
       
       if not naics_info:
-        log(f"NAICS code {naics_code} not found, using TDPSA general standards")
         # TDPSA general small business exemption: < 100 employees AND < $10M revenue
         return employee_count < 100 and annual_revenue < 10000000
       
@@ -263,14 +165,9 @@ code: |
       tdpsa_qualifies_as_small = employee_count < 100 and annual_revenue < 10000000
       
       # Business is small if it meets EITHER SBA standards OR TDPSA general standards
-      is_small = sba_qualifies_as_small or tdpsa_qualifies_as_small
-      
-      log(f"Small business check for {naics_code}: SBA={sba_qualifies_as_small}, TDPSA={tdpsa_qualifies_as_small}, Final={is_small}")
-      
-      return is_small
+      return sba_qualifies_as_small or tdpsa_qualifies_as_small
         
-    except Exception as e:
-      log(f"Error checking small business status: {e}")
+    except Exception:
       # Conservative fallback - use TDPSA general standards
       return employee_count < 100 and annual_revenue < 10000000
   
@@ -284,15 +181,21 @@ code: |
       naics_code = str(naics_code).split(':')[0].strip()
     
     try:
+      # Load NAICS data to check sector
+      import json
+      naics_file = path_and_mimetype('data/sources/naics.json')[0]
+      with open(naics_file, 'r') as f:
+        naics_data = json.load(f)
+      
       # Find the NAICS entry
       for item in naics_data:
-        if isinstance(item, dict) and item.get('id') == naics_code:
+        if isinstance(item, dict) and str(item.get('id')) == str(naics_code):
           sector_desc = item.get('sectorDescription', '')
           # Healthcare sector indicates potential HIPAA applicability
           return 'Health Care' in sector_desc
       
-    except Exception as e:
-      log(f"Error checking HIPAA applicability: {e}")
+    except Exception:
+      pass
     
     # Fallback to subsector check
     healthcare_subsectors = ['621', '622', '623']  # Ambulatory, Hospitals, Nursing
@@ -309,15 +212,21 @@ code: |
       naics_code = str(naics_code).split(':')[0].strip()
     
     try:
+      # Load NAICS data to check sector
+      import json
+      naics_file = path_and_mimetype('data/sources/naics.json')[0]
+      with open(naics_file, 'r') as f:
+        naics_data = json.load(f)
+      
       # Find the NAICS entry
       for item in naics_data:
-        if isinstance(item, dict) and item.get('id') == naics_code:
+        if isinstance(item, dict) and str(item.get('id')) == str(naics_code):
           sector_desc = item.get('sectorDescription', '')
           # Finance and Insurance sector indicates GLBA applicability
           return 'Finance and Insurance' in sector_desc
       
-    except Exception as e:
-      log(f"Error checking GLBA applicability: {e}")
+    except Exception:
+      pass
     
     # Fallback to subsector check
     financial_subsectors = ['521', '522', '523', '524', '525']
@@ -359,12 +268,6 @@ continue button label: "Continue"
 question: "Step 1b: Industry Classification" 
 subquestion: |
   Select your primary business activity from the NAICS codes:
-  
-  % if len(get_naics_choices_for_dropdown()) > 50:
-  **Successfully loaded ${len(get_naics_choices_for_dropdown())} NAICS codes from database**
-  % else:
-  **Using fallback NAICS codes (file loading may have failed)**
-  % endif
   
   **Tip**: You can type to search for your industry (e.g., "legal services", "software", "retail")
 
