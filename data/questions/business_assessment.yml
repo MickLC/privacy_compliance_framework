@@ -26,7 +26,7 @@ code: |
           if len(description) > 80:
             description = description[:77] + "..."
           
-          choice_text = f"{naics_code}: {description}"
+          choice_text = description
           choices.append((naics_code, choice_text))
       
       # Sort by NAICS code
@@ -40,19 +40,18 @@ code: |
   def get_fallback_naics_choices():
     """Fallback NAICS choices if file loading fails"""
     return [
-      ('111110', '111110: Soybean Farming'),
-      ('541110', '541110: Offices of Lawyers'),
-      ('541511', '541511: Custom Computer Programming Services'),
-      ('541512', '541512: Computer Systems Design Services'),
-      ('621111', '621111: Offices of Physicians (except Mental Health Specialists)'),
-      ('621210', '621210: Offices of Dentists'),
-      ('522110', '522110: Commercial Banking'),
-      ('523110', '523110: Investment Banking and Securities Dealing'),
-      ('524113', '524113: Direct Life Insurance Carriers'),
-      ('541211', '541211: Offices of Certified Public Accountants'),
-      ('445110', '445110: Supermarkets and Other Grocery Stores'),
-      ('722511', '722511: Full-Service Restaurants'),
-      ('999999', '999999: Other - Please specify in additional information')
+      ('541110', 'Offices of Lawyers'),
+      ('541613', 'Marketing Consulting Services'),
+      ('541511', 'Custom Computer Programming Services'),
+      ('541512', 'Computer Systems Design Services'),
+      ('621111', 'Offices of Physicians (except Mental Health Specialists)'),
+      ('621210', 'Offices of Dentists'),
+      ('522110', 'Commercial Banking'),
+      ('523110', 'Investment Banking and Securities Dealing'),
+      ('524113', 'Direct Life Insurance Carriers'),
+      ('541211', 'Offices of Certified Public Accountants'),
+      ('722511', 'Full-Service Restaurants'),
+      ('999999', 'Other - Please specify in additional information')
     ]
   
   def get_industry_from_naics(naics_code):
