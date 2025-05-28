@@ -235,14 +235,14 @@ code: |
 # Business information introduction
 question: "Step 1: Business Information"
 subquestion: |
-  "Let's start by gathering some basic information about your business.
+  Let's start by gathering some basic information about your business.
   
   This information will help us:
-  * Determine which privacy laws apply to your organization
-  * Assess your compliance requirements
-  * Generate appropriate documentation
+  - Determine which privacy laws apply to your organization
+  - Assess your compliance requirements
+  - Generate appropriate documentation
   
-  The process will take approximately 10-15 minutes."
+  The process will take approximately 10-15 minutes.
 
 continue button field: show_business_information_intro
 continue button label: "Begin Assessment"
