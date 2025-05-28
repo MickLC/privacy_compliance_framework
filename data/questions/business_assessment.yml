@@ -51,83 +51,91 @@ code: |
 ---
 code: |
   def get_naics_choices_for_dropdown():
-    """Convert NAICS data to dropdown choices format with comprehensive debugging"""
-    log("=== STARTING NAICS CHOICES CREATION ===")
-    log(f"naics_data type: {type(naics_data)}")
-    log(f"naics_data length: {len(naics_data) if hasattr(naics_data, '__len__') else 'No length attribute'}")
+    """Load NAICS data and convert to dropdown choices format - all in one function"""
+    log("=== STARTING NAICS CHOICES CREATION WITH INLINE LOADING ===")
     
-    # Check if naics_data is defined and not empty
-    if not naics_data:
-      log("naics_data is empty or None - using fallback")
-      return get_fallback_naics_choices()
-    
-    if not isinstance(naics_data, list):
-      log(f"naics_data is not a list, it's {type(naics_data)} - using fallback")
-      return get_fallback_naics_choices()
-    
-    choices = []
-    processed_count = 0
-    error_count = 0
-    
+    # Load data directly in this function
     try:
-      log(f"Processing {len(naics_data)} NAICS entries...")
+      log("Attempting to load naics.json using path_and_mimetype...")
+      naics_file = path_and_mimetype('naics.json')[0]
+      log(f"File path resolved to: {naics_file}")
+      
+      with open(naics_file, 'r') as f:
+        file_content = f.read()
+        
+      log(f"File content length: {len(file_content)} characters")
+      log(f"First 500 characters: {file_content[:500]}")
+      
+      naics_data = json.loads(file_content)
+      log(f"JSON parsed successfully. Type: {type(naics_data)}")
+      log(f"Data length: {len(naics_data) if hasattr(naics_data, '__len__') else 'No length attribute'}")
+      
+      if isinstance(naics_data, list) and len(naics_data) > 0:
+        log(f"First entry: {naics_data[0]}")
+        log(f"First entry type: {type(naics_data[0])}")
+        if isinstance(naics_data[0], dict):
+          log(f"First entry keys: {list(naics_data[0].keys())}")
+          log(f"First entry 'id': {naics_data[0].get('id')}")
+          log(f"First entry 'description': {naics_data[0].get('description')}")
+      else:
+        log("naics_data is empty or not a list")
+        return get_fallback_naics_choices()
+      
+      # Process the data into choices
+      choices = []
+      processed_count = 0
       
       for i, item in enumerate(naics_data):
-        try:
-          if i < 5:  # Log details for first 5 items
-            log(f"Processing item {i}: {item}")
-            log(f"Item type: {type(item)}")
+        if isinstance(item, dict) and 'id' in item and 'description' in item:
+          naics_code = str(item['id'])
+          description = str(item['description'])
           
-          if isinstance(item, dict):
-            if 'id' in item and 'description' in item:
-              naics_code = str(item['id'])
-              description = str(item['description'])
-              
-              if i < 5:
-                log(f"Creating choice: code={naics_code}, desc={description}")
-              
-              # Truncate long descriptions
-              if len(description) > 80:
-                description = description[:77] + "..."
-              
-              choice_text = f"{naics_code}: {description}"
-              choices.append((naics_code, choice_text))
-              processed_count += 1
-            else:
-              if i < 5:
-                log(f"Item {i} missing 'id' or 'description': {list(item.keys()) if isinstance(item, dict) else 'Not a dict'}")
-              error_count += 1
-          else:
-            if i < 5:
-              log(f"Item {i} is not a dict: {type(item)}")
-            error_count += 1
-            
-        except Exception as item_error:
-          log(f"Error processing item {i}: {item_error}")
-          error_count += 1
-      
-      log(f"Processing complete: {processed_count} successful, {error_count} errors")
+          # Truncate long descriptions
+          if len(description) > 80:
+            description = description[:77] + "..."
+          
+          choice_text = f"{naics_code}: {description}"
+          choices.append((naics_code, choice_text))
+          processed_count += 1
+          
+          if i < 5:  # Log first 5 for debugging
+            log(f"Created choice {i}: {choice_text}")
       
       # Sort by NAICS code
       choices.sort(key=lambda x: x[0])
       
-      log(f"Created {len(choices)} NAICS choices")
+      log(f"Successfully created {len(choices)} NAICS choices from {processed_count} entries")
+      
       if len(choices) > 0:
-        log(f"First choice: {choices[0]}")
-        log(f"Last choice: {choices[-1]}")
-        log("=== NAICS CHOICES CREATION SUCCESSFUL ===")
         return choices
       else:
-        log("No valid choices created - using fallback")
+        log("No valid choices created despite loading data")
         return get_fallback_naics_choices()
         
     except Exception as e:
-      log(f"=== ERROR CREATING NAICS CHOICES: {e} ===")
+      log(f"=== ERROR LOADING/PROCESSING NAICS DATA: {e} ===")
       import traceback
       log(f"Traceback: {traceback.format_exc()}")
       return get_fallback_naics_choices()
   
   def get_fallback_naics_choices():
+    """Fallback NAICS choices if file loading fails"""
+    log("Using fallback NAICS choices")
+    return [
+      ('111110', '111110: Soybean Farming'),
+      ('541110', '541110: Offices of Lawyers'),
+      ('541511', '541511: Custom Computer Programming Services'),
+      ('541512', '541512: Computer Systems Design Services'),
+      ('621111', '621111: Offices of Physicians (except Mental Health Specialists)'),
+      ('621210', '621210: Offices of Dentists'),
+      ('522110', '522110: Commercial Banking'),
+      ('523110', '523110: Investment Banking and Securities Dealing'),
+      ('524113', '524113: Direct Life Insurance Carriers'),
+      ('541211', '541211: Offices of Certified Public Accountants'),
+      ('445110', '445110: Supermarkets and Other Grocery Stores'),
+      ('722511', '722511: Full-Service Restaurants'),
+      ('999999', '999999: Other - Please specify in additional information')
+    ]
     """Fallback NAICS choices if file loading fails"""
     log("Using fallback NAICS choices")
     fallback_choices = [
