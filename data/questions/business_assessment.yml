@@ -51,40 +51,73 @@ code: |
 ---
 code: |
   def get_naics_choices_for_dropdown():
-    """Load NAICS data and convert to dropdown choices format - all in one function"""
-    log("=== STARTING NAICS CHOICES CREATION WITH INLINE LOADING ===")
+    """Load NAICS data trying multiple file locations"""
+    log("=== STARTING NAICS CHOICES CREATION WITH MULTI-PATH LOADING ===")
     
-    # Load data directly in this function
-    try:
-      log("Attempting to load naics.json using path_and_mimetype...")
-      naics_file = path_and_mimetype('naics.json')[0]
-      log(f"File path resolved to: {naics_file}")
-      
-      with open(naics_file, 'r') as f:
-        file_content = f.read()
+    import json
+    import os
+    
+    # Try multiple locations for the naics.json file
+    file_locations = [
+      # Standard sources location
+      ('path_and_mimetype', lambda: path_and_mimetype('naics.json')[0]),
+      # Try data/sources specifically
+      ('sources path', lambda: path_and_mimetype('data/sources/naics.json')[0]),
+      # Try static filename
+      ('static_filename', lambda: static_filename('naics.json')),
+      # Try current directory variations
+      ('direct path', lambda: './naics.json'),
+      ('absolute sources', lambda: '/usr/share/docassemble/files/playgroundstatic/3/PrivacyDocumentFramework/data/sources/naics.json'),
+    ]
+    
+    naics_data = None
+    successful_method = None
+    
+    for method_name, path_func in file_locations:
+      try:
+        log(f"Trying method: {method_name}")
+        file_path = path_func()
+        log(f"File path: {file_path}")
         
-      log(f"File content length: {len(file_content)} characters")
-      log(f"First 500 characters: {file_content[:500]}")
+        # Check if file exists
+        if os.path.exists(file_path):
+          log(f"File exists at: {file_path}")
+          
+          with open(file_path, 'r') as f:
+            file_content = f.read()
+            
+          log(f"File content length: {len(file_content)} characters")
+          
+          if len(file_content) > 0:
+            log(f"First 200 characters: {file_content[:200]}")
+            
+            naics_data = json.loads(file_content)
+            log(f"JSON parsed successfully. Type: {type(naics_data)}, Length: {len(naics_data)}")
+            
+            if len(naics_data) > 0:
+              successful_method = method_name
+              log(f"Successfully loaded {len(naics_data)} entries using {method_name}")
+              break
+            else:
+              log(f"File loaded but contains no data using {method_name}")
+          else:
+            log(f"File is empty using {method_name}")
+        else:
+          log(f"File does not exist at: {file_path}")
+          
+      except Exception as e:
+        log(f"Method {method_name} failed: {e}")
+    
+    # If we couldn't load any data, use fallback
+    if not naics_data or len(naics_data) == 0:
+      log("All file loading methods failed - using fallback choices")
+      return get_fallback_naics_choices()
+    
+    # Process the loaded data into choices
+    try:
+      log(f"Processing {len(naics_data)} entries into choices...")
       
-      naics_data = json.loads(file_content)
-      log(f"JSON parsed successfully. Type: {type(naics_data)}")
-      log(f"Data length: {len(naics_data) if hasattr(naics_data, '__len__') else 'No length attribute'}")
-      
-      if isinstance(naics_data, list) and len(naics_data) > 0:
-        log(f"First entry: {naics_data[0]}")
-        log(f"First entry type: {type(naics_data[0])}")
-        if isinstance(naics_data[0], dict):
-          log(f"First entry keys: {list(naics_data[0].keys())}")
-          log(f"First entry 'id': {naics_data[0].get('id')}")
-          log(f"First entry 'description': {naics_data[0].get('description')}")
-      else:
-        log("naics_data is empty or not a list")
-        return get_fallback_naics_choices()
-      
-      # Process the data into choices
       choices = []
-      processed_count = 0
-      
       for i, item in enumerate(naics_data):
         if isinstance(item, dict) and 'id' in item and 'description' in item:
           naics_code = str(item['id'])
@@ -96,49 +129,24 @@ code: |
           
           choice_text = f"{naics_code}: {description}"
           choices.append((naics_code, choice_text))
-          processed_count += 1
           
-          if i < 5:  # Log first 5 for debugging
-            log(f"Created choice {i}: {choice_text}")
+          if i < 3:  # Log first 3 for verification
+            log(f"Choice {i}: {choice_text}")
       
       # Sort by NAICS code
       choices.sort(key=lambda x: x[0])
       
-      log(f"Successfully created {len(choices)} NAICS choices from {processed_count} entries")
+      log(f"Successfully created {len(choices)} NAICS choices using {successful_method}")
+      return choices
       
-      if len(choices) > 0:
-        return choices
-      else:
-        log("No valid choices created despite loading data")
-        return get_fallback_naics_choices()
-        
     except Exception as e:
-      log(f"=== ERROR LOADING/PROCESSING NAICS DATA: {e} ===")
-      import traceback
-      log(f"Traceback: {traceback.format_exc()}")
+      log(f"Error processing NAICS data: {e}")
       return get_fallback_naics_choices()
   
   def get_fallback_naics_choices():
     """Fallback NAICS choices if file loading fails"""
     log("Using fallback NAICS choices")
     return [
-      ('111110', '111110: Soybean Farming'),
-      ('541110', '541110: Offices of Lawyers'),
-      ('541511', '541511: Custom Computer Programming Services'),
-      ('541512', '541512: Computer Systems Design Services'),
-      ('621111', '621111: Offices of Physicians (except Mental Health Specialists)'),
-      ('621210', '621210: Offices of Dentists'),
-      ('522110', '522110: Commercial Banking'),
-      ('523110', '523110: Investment Banking and Securities Dealing'),
-      ('524113', '524113: Direct Life Insurance Carriers'),
-      ('541211', '541211: Offices of Certified Public Accountants'),
-      ('445110', '445110: Supermarkets and Other Grocery Stores'),
-      ('722511', '722511: Full-Service Restaurants'),
-      ('999999', '999999: Other - Please specify in additional information')
-    ]
-    """Fallback NAICS choices if file loading fails"""
-    log("Using fallback NAICS choices")
-    fallback_choices = [
       ('111110', '111110: Soybean Farming'),
       ('541110', '541110: Offices of Lawyers'),
       ('541511', '541511: Custom Computer Programming Services'),
