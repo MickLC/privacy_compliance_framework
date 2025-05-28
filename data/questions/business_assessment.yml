@@ -3,51 +3,54 @@
 objects:
   - company: DAObject
 ---
+# Load NAICS data from JSON file
+initial: True
 code: |
-  naics_data = objects_from_file("naics.json")
+  import json
+  import os
+  
+  def load_naics_data():
+    """Load NAICS data from JSON file"""
+    try:
+      # Try to load from data/sources folder
+      naics_file = path_and_mimetype('naics.json')[0]
+      with open(naics_file, 'r') as f:
+        naics_data = json.load(f)
+      log(f"Successfully loaded NAICS data from file: {len(naics_data)} codes")
+      return naics_data
+    except Exception as e:
+      log(f"Error loading NAICS data: {e}")
+      return []
+  
+  # Load NAICS data once at startup
+  naics_data = load_naics_data()
 ---
-# NAICS Data Management System - Now using objects from file
 code: |
   def get_naics_choices_for_dropdown():
-    """Convert NAICS data from imported file to dropdown choices format"""
+    """Convert NAICS data to dropdown choices format"""
     try:
       choices = []
       
-      # Access the imported NAICS data
-      if hasattr(naics_data, 'naics_codes'):
-        naics_codes = naics_data.naics_codes
-      elif isinstance(naics_data, dict) and 'naics_codes' in naics_data:
-        naics_codes = naics_data['naics_codes']
-      elif isinstance(naics_data, list):
-        # If naics_data is a list of NAICS records
-        naics_codes = {}
+      if isinstance(naics_data, list):
         for item in naics_data:
-          if 'id' in item and 'description' in item:
-            naics_codes[item['id']] = item
-      else:
-        log(f"Unexpected naics_data structure: {type(naics_data)}")
-        return get_fallback_naics_choices()
-      
-      for code, info in naics_codes.items():
-        if isinstance(info, dict):
-          description = info.get('description', 'No description available')
-        else:
-          description = str(info)
-        
-        # Truncate long descriptions
-        if len(description) > 100:
-          description = description[:97] + "..."
-        
-        choices.append((code, f"{code}: {description}"))
+          if isinstance(item, dict) and 'id' in item and 'description' in item:
+            naics_code = item['id']
+            description = item['description']
+            
+            # Truncate long descriptions
+            if len(description) > 100:
+              description = description[:97] + "..."
+            
+            choices.append((naics_code, f"{naics_code}: {description}"))
       
       # Sort by description
       choices.sort(key=lambda x: x[1])
       
-      log(f"Successfully loaded {len(choices)} NAICS choices from imported data")
+      log(f"Successfully created {len(choices)} NAICS choices")
       return choices
       
     except Exception as e:
-      log(f"Error processing imported NAICS data: {e}")
+      log(f"Error processing NAICS data: {e}")
       return get_fallback_naics_choices()
   
   def get_fallback_naics_choices():
@@ -68,7 +71,7 @@ code: |
     ]
   
   def get_industry_from_naics(naics_code):
-    """Determine broad industry category from NAICS code using imported data"""
+    """Determine broad industry category from NAICS code"""
     if not naics_code:
       return "Other"
     
@@ -77,49 +80,36 @@ code: |
       naics_code = str(naics_code).split(':')[0].strip()
     
     try:
-      # Access the imported NAICS data
-      if hasattr(naics_data, 'naics_codes'):
-        naics_codes = naics_data.naics_codes
-      elif isinstance(naics_data, dict) and 'naics_codes' in naics_data:
-        naics_codes = naics_data['naics_codes']
-      elif isinstance(naics_data, list):
-        # Convert list to dict for lookup
-        naics_codes = {}
-        for item in naics_data:
-          if 'id' in item:
-            naics_codes[item['id']] = item
-      else:
-        raise ValueError("Unexpected naics_data structure")
-      
-      if naics_code in naics_codes:
-        naics_info = naics_codes[naics_code]
-        sector_desc = naics_info.get('sectorDescription', '') if isinstance(naics_info, dict) else ''
-        
-        # Map sector descriptions to simplified categories
-        sector_mapping = {
-          'Agriculture, Forestry, Fishing and Hunting': 'Agriculture',
-          'Mining, Quarrying, and Oil and Gas Extraction': 'Mining',
-          'Utilities': 'Utilities',
-          'Construction': 'Construction',
-          'Manufacturing': 'Manufacturing',
-          'Wholesale Trade': 'Wholesale Trade',
-          'Retail Trade': 'Retail',
-          'Transportation and Warehousing': 'Transportation',
-          'Information': 'Technology',
-          'Finance and Insurance': 'Financial Services',
-          'Real Estate and Rental and Leasing': 'Real Estate',
-          'Professional, Scientific, and Technical Services': 'Professional Services',
-          'Management of Companies and Enterprises': 'Management',
-          'Administrative and Support and Waste Management and Remediation Services': 'Administrative Services',
-          'Educational Services': 'Education',
-          'Health Care and Social Assistance': 'Healthcare',
-          'Arts, Entertainment, and Recreation': 'Arts & Entertainment',
-          'Accommodation and Food Services': 'Food Service',
-          'Other Services (except Public Administration)': 'Other Services',
-          'Public Administration': 'Public Administration'
-        }
-        
-        return sector_mapping.get(sector_desc, 'Other')
+      # Find the NAICS entry in our data
+      for item in naics_data:
+        if isinstance(item, dict) and item.get('id') == naics_code:
+          sector_desc = item.get('sectorDescription', '')
+          
+          # Map sector descriptions to simplified categories
+          sector_mapping = {
+            'Agriculture, Forestry, Fishing and Hunting': 'Agriculture',
+            'Mining, Quarrying, and Oil and Gas Extraction': 'Mining',
+            'Utilities': 'Utilities',
+            'Construction': 'Construction',
+            'Manufacturing': 'Manufacturing',
+            'Wholesale Trade': 'Wholesale Trade',
+            'Retail Trade': 'Retail',
+            'Transportation and Warehousing': 'Transportation',
+            'Information': 'Technology',
+            'Finance and Insurance': 'Financial Services',
+            'Real Estate and Rental and Leasing': 'Real Estate',
+            'Professional, Scientific, and Technical Services': 'Professional Services',
+            'Management of Companies and Enterprises': 'Management',
+            'Administrative and Support and Waste Management and Remediation Services': 'Administrative Services',
+            'Educational Services': 'Education',
+            'Health Care and Social Assistance': 'Healthcare',
+            'Arts, Entertainment, and Recreation': 'Arts & Entertainment',
+            'Accommodation and Food Services': 'Food Service',
+            'Other Services (except Public Administration)': 'Other Services',
+            'Public Administration': 'Public Administration'
+          }
+          
+          return sector_mapping.get(sector_desc, 'Other')
       
     except Exception as e:
       log(f"Error getting industry from NAICS: {e}")
@@ -140,47 +130,33 @@ code: |
     return fallback_mapping.get(sector, 'Other')
   
   def is_small_business_under_tdpsa(naics_code, employee_count, annual_revenue):
-    """Determine if business qualifies as small business under TDPSA using imported SBA size standards"""
+    """Determine if business qualifies as small business under TDPSA using SBA size standards"""
     try:
       # Extract just the code
       if ':' in str(naics_code):
         naics_code = str(naics_code).split(':')[0].strip()
       
-      # Access the imported NAICS data
-      if hasattr(naics_data, 'naics_codes'):
-        naics_codes = naics_data.naics_codes
-      elif isinstance(naics_data, dict) and 'naics_codes' in naics_data:
-        naics_codes = naics_data['naics_codes']
-      elif isinstance(naics_data, list):
-        # Convert list to dict for lookup
-        naics_codes = {}
-        for item in naics_data:
-          if 'id' in item:
-            naics_codes[item['id']] = item
-      else:
-        raise ValueError("Unexpected naics_data structure")
+      # Find the NAICS entry
+      naics_info = None
+      for item in naics_data:
+        if isinstance(item, dict) and item.get('id') == naics_code:
+          naics_info = item
+          break
       
-      if naics_code not in naics_codes:
+      if not naics_info:
         log(f"NAICS code {naics_code} not found, using TDPSA general standards")
         # TDPSA general small business exemption: < 100 employees AND < $10M revenue
         return employee_count < 100 and annual_revenue < 10000000
       
-      naics_info = naics_codes[naics_code]
+      # Get SBA size standards
+      employee_limit = naics_info.get('employeeCountLimit')
+      revenue_limit = naics_info.get('revenueLimit')
       
-      # Get SBA size standards from imported data
-      if isinstance(naics_info, dict):
-        employee_limit = naics_info.get('employeeCountLimit')
-        revenue_limit = naics_info.get('revenueLimit')
-        
-        # Convert revenue limit from millions to actual dollars if needed
-        if revenue_limit and revenue_limit < 1000:  # Assuming values under 1000 are in millions
-          revenue_limit = revenue_limit * 1000000
-      else:
-        employee_limit = None
-        revenue_limit = None
+      # Convert revenue limit from millions to actual dollars if needed
+      if revenue_limit and revenue_limit < 1000:  # Assuming values under 1000 are in millions
+        revenue_limit = revenue_limit * 1000000
       
       # SBA considers you small if you're UNDER the limit
-      # We need to check if business qualifies as small under SBA standards
       sba_qualifies_as_small = True
       
       if employee_limit:
@@ -205,7 +181,7 @@ code: |
       return employee_count < 100 and annual_revenue < 10000000
   
   def is_hipaa_applicable_by_naics(naics_code):
-    """Check if NAICS code indicates HIPAA applicability using imported data"""
+    """Check if NAICS code indicates HIPAA applicability"""
     if not naics_code:
       return False
     
@@ -214,26 +190,12 @@ code: |
       naics_code = str(naics_code).split(':')[0].strip()
     
     try:
-      # Access the imported NAICS data
-      if hasattr(naics_data, 'naics_codes'):
-        naics_codes = naics_data.naics_codes
-      elif isinstance(naics_data, dict) and 'naics_codes' in naics_data:
-        naics_codes = naics_data['naics_codes']
-      elif isinstance(naics_data, list):
-        # Convert list to dict for lookup
-        naics_codes = {}
-        for item in naics_data:
-          if 'id' in item:
-            naics_codes[item['id']] = item
-      else:
-        raise ValueError("Unexpected naics_data structure")
-      
-      if naics_code in naics_codes:
-        naics_info = naics_codes[naics_code]
-        sector_desc = naics_info.get('sectorDescription', '') if isinstance(naics_info, dict) else ''
-        
-        # Healthcare sector indicates potential HIPAA applicability
-        return 'Health Care' in sector_desc
+      # Find the NAICS entry
+      for item in naics_data:
+        if isinstance(item, dict) and item.get('id') == naics_code:
+          sector_desc = item.get('sectorDescription', '')
+          # Healthcare sector indicates potential HIPAA applicability
+          return 'Health Care' in sector_desc
       
     except Exception as e:
       log(f"Error checking HIPAA applicability: {e}")
@@ -244,7 +206,7 @@ code: |
     return naics_prefix in healthcare_subsectors
   
   def is_glba_applicable_by_naics(naics_code):
-    """Check if NAICS code indicates GLBA applicability using imported data"""  
+    """Check if NAICS code indicates GLBA applicability"""  
     if not naics_code:
       return False
     
@@ -253,26 +215,12 @@ code: |
       naics_code = str(naics_code).split(':')[0].strip()
     
     try:
-      # Access the imported NAICS data
-      if hasattr(naics_data, 'naics_codes'):
-        naics_codes = naics_data.naics_codes
-      elif isinstance(naics_data, dict) and 'naics_codes' in naics_data:
-        naics_codes = naics_data['naics_codes']
-      elif isinstance(naics_data, list):
-        # Convert list to dict for lookup
-        naics_codes = {}
-        for item in naics_data:
-          if 'id' in item:
-            naics_codes[item['id']] = item
-      else:
-        raise ValueError("Unexpected naics_data structure")
-      
-      if naics_code in naics_codes:
-        naics_info = naics_codes[naics_code]
-        sector_desc = naics_info.get('sectorDescription', '') if isinstance(naics_info, dict) else ''
-        
-        # Finance and Insurance sector indicates GLBA applicability
-        return 'Finance and Insurance' in sector_desc
+      # Find the NAICS entry
+      for item in naics_data:
+        if isinstance(item, dict) and item.get('id') == naics_code:
+          sector_desc = item.get('sectorDescription', '')
+          # Finance and Insurance sector indicates GLBA applicability
+          return 'Finance and Insurance' in sector_desc
       
     except Exception as e:
       log(f"Error checking GLBA applicability: {e}")
@@ -295,6 +243,7 @@ subquestion: |
   The process will take approximately 10-15 minutes.
 
 continue button field: show_business_information_intro
+continue button label: "Begin Assessment"
 ---
 # Step 1a: Basic business information
 question: "Step 1a: Basic Business Information"
@@ -310,27 +259,32 @@ fields:
     datatype: currency
     required: True
 continue button field: basic_business_info_complete
+continue button label: "Continue"
 ---
-# Step 1b: Enhanced NAICS selection with imported data
+# Step 1b: Enhanced NAICS selection
 question: "Step 1b: Industry Classification" 
 subquestion: |
   Select your primary business activity from the NAICS codes:
   
+  % if len(get_naics_choices_for_dropdown()) > 50:
+  **Successfully loaded ${len(get_naics_choices_for_dropdown())} NAICS codes from database**
+  % else:
+  **Using fallback NAICS codes (file loading may have failed)**
+  % endif
+  
   **Tip**: You can type to search for your industry (e.g., "legal services", "software", "retail")
 
 fields:
-  - Search for your industry: naics_search_term
-    required: False
-    help: |
-      Start typing to filter the list below. You can search by industry name or NAICS code.
   - Primary Business Activity (NAICS Code): company.naics_code
     required: True
     datatype: combobox
-    code: get_naics_choices_for_dropdown()
+    choices: code |
+      get_naics_choices_for_dropdown()
     help: |
       Select the NAICS code that best describes your primary business activity.
 
 continue button field: naics_selection_complete
+continue button label: "Continue"
 ---
 # Set industry and format display values AFTER NAICS selection
 code: |
@@ -378,6 +332,7 @@ fields:
       Any additional information about your business activities that might affect privacy compliance requirements.
 
 continue button field: business_profile_complete
+continue button label: "Continue"
 ---
 # Step 1d: Geographic and operational scope questions
 question: "Step 1d: Geographic and Operational Scope"
@@ -457,6 +412,7 @@ fields:
     datatype: yesnowide
     help: This includes sharing for advertising, marketing lists, or other commercial purposes
 continue button field: geographic_scope_complete
+continue button label: "Continue"
 ---
 # Healthcare-specific questions (conditional)
 question: Healthcare Industry Questions
@@ -473,6 +429,7 @@ fields:
     datatype: yesnowide
     help: PHI includes individually identifiable health information
 continue button field: healthcare_questions_complete
+continue button label: "Continue"
 ---
 # Financial services questions (conditional)
 question: Financial Services Industry Questions
@@ -489,6 +446,7 @@ fields:
     datatype: yesnowide
     help: Information not publicly available, such as account numbers, income, credit history
 continue button field: financial_questions_complete
+continue button label: "Continue"
 ---
 # Conditional logic for industry-specific questions
 code: |
