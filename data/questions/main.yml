@@ -37,11 +37,20 @@ code: |
   # Main interview flow - Step by step
   show_intro_screen
   
-  # Step 1: Business Assessment
+  # Step 1: Business Assessment - Ensure proper sequential completion
   show_business_information_intro
   
-  # Step 1b: NAICS selection
+  # Step 1a: Basic business information must complete first
+  basic_business_info_complete
+  
+  # Step 1b: NAICS selection must complete after Step 1a
   naics_selection_complete
+  
+  # Step 1c: Business profile confirmation must complete after Step 1b
+  business_profile_complete
+  
+  # Step 1d: Geographic scope must complete after Step 1c
+  geographic_scope_complete
 
   # Step 2: Jurisdictional Analysis  
   applicable_jurisdictions = determine_applicable_jurisdictions()
