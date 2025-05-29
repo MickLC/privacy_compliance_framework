@@ -1,0 +1,1273 @@
+{
+  "jurisdictionId": "gdpr",
+  "name": "General Data Protection Regulation",
+  "shortName": "GDPR",
+  "jurisdiction": "european_union",
+  "region": "europe",
+  "type": "comprehensive",
+  "effectiveDate": "2018-05-25",
+  "latestAmendment": "2023-01-01",
+  "applicabilityChecks": [
+    {
+      "type": "geographic",
+      "field": "serves_eu",
+      "operator": "equals",
+      "value": true,
+      "description": "Business serves customers in the European Union"
+  "lawfulBasisValidation": {
+    "rules": [
+      {
+        "id": "special_category_consent_required",
+        "condition": {
+          "data_categories_processed": "contains_any",
+          "values": ["Health information", "Biometric information", "Special category data"]
+        },
+        "required_lawful_basis": "Consent",
+        "severity": "high",
+        "message": "Special categories of data under GDPR Article 9 require explicit consent",
+        "remediation": "Implement explicit consent mechanism specifically for special category data"
+      },
+      {
+        "id": "children_data_consent_required", 
+        "condition": {
+          "data_categories_processed": "contains",
+          "value": "Children's data (under 16 years old)"
+        },
+        "required_lawful_basis": "Consent",
+        "additional_requirements": ["parental_consent_mechanism"],
+        "severity": "high",
+        "message": "Processing children's data requires parental consent in most EU member states",
+        "remediation": "Implement age verification and parental consent mechanisms"
+      },
+      {
+        "id": "marketing_consent_required",
+        "condition": {
+          "processing_purpose": "Marketing and advertising campaigns"
+        },
+        "required_lawful_basis": "Consent",
+        "severity": "high", 
+        "message": "Direct marketing typically requires consent under GDPR",
+        "remediation": "Implement clear opt-in mechanisms for marketing communications"
+      },
+      {
+        "id": "invalid_consent_mechanism",
+        "condition": {
+          "and": [
+            {"claimed_lawful_basis": "contains", "value": "Consent"},
+            {"consent_mechanism": "contains_any", "values": ["Pre-checked boxes", "Implied through continued service use"]}
+          ]
+        },
+        "severity": "high",
+        "message": "Consent must be freely given, specific, informed and unambiguous - pre-checked boxes and implied consent are invalid",
+        "remediation": "Replace with clear opt-in checkboxes or explicit affirmative actions"
+      },
+      {
+        "id": "legitimate_interest_balancing_test",
+        "condition": {
+          "claimed_lawful_basis": "contains",
+          "value": "Legitimate interests"
+        },
+        "required_documentation": ["legitimate_interest_details"],
+        "severity": "medium",
+        "message": "Legitimate interests require documented balancing test considering individual rights",
+        "remediation": "Conduct and document legitimate interest assessment (LIA)"
+      },
+      {
+        "id": "contract_necessity_test",
+        "condition": {
+          "and": [
+            {"claimed_lawful_basis": "contains", "value": "Contract"},
+            {"processing_purpose": "not_equals", "value": "Providing products or services to customers"}
+          ]
+        },
+        "severity": "medium",
+        "message": "Contract basis only valid if processing is necessary to perform the contract",
+        "remediation": "Verify processing is actually necessary for contract performance, or consider alternative lawful basis"
+      },
+      {
+        "id": "behavioral_data_consent",
+        "condition": {
+          "and": [
+            {"data_categories_processed": "contains", "value": "Behavioral information"},
+            {"processing_purpose": "contains_any", "values": ["Marketing and advertising campaigns", "Website analytics and improvement"]}
+          ]
+        },
+        "recommended_lawful_basis": "Consent",
+        "severity": "medium",
+        "message": "Behavioral tracking for marketing/analytics typically requires consent",
+        "remediation": "Implement cookie consent banners and clear opt-in for behavioral tracking"
+      }
+    ]
+  },
+    {
+      "type": "geographic", 
+      "field": "has_eu_establishment",
+      "operator": "equals",
+      "value": true,
+      "description": "Business has establishment in the European Union"
+    },
+    {
+      "type": "data_processing",
+      "field": "eu_data_subjects",
+      "operator": "greater_than",
+      "value": 0,
+      "description": "Processes personal data of EU data subjects"
+    }
+    {
+      "id": "data_retention_practices",
+      "question": "How long do you typically retain different types of personal data?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "We have specific retention periods for different data types",
+        "We keep data indefinitely unless requested to delete",
+        "We delete data after a standard period (e.g., 7 years)",
+        "We don't have defined retention periods",
+        "We only delete data when legally required"
+      ],
+  "complianceAnalysis": {
+    "processingActivityAnalysis": {
+      "description": "System analyzes each processing activity against GDPR requirements",
+      "validationProcess": [
+        "Check lawful basis validity for stated purpose",
+        "Validate consent mechanisms if consent is claimed",
+        "Verify special category data protections",
+        "Assess legitimate interest balancing tests",
+        "Check retention period appropriateness",
+        "Validate international transfer safeguards"
+      ],
+      "outputFormat": {
+        "activity_assessment": {
+          "activity_name": "string",
+          "compliance_status": "compliant|non_compliant|needs_review", 
+          "identified_issues": ["array of compliance gaps"],
+          "recommendations": ["array of remediation actions"],
+          "priority": "high|medium|low"
+        }
+      }
+    }
+  },
+      "help": "GDPR requires data to be kept no longer than necessary for the purposes",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "deletion_triggers",
+      "question": "What triggers data deletion in your current processes?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Individual requests for deletion",
+        "End of business relationship",
+        "Automatic expiration after set period",
+        "Legal requirement expiry",
+        "Storage space limitations",
+        "Annual data cleanup processes",
+        "We don't routinely delete data"
+      ],
+      "help": "Understanding current deletion practices helps assess GDPR compliance",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "data_access_logging",
+      "question": "Do you log access to personal data?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Comprehensive logging of all data access",
+        "Logging for sensitive data only",
+        "Basic access logs",
+        "No access logging",
+        "Don't know"
+      ],
+      "help": "Access logging is important for breach detection and accountability",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "breach_notification_contacts",
+      "question": "Do you have designated contacts for breach notifications?",
+      "type": "yesno",
+      "required": false,
+      "help": "GDPR requires notification to supervisory authority within 72 hours",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "regulatory_authority_identification",
+      "question": "Have you identified which data protection authority you would notify in case of a breach?",
+      "type": "yesno",
+      "required": false,
+      "help": "Each EU member state has its own data protection authority",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "individual_rights_request_volume",
+      "question": "Approximately how many individual rights requests do you receive monthly?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "None - we haven't received any",
+        "1-5 requests per month",
+        "6-20 requests per month", 
+        "21-50 requests per month",
+        "More than 50 requests per month"
+      ],
+      "help": "This helps assess the scale of your rights management needs",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "rights_request_handling_time",
+      "question": "How long does it typically take to respond to individual rights requests?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Within 1 week",
+        "Within 2 weeks",
+        "Within 1 month (30 days)",
+        "More than 1 month",
+        "We haven't processed any requests yet"
+      ],
+      "help": "GDPR requires responses within 1 month, extendable to 3 months in complex cases",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+  "assessmentQuestions": [
+    {
+      "id": "serves_eu",
+      "question": "Do you serve customers or clients in the European Union?",
+      "type": "yesno",
+      "required": true,
+      "help": "This includes any goods or services offered to individuals in EU member states"
+    },
+    {
+      "id": "has_eu_establishment", 
+      "question": "Do you have an establishment (office, subsidiary, etc.) in the EU?",
+      "type": "yesno",
+      "required": true,
+      "help": "An establishment means a fixed place of business through which the activities are wholly or partly carried out"
+    },
+    {
+      "id": "eu_data_subjects",
+      "question": "Approximately how many EU residents' personal data do you process annually?",
+      "type": "integer",
+      "required": false,
+      "help": "Include customers, employees, vendors, website visitors, etc.",
+      "show_if": {
+        "field": "serves_eu",
+        "value": true
+      }
+    },
+    {
+      "id": "cross_border_transfers",
+      "question": "Do you transfer personal data outside the European Economic Area?",
+      "type": "yesno", 
+      "required": false,
+      "help": "This includes cloud storage, third-party services, or subsidiaries outside the EEA",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "transfer_destinations",
+      "question": "To which countries/regions do you transfer personal data?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "United States",
+        "United Kingdom",
+        "Canada",
+        "India",
+        "China",
+        "Japan",
+        "Australia",
+        "Other Asian countries",
+        "Other non-EU countries",
+        "We don't transfer data outside the EEA"
+      ],
+      "help": "Include any transfers through cloud services, subsidiaries, or third-party providers",
+      "show_if": {
+        "and": [
+          {"or": [
+            {"field": "serves_eu", "value": true},
+            {"field": "has_eu_establishment", "value": true}
+          ]},
+          {"field": "cross_border_transfers", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "transfer_methods",
+      "question": "How do you currently transfer data internationally?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Cloud storage services (AWS, Google Cloud, Microsoft Azure)",
+        "Direct data sharing with overseas subsidiaries",
+        "Third-party service providers (CRM, support, analytics)",
+        "Customer support platforms",
+        "Marketing and advertising tools",
+        "Backup and disaster recovery systems",
+        "Email and communication services"
+      ],
+      "help": "Include all methods, even if through third-party services",
+      "show_if": {
+        "and": [
+          {"or": [
+            {"field": "serves_eu", "value": true},
+            {"field": "has_eu_establishment", "value": true}
+          ]},
+          {"field": "cross_border_transfers", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "current_transfer_protections",
+      "question": "What protections do you currently have for international transfers?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Standard Contractual Clauses with recipients",
+        "Binding Corporate Rules",
+        "Explicit consent from individuals",
+        "Contracts with cloud providers mentioning data protection",
+        "No specific protections in place",
+        "Don't know what protections we have"
+      ],
+      "help": "This helps assess current compliance with GDPR transfer requirements",
+      "show_if": {
+        "and": [
+          {"or": [
+            {"field": "serves_eu", "value": true},
+            {"field": "has_eu_establishment", "value": true}
+          ]},
+          {"field": "cross_border_transfers", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "processing_activities_loop",
+      "question_type": "iterative_collection",
+      "collection_object": "processing_activities",
+      "loop_question": "Do you have another processing activity to document?",
+      "initial_question": "Let's document each way you process personal data. This helps ensure proper lawful basis for each activity.",
+      "iteration_questions": [
+        {
+          "id": "activity_name",
+          "question": "What would you call this processing activity?",
+          "type": "text",
+          "help": "Examples: 'Customer registration', 'Email marketing', 'Employee payroll', 'Website analytics'"
+        },
+        {
+          "id": "processing_purpose",
+          "question": "What is the primary purpose of this processing?",
+          "type": "radio",
+          "required": true,
+          "choices": [
+            "Providing products or services to customers",
+            "Marketing and advertising campaigns",
+            "Website analytics and improvement",
+            "Employee management and HR",
+            "Legal compliance and record-keeping",
+            "Fraud prevention and security",
+            "Research and development",
+            "Customer support and service",
+            "Financial management and billing",
+            "Other (specify in activity name)"
+          ]
+        },
+        {
+          "id": "data_categories_processed",
+          "question": "What categories of personal data do you process for this purpose?",
+          "type": "checkboxes",
+          "required": true,
+          "choices": [
+            "Basic contact information (name, email, phone, address)",
+            "Financial information (payment details, billing, credit info)",
+            "Technical information (IP address, device info, cookies)",
+            "Behavioral information (website usage, preferences, clicks)",
+            "Demographic information (age, gender, location)",
+            "Professional information (job title, company, work history)",
+            "Health information (medical records, fitness data)",
+            "Biometric information (fingerprints, facial recognition)",
+            "Special category data (race, religion, political views)",
+            "Criminal conviction data",
+            "Children's data (under 16 years old)"
+          ]
+        },
+        {
+          "id": "data_subjects",
+          "question": "Who are the data subjects for this processing?",
+          "type": "checkboxes",
+          "required": true,
+          "choices": [
+            "Customers and clients",
+            "Website visitors",
+            "Employees",
+            "Job applicants",
+            "Vendors and suppliers",
+            "Business contacts",
+            "Children (under 16)",
+            "Vulnerable individuals"
+          ]
+        },
+        {
+          "id": "claimed_lawful_basis",
+          "question": "What lawful basis do you rely on for this processing?",
+          "type": "radio",
+          "required": true,
+          "choices": [
+            "Consent - individuals have explicitly agreed",
+            "Contract - necessary to perform our contract with them",
+            "Legal obligation - required by law or regulation",
+            "Vital interests - protecting someone's life or health",
+            "Public task - carrying out official functions",
+            "Legitimate interests - our legitimate business needs"
+          ],
+          "help": "The system will validate this choice against GDPR requirements for your specific data and purpose"
+        },
+        {
+          "id": "consent_mechanism",
+          "question": "How do you obtain consent for this processing?",
+          "type": "checkboxes",
+          "required": true,
+          "show_if": {
+            "field": "claimed_lawful_basis",
+            "contains": "Consent"
+          },
+          "choices": [
+            "Clear opt-in checkbox (unchecked by default)",
+            "Explicit verbal consent with documentation",
+            "Clear affirmative action (button click, form submission)",
+            "Granular consent for different purposes",
+            "Double opt-in confirmation",
+            "Implied through continued service use",
+            "Pre-checked boxes or opt-out mechanisms"
+          ]
+        },
+        {
+          "id": "legitimate_interest_details",
+          "question": "Describe your legitimate interest and balancing test",
+          "type": "textarea",
+          "required": true,
+          "show_if": {
+            "field": "claimed_lawful_basis",
+            "contains": "Legitimate interests"
+          },
+          "help": "You must demonstrate: (1) legitimate interest, (2) necessity for that interest, and (3) that your interests don't override individual rights"
+        },
+        {
+          "id": "legal_obligation_source",
+          "question": "What law or regulation requires this processing?",
+          "type": "text",
+          "required": true,
+          "show_if": {
+            "field": "claimed_lawful_basis",
+            "contains": "Legal obligation"
+          },
+          "help": "Specify the exact legal requirement (e.g., 'Tax records retention under [specific law]')"
+        },
+        {
+          "id": "data_retention_period",
+          "question": "How long do you retain this data?",
+          "type": "radio",
+          "required": true,
+          "choices": [
+            "Only as long as necessary for the purpose",
+            "Specific period: less than 1 year",
+            "Specific period: 1-3 years",
+            "Specific period: 3-7 years",
+            "Specific period: more than 7 years",
+            "Indefinitely unless requested to delete",
+            "Until legal requirements expire",
+            "We don't have a defined retention period"
+          ]
+        },
+        {
+          "id": "data_sharing",
+          "question": "Do you share this data with third parties?",
+          "type": "checkboxes",
+          "choices": [
+            "Cloud service providers (AWS, Google, Microsoft)",
+            "Marketing and advertising partners",
+            "Analytics providers (Google Analytics, etc.)",
+            "Payment processors",
+            "Professional service providers (legal, accounting)",
+            "Subsidiaries or affiliated companies",
+            "Government authorities when required",
+            "We don't share this data with third parties"
+          ]
+        },
+        {
+          "id": "international_transfers",
+          "question": "Is this data transferred outside the EEA?",
+          "type": "radio",
+          "choices": [
+            "Yes, to countries with adequacy decisions",
+            "Yes, with Standard Contractual Clauses",
+            "Yes, with other appropriate safeguards",
+            "Yes, but no safeguards in place",
+            "No, data stays within EEA",
+            "Don't know"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "consent_collection_method",
+      "question": "How do you currently obtain consent from individuals?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Clear opt-in checkboxes on forms",
+        "Verbal consent with documentation",
+        "Implied through continued use of service",
+        "Pre-checked boxes",
+        "We don't explicitly collect consent",
+        "Pop-up consent banners",
+        "Cookie consent mechanisms"
+      ],
+      "help": "GDPR requires consent to be freely given, specific, informed, and unambiguous",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "consent_specificity",
+      "question": "How specific is your consent collection?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Separate consent for each processing purpose",
+        "General consent for all processing activities",
+        "Consent by category (marketing, analytics, etc.)",
+        "We use one blanket consent form",
+        "We don't explicitly collect consent"
+      ],
+      "help": "GDPR requires consent to be specific to particular processing purposes",
+      "show_if": {
+        "and": [
+          {"or": [
+            {"field": "serves_eu", "value": true},
+            {"field": "has_eu_establishment", "value": true}
+          ]},
+          {"field": "consent_collection_method", "not_contains": "We don't explicitly collect consent"}
+        ]
+      }
+    },
+    {
+      "id": "consent_withdrawal_method",
+      "question": "How can individuals withdraw consent?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Unsubscribe links in emails",
+        "Account settings/preferences page",
+        "Contacting customer service",
+        "Written request only",
+        "Phone call to customer service",
+        "We don't provide withdrawal mechanisms"
+      ],
+      "help": "GDPR requires withdrawal to be as easy as giving consent",
+      "show_if": {
+        "and": [
+          {"or": [
+            {"field": "serves_eu", "value": true},
+            {"field": "has_eu_establishment", "value": true}
+          ]},
+          {"field": "consent_collection_method", "not_contains": "We don't explicitly collect consent"}
+        ]
+      }
+    },
+    {
+      "id": "special_categories_processed",
+      "question": "Which special categories of personal data do you process?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Health data (medical records, fitness data, mental health information)",
+        "Biometric data for identification (fingerprints, facial recognition, voice recognition)",
+        "Genetic data (DNA analysis, genetic testing results)",
+        "Racial or ethnic origin data",
+        "Political opinions or affiliations",
+        "Religious or philosophical beliefs",
+        "Trade union membership",
+        "Data concerning sex life or sexual orientation",
+        "Criminal convictions or offenses data",
+        "None of the above"
+      ],
+      "help": "Select all categories that apply. Special categories require explicit consent or other specific legal basis under GDPR Article 9",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "is_public_authority",
+      "question": "Is your organization a public authority or public body?",
+      "type": "yesno",
+      "required": false,
+      "help": "This includes government agencies, municipal authorities, regulatory bodies, and similar public sector organizations",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "core_monitoring_activities",
+      "question": "Do your core business activities involve regular and systematic monitoring of data subjects?",
+      "type": "yesno",
+      "required": false,
+      "help": "Examples: behavioral advertising, location tracking, telecommunications monitoring, credit monitoring, employee surveillance systems",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "large_scale_special_categories",
+      "question": "Do you process special categories of personal data on a large scale?",
+      "type": "yesno",
+      "required": false,
+      "help": "Special categories include health data, biometric data, racial/ethnic origin, political opinions, religious beliefs, trade union membership, genetic data, or data concerning sex life/sexual orientation",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "automated_decision_making",
+      "question": "Do you use automated decision-making or profiling that produces legal effects or significantly affects individuals?",
+      "type": "yesno",
+      "required": false,
+      "help": "Examples: automated loan approvals, algorithmic hiring decisions, credit scoring, automated insurance claims processing, targeted advertising based on profiling",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "systematic_monitoring_scale",
+      "question": "If you conduct systematic monitoring, approximately how many individuals are monitored?",
+      "type": "integer",
+      "required": false,
+      "help": "Include website tracking, location monitoring, surveillance systems, behavioral analysis, etc.",
+      "show_if": {
+        "and": [
+          {"or": [
+            {"field": "serves_eu", "value": true},
+            {"field": "has_eu_establishment", "value": true}
+          ]},
+          {"field": "core_monitoring_activities", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "vulnerable_data_subjects",
+      "question": "Do you process personal data of vulnerable data subjects on a large scale?",
+      "type": "yesno",
+      "required": false,
+      "help": "Vulnerable subjects include children, elderly, patients, employees, individuals in financial distress, or those lacking capacity to consent",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+  ],
+  "categories": [
+    {
+      "id": "lawful_basis",
+      "name": "Lawful Basis for Processing",
+      "description": "Requirements for establishing valid legal grounds for processing personal data"
+    },
+    {
+      "id": "transparency",
+      "name": "Transparency Requirements", 
+      "description": "Obligations to provide clear information to data subjects about processing"
+    },
+    {
+      "id": "individual_rights",
+      "name": "Individual Rights",
+      "description": "Rights that must be provided to data subjects under GDPR"
+    },
+    {
+      "id": "data_protection",
+      "name": "Data Protection Requirements",
+      "description": "Technical and organizational measures for protecting personal data"
+    },
+    {
+      "id": "accountability",
+      "name": "Accountability Requirements", 
+      "description": "Obligations to demonstrate compliance with GDPR principles"
+    },
+    {
+      "id": "data_transfers",
+      "name": "International Data Transfers",
+      "description": "Requirements for transferring personal data outside the EEA"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "gdpr-lawful-1", 
+      "category": "lawful_basis",
+      "title": "Processing requires lawful basis",
+      "description": "Processing of personal data is lawful only if and to the extent that at least one of the lawful bases applies",
+      "severity": "high",
+      "details": "Processing of personal data is lawful only if and to the extent that at least one of the lawful bases applies: consent, contract, legal obligation, vital interests, public interest, or legitimate interests.",
+      "articleReference": "Art. 6, GDPR",
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "policy_requirement",
+          "description": "Document lawful basis for each processing activity"
+        },
+        {
+          "type": "operational_requirement", 
+          "description": "Identify and document lawful basis before processing begins"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-lawful-2",
+      "category": "lawful_basis", 
+      "title": "Conditions for consent",
+      "description": "Consent must be freely given, specific, informed, and unambiguous indication of the data subject's wishes",
+      "severity": "high",
+      "details": "Consent must be freely given, specific, informed, and unambiguous indication of the data subject's wishes, by a clear affirmative action.",
+      "articleReference": "Art. 7, GDPR",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "claimed_lawful_basis": "contains",
+          "value": "Consent"
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement consent management system that records when, how, and what was consented to"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Ensure consent withdrawal is as easy as giving consent"
+        },
+        {
+          "type": "validation_rule",
+          "rule_id": "invalid_consent_mechanism"
+        }
+      ]
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement consent management system"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Maintain records of consent including when, how, and what was consented to"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-trans-1",
+      "category": "transparency",
+      "title": "Privacy notice must be provided to data subjects", 
+      "description": "Controllers must provide information to data subjects at the time personal data is obtained",
+      "severity": "high",
+      "details": "Controllers must provide information to data subjects at the time personal data is obtained, including identity and contact details of the controller, purposes of processing, legal basis, recipients, retention period, and data subject rights.",
+      "articleReference": "Art. 13 & 14, GDPR",
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "policy_requirement",
+          "description": "Create comprehensive privacy notice covering all required elements"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Provide privacy notice at point of data collection"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-trans-2",
+      "category": "transparency",
+      "title": "Privacy notice must be concise, transparent, intelligible and easily accessible",
+      "description": "Information must be provided in a concise, transparent, intelligible and easily accessible form",
+      "severity": "medium", 
+      "details": "Information must be provided in a concise, transparent, intelligible and easily accessible form, using clear and plain language.",
+      "articleReference": "Art. 12(1), GDPR",
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "policy_requirement",
+          "description": "Review privacy notice for plain language and accessibility"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-rights-1",
+      "category": "individual_rights",
+      "title": "Right of access by the data subject",
+      "description": "Data subjects have the right to obtain confirmation as to whether personal data concerning them is being processed",
+      "severity": "high",
+      "details": "Data subjects have the right to obtain confirmation as to whether personal data concerning them is being processed, and if so, access to the personal data and specific information about the processing.",
+      "articleReference": "Art. 15, GDPR", 
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement process for handling subject access requests within 1 month"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "Maintain systems capable of locating and extracting individual's data"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-rights-2",
+      "category": "individual_rights",
+      "title": "Right to rectification",
+      "description": "Data subjects have the right to obtain without undue delay the rectification of inaccurate personal data",
+      "severity": "high",
+      "details": "Data subjects have the right to obtain without undue delay the rectification of inaccurate personal data concerning them.",
+      "articleReference": "Art. 16, GDPR",
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement", 
+          "description": "Implement process for correcting inaccurate data within 1 month"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-rights-3",
+      "category": "individual_rights",
+      "title": "Right to erasure ('right to be forgotten')",
+      "description": "Data subjects have the right to obtain the erasure of personal data concerning them without undue delay",
+      "severity": "high",
+      "details": "Data subjects have the right to obtain the erasure of personal data concerning them without undue delay under certain circumstances.",
+      "articleReference": "Art. 17, GDPR",
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement deletion process considering legal grounds and exceptions"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "Ensure technical capability to delete data across all systems"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-rights-4", 
+      "category": "individual_rights",
+      "title": "Right to restriction of processing",
+      "description": "Data subjects have the right to obtain restriction of processing under certain circumstances",
+      "severity": "high",
+      "details": "Data subjects have the right to obtain restriction of processing under certain circumstances.",
+      "articleReference": "Art. 18, GDPR",
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement process to restrict processing when required"
+        },
+        {
+          "type": "technical_requirement", 
+          "description": "Technical capability to flag and restrict processing of specific data"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-rights-5",
+      "category": "individual_rights",
+      "title": "Right to data portability",
+      "description": "Data subjects have the right to receive personal data in a structured, commonly used and machine-readable format",
+      "severity": "high",
+      "details": "Data subjects have the right to receive the personal data concerning them in a structured, commonly used and machine-readable format and have the right to transmit those data to another controller without hindrance.",
+      "articleReference": "Art. 20, GDPR",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "and": [
+            {"claimed_lawful_basis": "contains", "value": "Consent"},
+            {"data_categories_processed": "contains_any", "values": ["Basic contact information", "Behavioral information"]}
+          ]
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement data export functionality in machine-readable format"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-rights-6",
+      "category": "individual_rights", 
+      "title": "Right to object",
+      "description": "Data subjects have the right to object to processing of personal data",
+      "severity": "high",
+      "details": "Data subjects have the right to object to processing of personal data based on legitimate interests, public interest, or official authority, and for direct marketing purposes.",
+      "articleReference": "Art. 21, GDPR",
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement process to handle objections, especially for direct marketing"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-protection-1",
+      "category": "data_protection",
+      "title": "Data protection by design and by default",
+      "description": "Controller shall implement appropriate technical and organizational measures",
+      "severity": "high", 
+      "details": "Controller shall implement appropriate technical and organizational measures to implement data protection principles and to integrate necessary safeguards into the processing.",
+      "articleReference": "Art. 25, GDPR",
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement privacy by design in system development"
+        },
+        {
+          "type": "policy_requirement",
+          "description": "Establish data protection by design policies"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-protection-2",
+      "category": "data_protection",
+      "title": "Security of processing", 
+      "description": "Controller and processor shall implement appropriate technical and organizational measures",
+      "severity": "high",
+      "details": "Controller and processor shall implement appropriate technical and organizational measures to ensure a level of security appropriate to the risk.",
+      "articleReference": "Art. 32, GDPR",
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement encryption, access controls, and other security measures"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Document security measures and conduct regular reviews"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-protection-3",
+      "category": "data_protection",
+      "title": "Data breach notification to supervisory authority",
+      "description": "In the case of a personal data breach, the controller shall notify the supervisory authority",
+      "severity": "high",
+      "details": "In the case of a personal data breach, the controller shall without undue delay and, where feasible, not later than 72 hours after having become aware of it, notify the personal data breach to the supervisory authority.",
+      "articleReference": "Art. 33, GDPR",
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement", 
+          "description": "Implement breach detection and 72-hour notification process"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Maintain breach register and notification procedures"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-protection-4",
+      "category": "data_protection",
+      "title": "Data breach notification to data subject",
+      "description": "When the personal data breach is likely to result in a high risk, notify the data subject",
+      "severity": "high", 
+      "details": "When the personal data breach is likely to result in a high risk to the rights and freedoms of natural persons, the controller shall communicate the personal data breach to the data subject without undue delay.",
+      "articleReference": "Art. 34, GDPR",
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement high-risk breach notification to individuals"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-accountability-1",
+      "category": "accountability",
+      "title": "Records of processing activities",
+      "description": "Each controller shall maintain a record of processing activities under its responsibility",
+      "severity": "high",
+      "details": "Each controller and, where applicable, the controller's representative, shall maintain a record of processing activities under its responsibility.",
+      "articleReference": "Art. 30, GDPR",
+      "applicableWhen": {
+        "any": ["serves_eu", "has_eu_establishment"]
+      },
+      "complianceChecks": [
+        {
+          "type": "documentation_requirement",
+          "description": "Maintain comprehensive record of processing activities (ROPA)"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-accountability-2",
+      "category": "accountability",
+      "title": "Data Protection Impact Assessment",
+      "description": "Where processing is likely to result in a high risk, carry out an impact assessment",
+      "severity": "high",
+      "details": "Where processing is likely to result in a high risk to the rights and freedoms of natural persons, the controller shall carry out an assessment of the impact of the envisaged processing operations on the protection of personal data.",
+      "articleReference": "Art. 35, GDPR",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "or": [
+            {"claimed_lawful_basis": "contains", "value": "Legitimate interests"},
+            {
+              "and": [
+                {"data_categories_processed": "contains", "value": "Behavioral information"},
+                {"processing_purpose": "Marketing and advertising campaigns"}
+              ]
+            }
+          ]
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "validation_rule",
+          "rule_id": "legitimate_interest_balancing_test"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Maintain records of legitimate interest assessments and balancing tests"
+        }
+      ]
+      "complianceChecks": [
+        {
+          "type": "documentation_requirement",
+          "description": "Conduct DPIA for high-risk processing activities"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-accountability-3",
+      "category": "accountability",
+      "title": "Data Protection Officer",
+      "description": "The controller and processor shall designate a data protection officer in certain cases",
+      "severity": "high",
+      "details": "The controller and the processor shall designate a data protection officer in certain cases specified by the regulation.",
+      "articleReference": "Art. 37, GDPR",
+      "applicableWhen": {
+        "or": [
+          {"field": "is_public_authority", "value": true},
+          {"field": "core_monitoring_activities", "value": true},
+          {
+            "and": [
+              {"field": "large_scale_special_categories", "value": true},
+              {"field": "eu_data_subjects", "operator": "greater_than", "value": 5000}
+            ]
+          }
+        ]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Appoint qualified Data Protection Officer"
+        },
+        {
+          "type": "documentation_requirement", 
+          "description": "Document DPO appointment and publish contact details"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-transfers-1",
+      "category": "data_transfers",
+      "title": "Transfers on the basis of an adequacy decision",
+      "description": "A transfer may take place where the Commission has decided the third country ensures adequate protection",
+      "severity": "high",
+      "details": "A transfer of personal data to a third country or an international organisation may take place where the Commission has decided that the third country, a territory or one or more specified sectors within that third country, or the international organisation in question ensures an adequate level of protection.",
+      "articleReference": "Art. 45, GDPR",
+      "applicableWhen": {
+        "and": [
+          {"any": ["serves_eu", "has_eu_establishment"]},
+          {"field": "cross_border_transfers", "value": true}
+        ]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Verify adequacy status of transfer destinations"
+        }
+      ]
+    },
+    {
+      "id": "gdpr-transfers-2", 
+      "category": "data_transfers",
+      "title": "Transfers subject to appropriate safeguards",
+      "description": "In the absence of an adequacy decision, transfers require appropriate safeguards",
+      "severity": "high",
+      "details": "In the absence of an adequacy decision, a controller or processor may transfer personal data to a third country or an international organisation only if the controller or processor has provided appropriate safeguards, and on condition that enforceable data subject rights and effective legal remedies for data subjects are available.",
+      "articleReference": "Art. 46, GDPR",
+      "applicableWhen": {
+        "and": [
+          {"any": ["serves_eu", "has_eu_establishment"]},
+          {"field": "cross_border_transfers", "value": true},
+          {"field": "current_transfer_protections", "not_contains": "Standard Contractual Clauses with recipients"}
+        ]
+      },
+      "complianceChecks": [
+        {
+          "type": "documentation_requirement",
+          "description": "Implement Standard Contractual Clauses or other appropriate safeguards"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Conduct Transfer Impact Assessments where required"
+        }
+      ]
+    }
+  ],
+  "documentTemplates": {
+    "privacy_notice": {
+      "sections": [
+        "controller_information",
+        "processing_purposes", 
+        "lawful_basis",
+        "data_categories",
+        "recipients",
+        "retention_periods",
+        "data_subject_rights",
+        "international_transfers",
+        "contact_information"
+      ]
+    },
+    "consent_form": {
+      "required_elements": [
+        "clear_purpose_statement",
+        "data_categories",
+        "processing_activities", 
+        "withdrawal_mechanism",
+        "consequences_of_withdrawal"
+      ]
+    },
+    "breach_notification": {
+      "authority_notification": {
+        "timeframe": "72_hours",
+        "required_information": [
+          "nature_of_breach",
+          "categories_and_numbers",
+          "likely_consequences", 
+          "measures_taken"
+        ]
+      },
+      "individual_notification": {
+        "trigger": "high_risk_to_rights",
+        "required_information": [
+          "nature_of_breach",
+          "contact_point",
+          "likely_consequences",
+          "measures_taken"
+        ]
+      }
+    }
+  },
+  "penalties": {
+    "administrative_fines": {
+      "tier_1": {
+        "max_amount": "10_million_euros_or_2_percent_turnover",
+        "violations": [
+          "processing_without_lawful_basis",
+          "inadequate_records",
+          "failure_to_notify_breach",
+          "failure_to_conduct_dpia"
+        ]
+      },
+      "tier_2": {
+        "max_amount": "20_million_euros_or_4_percent_turnover", 
+        "violations": [
+          "violation_of_data_subject_rights",
+          "unlawful_international_transfers",
+          "violation_of_processing_principles",
+          "non_compliance_with_orders"
+        ]
+      }
+    }
+  }
+}
