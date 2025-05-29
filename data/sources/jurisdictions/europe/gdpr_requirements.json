@@ -14,6 +14,22 @@
       "operator": "equals",
       "value": true,
       "description": "Business serves customers in the European Union"
+    },
+    {
+      "type": "geographic", 
+      "field": "has_eu_establishment",
+      "operator": "equals",
+      "value": true,
+      "description": "Business has establishment in the European Union"
+    },
+    {
+      "type": "data_processing",
+      "field": "eu_data_subjects",
+      "operator": "greater_than",
+      "value": 0,
+      "description": "Processes personal data of EU data subjects"
+    }
+  ],
   "lawfulBasisValidation": {
     "rules": [
       {
@@ -99,32 +115,6 @@
       }
     ]
   },
-    {
-      "type": "geographic", 
-      "field": "has_eu_establishment",
-      "operator": "equals",
-      "value": true,
-      "description": "Business has establishment in the European Union"
-    },
-    {
-      "type": "data_processing",
-      "field": "eu_data_subjects",
-      "operator": "greater_than",
-      "value": 0,
-      "description": "Processes personal data of EU data subjects"
-    }
-    {
-      "id": "data_retention_practices",
-      "question": "How long do you typically retain different types of personal data?",
-      "type": "radio",
-      "required": false,
-      "choices": [
-        "We have specific retention periods for different data types",
-        "We keep data indefinitely unless requested to delete",
-        "We delete data after a standard period (e.g., 7 years)",
-        "We don't have defined retention periods",
-        "We only delete data when legally required"
-      ],
   "complianceAnalysis": {
     "processingActivityAnalysis": {
       "description": "System analyzes each processing activity against GDPR requirements",
@@ -147,122 +137,6 @@
       }
     }
   },
-      "help": "GDPR requires data to be kept no longer than necessary for the purposes",
-      "show_if": {
-        "or": [
-          {"field": "serves_eu", "value": true},
-          {"field": "has_eu_establishment", "value": true}
-        ]
-      }
-    },
-    {
-      "id": "deletion_triggers",
-      "question": "What triggers data deletion in your current processes?",
-      "type": "checkboxes",
-      "required": false,
-      "choices": [
-        "Individual requests for deletion",
-        "End of business relationship",
-        "Automatic expiration after set period",
-        "Legal requirement expiry",
-        "Storage space limitations",
-        "Annual data cleanup processes",
-        "We don't routinely delete data"
-      ],
-      "help": "Understanding current deletion practices helps assess GDPR compliance",
-      "show_if": {
-        "or": [
-          {"field": "serves_eu", "value": true},
-          {"field": "has_eu_establishment", "value": true}
-        ]
-      }
-    },
-    {
-      "id": "data_access_logging",
-      "question": "Do you log access to personal data?",
-      "type": "radio",
-      "required": false,
-      "choices": [
-        "Comprehensive logging of all data access",
-        "Logging for sensitive data only",
-        "Basic access logs",
-        "No access logging",
-        "Don't know"
-      ],
-      "help": "Access logging is important for breach detection and accountability",
-      "show_if": {
-        "or": [
-          {"field": "serves_eu", "value": true},
-          {"field": "has_eu_establishment", "value": true}
-        ]
-      }
-    },
-    {
-      "id": "breach_notification_contacts",
-      "question": "Do you have designated contacts for breach notifications?",
-      "type": "yesno",
-      "required": false,
-      "help": "GDPR requires notification to supervisory authority within 72 hours",
-      "show_if": {
-        "or": [
-          {"field": "serves_eu", "value": true},
-          {"field": "has_eu_establishment", "value": true}
-        ]
-      }
-    },
-    {
-      "id": "regulatory_authority_identification",
-      "question": "Have you identified which data protection authority you would notify in case of a breach?",
-      "type": "yesno",
-      "required": false,
-      "help": "Each EU member state has its own data protection authority",
-      "show_if": {
-        "or": [
-          {"field": "serves_eu", "value": true},
-          {"field": "has_eu_establishment", "value": true}
-        ]
-      }
-    },
-    {
-      "id": "individual_rights_request_volume",
-      "question": "Approximately how many individual rights requests do you receive monthly?",
-      "type": "radio",
-      "required": false,
-      "choices": [
-        "None - we haven't received any",
-        "1-5 requests per month",
-        "6-20 requests per month", 
-        "21-50 requests per month",
-        "More than 50 requests per month"
-      ],
-      "help": "This helps assess the scale of your rights management needs",
-      "show_if": {
-        "or": [
-          {"field": "serves_eu", "value": true},
-          {"field": "has_eu_establishment", "value": true}
-        ]
-      }
-    },
-    {
-      "id": "rights_request_handling_time",
-      "question": "How long does it typically take to respond to individual rights requests?",
-      "type": "radio",
-      "required": false,
-      "choices": [
-        "Within 1 week",
-        "Within 2 weeks",
-        "Within 1 month (30 days)",
-        "More than 1 month",
-        "We haven't processed any requests yet"
-      ],
-      "help": "GDPR requires responses within 1 month, extendable to 3 months in complex cases",
-      "show_if": {
-        "or": [
-          {"field": "serves_eu", "value": true},
-          {"field": "has_eu_establishment", "value": true}
-        ]
-      }
-    },
   "assessmentQuestions": [
     {
       "id": "serves_eu",
@@ -642,6 +516,134 @@
       }
     },
     {
+      "id": "data_retention_practices",
+      "question": "How long do you typically retain different types of personal data?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "We have specific retention periods for different data types",
+        "We keep data indefinitely unless requested to delete",
+        "We delete data after a standard period (e.g., 7 years)",
+        "We don't have defined retention periods",
+        "We only delete data when legally required"
+      ],
+      "help": "GDPR requires data to be kept no longer than necessary for the purposes",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "deletion_triggers",
+      "question": "What triggers data deletion in your current processes?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Individual requests for deletion",
+        "End of business relationship",
+        "Automatic expiration after set period",
+        "Legal requirement expiry",
+        "Storage space limitations",
+        "Annual data cleanup processes",
+        "We don't routinely delete data"
+      ],
+      "help": "Understanding current deletion practices helps assess GDPR compliance",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "data_access_logging",
+      "question": "Do you log access to personal data?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Comprehensive logging of all data access",
+        "Logging for sensitive data only",
+        "Basic access logs",
+        "No access logging",
+        "Don't know"
+      ],
+      "help": "Access logging is important for breach detection and accountability",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "breach_notification_contacts",
+      "question": "Do you have designated contacts for breach notifications?",
+      "type": "yesno",
+      "required": false,
+      "help": "GDPR requires notification to supervisory authority within 72 hours",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "regulatory_authority_identification",
+      "question": "Have you identified which data protection authority you would notify in case of a breach?",
+      "type": "yesno",
+      "required": false,
+      "help": "Each EU member state has its own data protection authority",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "individual_rights_request_volume",
+      "question": "Approximately how many individual rights requests do you receive monthly?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "None - we haven't received any",
+        "1-5 requests per month",
+        "6-20 requests per month", 
+        "21-50 requests per month",
+        "More than 50 requests per month"
+      ],
+      "help": "This helps assess the scale of your rights management needs",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "rights_request_handling_time",
+      "question": "How long does it typically take to respond to individual rights requests?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Within 1 week",
+        "Within 2 weeks",
+        "Within 1 month (30 days)",
+        "More than 1 month",
+        "We haven't processed any requests yet"
+      ],
+      "help": "GDPR requires responses within 1 month, extendable to 3 months in complex cases",
+      "show_if": {
+        "or": [
+          {"field": "serves_eu", "value": true},
+          {"field": "has_eu_establishment", "value": true}
+        ]
+      }
+    },
+    {
       "id": "is_public_authority",
       "question": "Is your organization a public authority or public body?",
       "type": "yesno",
@@ -721,7 +723,7 @@
           {"field": "has_eu_establishment", "value": true}
         ]
       }
-    },
+    }
   ],
   "categories": [
     {
@@ -805,16 +807,6 @@
         {
           "type": "validation_rule",
           "rule_id": "invalid_consent_mechanism"
-        }
-      ]
-      "complianceChecks": [
-        {
-          "type": "technical_requirement",
-          "description": "Implement consent management system"
-        },
-        {
-          "type": "documentation_requirement",
-          "description": "Maintain records of consent including when, how, and what was consented to"
         }
       ]
     },
@@ -1116,9 +1108,7 @@
         {
           "type": "documentation_requirement",
           "description": "Maintain records of legitimate interest assessments and balancing tests"
-        }
-      ]
-      "complianceChecks": [
+        },
         {
           "type": "documentation_requirement",
           "description": "Conduct DPIA for high-risk processing activities"
