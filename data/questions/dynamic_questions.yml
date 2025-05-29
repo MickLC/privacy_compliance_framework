@@ -1,0 +1,117 @@
+# dynamic_questions.yml - Generic JSON-Driven Question System
+---
+objects from file:
+  - gdpr_requirements: gdpr_requirements.json
+  - ccpa_requirements: ccpa_requirements.json
+  - tdpsa_requirements: tdpsa_requirements.json
+---
+code: |
+  def load_jurisdiction_questions():
+    """Load all questions for applicable jurisdictions from JSON"""
+    global jurisdiction_questions
+    jurisdiction_questions = {}
+    
+    jurisdiction_configs = {
+      'gdpr': gdpr_requirements,
+      'ccpa': ccpa_requirements,
+      'tdpsa': tdpsa_requirements
+    }
+    
+    for jurisdiction_id in applicable_jurisdictions:
+      if jurisdiction_id in jurisdiction_configs:
+        config = jurisdiction_configs[jurisdiction_id]
+        jurisdiction_questions[jurisdiction_id] = config.get('assessmentQuestions', [])
+    
+    return jurisdiction_questions
+  
+  def get_next_question():
+    """Get the next unanswered question from any applicable jurisdiction"""
+    for jurisdiction_id, questions in jurisdiction_questions.items():
+      for question in questions:
+        question_id = f"{jurisdiction_id}_{question['id']}"
+        
+        # Check if question should be shown based on conditions
+        if should_show_question(question) and not defined(question_id):
+          return create_question_block(question, question_id)
+    
+    return None  # All questions answered
+  
+  def should_show_question(question):
+    """Evaluate show_if conditions from JSON"""
+    show_if = question.get('show_if')
+    if not show_if:
+      return True
+    
+    return evaluate_condition(show_if)
+  
+  def evaluate_condition(condition):
+    """Evaluate conditional logic from JSON"""
+    if 'field' in condition:
+      # Simple field condition
+      field_value = globals().get(condition['field'])
+      expected_value = condition.get('value')
+      
+      if condition.get('operator') == 'contains':
+        return expected_value in field_value if field_value else False
+      else:
+        return field_value == expected_value
+    
+    elif 'and' in condition:
+      # AND logic
+      return all(evaluate_condition(sub_condition) for sub_condition in condition['and'])
+    
+    elif 'or' in condition:
+      # OR logic  
+      return any(evaluate_condition(sub_condition) for sub_condition in condition['or'])
+    
+    return True
+  
+  def create_question_block(question_config, question_id):
+    """Convert JSON question config to Docassemble question"""
+    question_text = question_config['question']
+    question_type = question_config.get('type', 'text')
+    
+    if question_type == 'yesno':
+      return {
+        'question': question_text,
+        'field': question_id,
+        'datatype': 'yesnowide',
+        'help': question_config.get('help', '')
+      }
+    elif question_type == 'checkboxes':
+      return {
+        'question': question_text,
+        'field': question_id,
+        'datatype': 'checkboxes',
+        'choices': question_config.get('choices', []),
+        'help': question_config.get('help', '')
+      }
+    elif question_type == 'radio':
+      return {
+        'question': question_text,
+        'field': question_id,
+        'datatype': 'radio',
+        'choices': question_config.get('choices', []),
+        'help': question_config.get('help', '')
+      }
+    else:
+      return {
+        'question': question_text,
+        'field': question_id,
+        'help': question_config.get('help', '')
+      }
+---
+# Generic question that asks the next question from JSON
+question: |
+  ${ current_question['question'] }
+field: ${ current_question['field'] }
+datatype: ${ current_question.get('datatype', 'text') }
+choices: ${ current_question.get('choices', []) }
+help: ${ current_question.get('help', '') }
+---
+code: |
+  # Get the next question to ask
+  current_question = get_next_question()
+  if current_question is None:
+    jurisdiction_assessment_complete = True
+---
