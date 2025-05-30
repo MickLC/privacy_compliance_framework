@@ -3,7 +3,7 @@
 objects from file:
   - gdpr_requirements: gdpr_requirements.json
   - ccpa_requirements: ccpa_requirements.json
-  - tdpsa_requirements: tdpsa_requirements.json
+  - tdpsa_requirements: jurisdictions/united_states/states/texas/tdpsa_requirements.json
 ---
 code: |
   def load_jurisdiction_specific_questions():
