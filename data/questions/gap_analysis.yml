@@ -1,59 +1,35 @@
-# modules/jurisdiction_registry.yml - JSON-Driven Jurisdiction Registry Module
+# modules/gap_analysis.yml - JSON-Driven Gap Analysis Module
 ---
 objects from file:
   - gdpr_requirements: data/sources/jurisdictions/europe/gdpr_requirements.json
   - ccpa_requirements: data/sources/jurisdictions/united_states/states/california/ccpa_requirements.json
   - tdpsa_requirements: data/sources/jurisdictions/united_states/states/texas/tdpsa_requirements.json
 ---
-question: "Step 2: Jurisdictional Analysis"
+question: "Step 4: Gap Analysis"
 subquestion: |
-  Based on your business profile, we'll now determine which privacy laws apply to your operations.
+  Now we'll compare your current privacy practices against the requirements of applicable laws.
   
-  The system will analyze:
-  - Where your business operates
-  - Where your customers/clients are located
-  - Your industry-specific regulations
-  - Data volumes and types you process
+  This will identify gaps that need to be addressed and generate remediation recommendations.
 
-continue button field: show_jurisdiction_intro
+continue button field: show_gap_analysis_intro
+continue button label: "Perform Analysis"
+---
+# Trigger gap analysis after intro
+code: |
+  # Perform gap analysis after intro is shown
+  if show_gap_analysis_intro:
+    compliance_gaps = perform_gap_analysis()
+    gap_report = generate_gap_report()
 ---
 code: |
-  def load_jurisdiction_registry():
-    """Load the registry from JSON files"""
-    global jurisdiction_registry
-    
-    if not defined('jurisdiction_registry'):
-      jurisdiction_registry = {
-        "jurisdictions": []
-      }
-      
-      # Build registry from JSON files
-      jurisdiction_configs = {
-        'gdpr': gdpr_requirements,
-        'ccpa': ccpa_requirements,
-        'tdpsa': tdpsa_requirements
-      }
-      
-      for jurisdiction_id, config in jurisdiction_configs.items():
-        jurisdiction_info = {
-          "id": jurisdiction_id,
-          "name": config.get('name', jurisdiction_id.upper()),
-          "short_name": config.get('shortName', jurisdiction_id.upper()),
-          "region": config.get('region', 'Unknown'),
-          "type": config.get('type', 'comprehensive'),
-          "effective_date": config.get('effectiveDate', 'Unknown'),
-          "latest_amendment": config.get('latestAmendment'),
-          "applicability_function": f"is_{jurisdiction_id}_applicable"
-        }
-        jurisdiction_registry["jurisdictions"].append(jurisdiction_info)
-    
-    return jurisdiction_registry
----
-code: |
-  def determine_applicable_jurisdictions():
-    """Determine which privacy jurisdictions apply using JSON-driven logic"""
-    global applicable_jurisdictions
-    applicable_jurisdictions = []
+  def perform_gap_analysis():
+    """Compare current practices against regulatory requirements using JSON data"""
+    gaps = {
+      "policy_gaps": [],
+      "operational_gaps": [],
+      "documentation_gaps": [],
+      "technical_gaps": []
+    }
     
     jurisdiction_configs = {
       'gdpr': gdpr_requirements,
@@ -61,89 +37,261 @@ code: |
       'tdpsa': tdpsa_requirements
     }
     
-    # For each jurisdiction, check applicability using JSON rules
-    for jurisdiction_id, config in jurisdiction_configs.items():
-      if check_jurisdiction_applicability(jurisdiction_id, config):
-        applicable_jurisdictions.append(jurisdiction_id)
+    # Analyze each applicable jurisdiction using JSON requirements
+    for jurisdiction_id in applicable_jurisdictions:
+      if jurisdiction_id in jurisdiction_configs:
+        analyze_jurisdiction_gaps(jurisdiction_id, jurisdiction_configs[jurisdiction_id], gaps)
     
-    return applicable_jurisdictions
+    return gaps
   
-  def check_jurisdiction_applicability(jurisdiction_id, config):
-    """Check if jurisdiction applies using JSON applicability checks"""
-    applicability_checks = config.get('applicabilityChecks', [])
+  def analyze_jurisdiction_gaps(jurisdiction_id, jurisdiction_config, gaps):
+    """Analyze gaps for a specific jurisdiction using JSON requirements"""
+    requirements = jurisdiction_config.get('requirements', [])
     
-    if not applicability_checks:
-      # Fallback to hardcoded functions if no JSON rules
-      func_name = f"is_{jurisdiction_id}_applicable"
-      if func_name in globals():
-        return globals()[func_name]()
-      return False
-    
-    # Evaluate JSON applicability rules
-    for check in applicability_checks:
-      if evaluate_applicability_check(check):
-        return True
-    
-    return False
+    for requirement in requirements:
+      # Check if requirement is applicable
+      if is_requirement_applicable(requirement, jurisdiction_id):
+        # Analyze compliance for this requirement
+        gap_info = check_requirement_compliance(requirement, jurisdiction_id)
+        if gap_info:
+          # Categorize the gap
+          category = map_requirement_to_category(requirement.get('category', 'operational'))
+          gaps[category].append(gap_info)
   
-  def evaluate_applicability_check(check):
-    """Evaluate individual applicability check from JSON"""
-    check_type = check.get('type')
-    field = check.get('field')
-    operator = check.get('operator', 'equals')
-    value = check.get('value')
+  def is_requirement_applicable(requirement, jurisdiction_id):
+    """Check if a requirement applies based on current conditions"""
+    applicable_when = requirement.get('applicableWhen')
+    if not applicable_when:
+      return True
     
-    # Get the field value from globals
-    field_value = globals().get(field)
+    # Simple applicability check - can be enhanced based on JSON structure
+    if isinstance(applicable_when, dict):
+      if 'any' in applicable_when:
+        # Check if any condition is met
+        conditions = applicable_when['any']
+        return any(check_applicability_condition(condition) for condition in conditions)
+      elif 'field' in applicable_when:
+        # Single field condition
+        return check_applicability_condition(applicable_when)
     
-    if operator == 'equals':
-      return field_value == value
-    elif operator == 'greater_than':
-      return field_value > value if field_value else False
-    elif operator == 'greater_than_or_equal':
-      return field_value >= value if field_value else False
-    elif operator == 'contains':
-      return value in field_value if field_value else False
-    
-    # Handle complex conditions
-    additional_condition = check.get('additional_condition')
-    if additional_condition:
-      additional_field = additional_condition.get('field')
-      additional_operator = additional_condition.get('operator', 'equals')
-      additional_value = additional_condition.get('value')
-      additional_field_value = globals().get(additional_field)
+    return True
+  
+  def check_applicability_condition(condition):
+    """Check individual applicability condition"""
+    if isinstance(condition, str):
+      # Simple field name check
+      return globals().get(condition, False)
+    elif isinstance(condition, dict):
+      field_name = condition.get('field')
+      operator = condition.get('operator', 'equals')
+      value = condition.get('value')
       
-      if additional_operator == 'equals':
-        return field_value >= value and additional_field_value == additional_value
+      field_value = globals().get(field_name)
+      
+      if operator == 'equals':
+        return field_value == value
+      elif operator == 'greater_than':
+        return field_value > value if field_value else False
+      elif operator == 'contains':
+        return value in field_value if field_value else False
     
     return False
   
-  # Fallback applicability functions (for backward compatibility)
-  def is_gdpr_applicable():
-    """Determine if GDPR applies"""
-    return serves_eu or has_eu_establishment
+  def check_requirement_compliance(requirement, jurisdiction_id):
+    """Check if current practices meet this requirement"""
+    req_id = requirement.get('id')
+    description = requirement.get('description')
+    severity = requirement.get('severity', 'medium')
+    title = requirement.get('title', description)
+    
+    # Map requirement IDs to compliance checks
+    compliance_check = get_compliance_check_function(req_id)
+    
+    if compliance_check and not compliance_check():
+      return {
+        "id": req_id,
+        "title": title,
+        "description": description,
+        "severity": severity,
+        "jurisdiction": jurisdiction_id,
+        "remediation": get_remediation_text(requirement)
+      }
+    
+    return None
   
-  def is_ccpa_applicable():
-    """Determine if CCPA/CPRA applies"""
-    return ((company.annual_revenue >= 25000000 or 
-             california_records >= 100000 or
-             (california_records >= 50000 and sells_personal_info)) and
-            ('California' in states_with_locations or california_records > 0))
+  def get_compliance_check_function(req_id):
+    """Return compliance check function for specific requirement"""
+    compliance_checks = {
+      # Privacy Policy Requirements
+      'gdpr-trans-1': lambda: has_existing_policy,
+      'ccpa-notice-1': lambda: has_existing_policy,
+      'ccpa-notice-2': lambda: has_existing_policy,
+      'tdpsa-trans-1': lambda: has_existing_policy,
+      'tdpsa-trans-2': lambda: has_existing_policy,
+      
+      # Individual Rights Requirements  
+      'gdpr-rights-1': lambda: has_dsr_procedures,
+      'gdpr-rights-2': lambda: has_dsr_procedures,
+      'gdpr-rights-3': lambda: has_dsr_procedures,
+      'gdpr-rights-5': lambda: has_dsr_procedures,
+      'gdpr-rights-6': lambda: has_dsr_procedures,
+      'ccpa-rights-1': lambda: has_dsr_procedures,
+      'ccpa-rights-2': lambda: has_dsr_procedures,
+      'ccpa-rights-5': lambda: has_dsr_procedures,
+      'tdpsa-rights-1': lambda: has_dsr_procedures,
+      'tdpsa-rights-2': lambda: has_dsr_procedures,
+      'tdpsa-rights-3': lambda: has_dsr_procedures,
+      'tdpsa-rights-4': lambda: has_dsr_procedures,
+      
+      # Security Requirements
+      'gdpr-protection-2': lambda: uses_encryption and has_access_controls,
+      'ccpa-security-1': lambda: uses_encryption and has_access_controls,
+      'tdpsa-processing-3': lambda: uses_encryption and has_access_controls,
+      
+      # Breach Response Requirements
+      'gdpr-protection-3': lambda: has_breach_plan,
+      'gdpr-protection-4': lambda: has_breach_plan,
+      'tdpsa-security-1': lambda: has_breach_plan,
+      
+      # Documentation Requirements
+      'gdpr-accountability-1': lambda: has_retention_policy,
+      'tdpsa-processing-1': lambda: has_retention_policy,
+      
+      # Training Requirements
+      'ccpa-training-1': lambda: provides_security_training,
+      
+      # Opt-out Requirements (for applicable businesses)
+      'ccpa-rights-3': lambda: not sells_personal_info or (defined('has_optout_sale_process') and has_optout_sale_process),
+      'ccpa-opt-out-1': lambda: not sells_personal_info or (defined('has_optout_sale_process') and has_optout_sale_process),
+      'tdpsa-rights-5': lambda: not defined('processes_targeted_advertising') or (defined('has_optout_targeting_process') and has_optout_targeting_process),
+      'tdpsa-rights-6': lambda: not sells_personal_info or (defined('has_optout_sale_process') and has_optout_sale_process)
+    }
+    
+    return compliance_checks.get(req_id)
   
-  def is_tdpsa_applicable():
-    """Determine if Texas TDPSA applies"""
-    # Check if business has Texas presence
-    has_texas_presence = ('Texas' in states_with_locations or texas_records > 0)
+  def get_remediation_text(requirement):
+    """Extract remediation guidance from requirement"""
+    # Look for remediation in compliance checks
+    compliance_checks = requirement.get('complianceChecks', [])
+    remediation_parts = []
     
-    if not has_texas_presence:
-      return False
+    for check in compliance_checks:
+      description = check.get('description', '')
+      if description:
+        remediation_parts.append(description)
     
-    # Check data volume thresholds
-    meets_data_thresholds = (texas_records >= 100000 or 
-                            (texas_records >= 25000 and sells_personal_info))
+    if remediation_parts:
+      return '; '.join(remediation_parts)
     
-    if not meets_data_thresholds:
-      return False
+    # Fallback to generic remediation
+    return f"Implement controls to meet {requirement.get('title', 'this requirement')}"
+  
+  def map_requirement_to_category(category):
+    """Map JSON requirement categories to gap categories"""
+    category_mapping = {
+      'transparency': 'policy_gaps',
+      'notice_requirements': 'policy_gaps',
+      'consumer_rights': 'operational_gaps',
+      'individual_rights': 'operational_gaps',
+      'data_protection': 'technical_gaps',
+      'security': 'technical_gaps',
+      'data_security': 'technical_gaps',
+      'accountability': 'documentation_gaps',
+      'contracts': 'documentation_gaps',
+      'service_providers': 'documentation_gaps',
+      'data_transfers': 'operational_gaps',
+      'opt_out_requirements': 'operational_gaps',
+      'children_data': 'operational_gaps',
+      'sensitive_data': 'operational_gaps',
+      'lawful_basis': 'documentation_gaps'
+    }
     
-    # Check if business qualifies as small business (exempt from TDPSA)
-    if (defined('company.naics_code') and defined('company
+    return category_mapping.get(category, 'operational_gaps')
+  
+  def generate_gap_report():
+    """Generate formatted gap analysis report using JSON data"""
+    report = {
+      "summary": {
+        "total_gaps": sum(len(gaps) for gaps in compliance_gaps.values()),
+        "high_severity": sum(1 for category in compliance_gaps.values() 
+                            for gap in category if gap["severity"] == "high"),
+        "medium_severity": sum(1 for category in compliance_gaps.values() 
+                              for gap in category if gap["severity"] == "medium"),
+        "low_severity": sum(1 for category in compliance_gaps.values() 
+                           for gap in category if gap["severity"] == "low")
+      },
+      "gaps_by_category": compliance_gaps,
+      "gaps_by_jurisdiction": organize_gaps_by_jurisdiction(),
+      "remediation_plan": create_remediation_plan()
+    }
+    
+    return report
+  
+  def organize_gaps_by_jurisdiction():
+    """Reorganize gaps by jurisdiction for reporting"""
+    jurisdiction_gaps = {}
+    
+    for jurisdiction_id in applicable_jurisdictions:
+      jurisdiction_gaps[jurisdiction_id] = {
+        "policy_gaps": [gap for gap in compliance_gaps["policy_gaps"] if gap["jurisdiction"] == jurisdiction_id],
+        "operational_gaps": [gap for gap in compliance_gaps["operational_gaps"] if gap["jurisdiction"] == jurisdiction_id],
+        "documentation_gaps": [gap for gap in compliance_gaps["documentation_gaps"] if gap["jurisdiction"] == jurisdiction_id],
+        "technical_gaps": [gap for gap in compliance_gaps["technical_gaps"] if gap["jurisdiction"] == jurisdiction_id]
+      }
+    
+    return jurisdiction_gaps
+  
+  def create_remediation_plan():
+    """Create prioritized remediation plan"""
+    remediation_items = []
+    
+    # Extract all gaps and sort by severity
+    all_gaps = []
+    for category, gaps in compliance_gaps.items():
+      all_gaps.extend(gaps)
+    
+    # Sort by severity
+    severity_order = {"high": 0, "medium": 1, "low": 2}
+    all_gaps.sort(key=lambda x: severity_order.get(x["severity"], 3))
+    
+    # Create remediation items
+    for gap in all_gaps:
+      remediation_items.append({
+        "description": gap["remediation"],
+        "severity": gap["severity"],
+        "jurisdiction": gap["jurisdiction"],
+        "timeframe": "30 days" if gap["severity"] == "high" else "60 days" if gap["severity"] == "medium" else "90 days"
+      })
+    
+    return remediation_items
+---
+# Gap summary screen
+question: Compliance Gaps Summary
+subquestion: |
+  Based on our analysis, we've identified ${gap_report["summary"]["total_gaps"]} compliance gaps:
+  
+  ## Summary
+  
+  * **High Severity Gaps**: ${gap_report["summary"]["high_severity"]}
+  * **Medium Severity Gaps**: ${gap_report["summary"]["medium_severity"]}
+  * **Low Severity Gaps**: ${gap_report["summary"]["low_severity"]}
+  
+  ## Key Compliance Gaps by Jurisdiction
+  
+  % for jurisdiction_id, jurisdiction_data in gap_report["gaps_by_jurisdiction"].items():
+  **${jurisdiction_id.upper()}**:
+  % for category, gaps in jurisdiction_data.items():
+  % if gaps:
+  ${category.replace("_", " ").title()}:
+  % for gap in gaps:
+  * ${gap["description"]} (${gap["severity"].title()})
+  % endfor
+  % endif
+  % endfor
+  
+  % endfor
+  
+  A detailed gap analysis report and remediation plan will be included in your documentation package.
+continue button field: continue_gap_summary
+continue button label: "Continue to Document Generation"
+---
