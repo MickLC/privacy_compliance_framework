@@ -2,180 +2,1047 @@
   "jurisdictionId": "ccpa",
   "name": "California Consumer Privacy Act / California Privacy Rights Act",
   "shortName": "CCPA/CPRA",
-  "region": "California, USA",
+  "jurisdiction": "california",
+  "region": "united_states",
   "type": "comprehensive",
   "effectiveDate": "2020-01-01",
   "latestAmendment": "2023-01-01",
+  "applicabilityChecks": [
+    {
+      "type": "geographic",
+      "field": "california_records",
+      "operator": "greater_than",
+      "value": 0,
+      "description": "Processes personal information of California residents"
+    },
+    {
+      "type": "revenue",
+      "field": "company.annual_revenue",
+      "operator": "greater_than_or_equal",
+      "value": 25000000,
+      "description": "Annual gross revenues exceed $25 million"
+    },
+    {
+      "type": "data_volume",
+      "field": "california_records",
+      "operator": "greater_than_or_equal",
+      "value": 100000,
+      "description": "Buys, receives, sells, or shares personal information of 100,000 or more California consumers"
+    },
+    {
+      "type": "data_volume_with_sale",
+      "condition": {
+        "and": [
+          {"field": "california_records", "operator": "greater_than_or_equal", "value": 50000},
+          {"field": "sells_personal_info", "operator": "equals", "value": true}
+        ]
+      },
+      "description": "Derives 50% or more of annual revenues from selling or sharing consumers' personal information"
+    }
+  ],
+  "lawfulBasisValidation": {
+    "rules": [
+      {
+        "id": "sensitive_personal_information_consent",
+        "condition": {
+          "data_categories_processed": "contains_any",
+          "values": ["Precise geolocation", "Race or ethnic origin", "Religious beliefs", "Health information", "Biometric information", "Genetic data"]
+        },
+        "required_consent": true,
+        "severity": "high",
+        "message": "Sensitive personal information requires explicit consent or falls under specific exceptions",
+        "remediation": "Implement consent mechanism for sensitive personal information or ensure processing falls under permitted exceptions"
+      },
+      {
+        "id": "children_data_opt_in_required",
+        "condition": {
+          "data_categories_processed": "contains",
+          "value": "Children's data (under 16 years old)"
+        },
+        "required_consent": "opt_in",
+        "additional_requirements": ["age_verification", "parental_consent_under_13"],
+        "severity": "high",
+        "message": "Processing children's data requires opt-in consent and parental consent for under 13",
+        "remediation": "Implement age verification and opt-in consent for minors, parental consent for children under 13"
+      },
+      {
+        "id": "sale_of_personal_information",
+        "condition": {
+          "processing_purpose": "contains_any",
+          "values": ["Sale to third parties", "Sharing for advertising revenue", "Data monetization"]
+        },
+        "required_rights": ["opt_out_mechanism"],
+        "severity": "high",
+        "message": "Sale of personal information requires prominent opt-out mechanism",
+        "remediation": "Implement 'Do Not Sell My Personal Information' link and opt-out process"
+      },
+      {
+        "id": "cross_context_behavioral_advertising",
+        "condition": {
+          "and": [
+            {"processing_purpose": "Marketing and advertising campaigns"},
+            {"data_categories_processed": "contains", "value": "Behavioral information"}
+          ]
+        },
+        "required_rights": ["opt_out_sharing"],
+        "severity": "high",
+        "message": "Cross-context behavioral advertising requires opt-out mechanism",
+        "remediation": "Implement 'Do Not Share My Personal Information' link and opt-out process"
+      },
+      {
+        "id": "household_data_processing",
+        "condition": {
+          "data_categories_processed": "contains",
+          "value": "Household information"
+        },
+        "required_notice": "household_context",
+        "severity": "medium",
+        "message": "Household data processing requires specific notice provisions",
+        "remediation": "Provide clear notice about household data collection and use"
+      },
+      {
+        "id": "employee_data_exemption",
+        "condition": {
+          "and": [
+            {"data_subjects": "contains", "value": "Employees"},
+            {"processing_purpose": "Employee management and HR"}
+          ]
+        },
+        "exemption": "employment_context",
+        "severity": "low",
+        "message": "Employee data may be subject to different requirements under employment context",
+        "remediation": "Ensure employment-specific privacy notices and rights are provided"
+      }
+    ]
+  },
+  "complianceAnalysis": {
+    "consumerRightsAnalysis": {
+      "description": "System analyzes consumer rights compliance against CCPA/CPRA requirements",
+      "validationProcess": [
+        "Check opt-out mechanisms for sale and sharing",
+        "Validate consumer request response procedures",
+        "Verify non-discrimination protections",
+        "Assess correction and deletion capabilities",
+        "Check data portability implementation",
+        "Validate sensitive personal information controls"
+      ],
+      "outputFormat": {
+        "rights_assessment": {
+          "right_name": "string",
+          "compliance_status": "compliant|non_compliant|needs_review",
+          "identified_issues": ["array of compliance gaps"],
+          "recommendations": ["array of remediation actions"],
+          "priority": "high|medium|low"
+        }
+      }
+    }
+  },
+  "assessmentQuestions": [
+    {
+      "id": "california_presence",
+      "question": "Do you conduct business in California or serve California residents?",
+      "type": "yesno",
+      "required": true,
+      "help": "This includes any goods, services, or activities directed to California consumers"
+    },
+    {
+      "id": "california_records",
+      "question": "Approximately how many California residents' personal information do you process annually?",
+      "type": "integer",
+      "required": true,
+      "help": "Include customers, employees, vendors, website visitors, etc. This helps determine CCPA applicability thresholds"
+    },
+    {
+      "id": "annual_revenue",
+      "question": "What is your business's annual gross revenue?",
+      "type": "currency",
+      "required": true,
+      "help": "CCPA applies to businesses with annual gross revenues over $25 million"
+    },
+    {
+      "id": "revenue_from_data_sales",
+      "question": "What percentage of your annual revenue comes from selling or sharing consumer personal information?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "None - we don't sell or share personal information",
+        "Less than 10%",
+        "10-25%",
+        "26-50%",
+        "More than 50%"
+      ],
+      "help": "Businesses deriving 50% or more of revenue from selling PI have lower consumer volume thresholds",
+      "show_if": {
+        "field": "sells_personal_info",
+        "value": true
+      }
+    },
+    {
+      "id": "data_sale_activities",
+      "question": "Which of these activities do you engage in?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Sell customer lists to third parties",
+        "Share data with advertising partners for compensation",
+        "Provide data to data brokers",
+        "License customer data for commercial use",
+        "Share data for cross-context behavioral advertising",
+        "Monetize data through third-party partnerships",
+        "None of the above"
+      ],
+      "help": "These activities may constitute 'selling' or 'sharing' under CCPA definitions"
+    },
+    {
+      "id": "sensitive_personal_information",
+      "question": "Which types of sensitive personal information do you collect or process?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Social Security numbers or driver's license numbers",
+        "Account login credentials (usernames and passwords)",
+        "Financial account numbers or credit card information",
+        "Precise geolocation (within 1,850 feet)",
+        "Racial or ethnic origin",
+        "Religious or philosophical beliefs",
+        "Union membership information",
+        "Contents of mail, email, or text messages (where business is not intended recipient)",
+        "Genetic data",
+        "Biometric information for identification purposes",
+        "Health information",
+        "Sex life or sexual orientation information",
+        "None of the above"
+      ],
+      "help": "Sensitive personal information has enhanced protection requirements under CPRA"
+    },
+    {
+      "id": "children_data_collection",
+      "question": "Do you knowingly collect personal information from children?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "No, we don't collect from children",
+        "Yes, from children under 13 years old",
+        "Yes, from children 13-15 years old",
+        "Yes, from children under 16 years old",
+        "We don't know the ages of our users"
+      ],
+      "help": "Children's data has special requirements including opt-in consent and parental consent"
+    },
+    {
+      "id": "consumer_request_volume",
+      "question": "Approximately how many consumer privacy requests do you receive monthly?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "None - we haven't received any",
+        "1-10 requests per month",
+        "11-50 requests per month",
+        "51-100 requests per month",
+        "More than 100 requests per month"
+      ],
+      "help": "This helps assess the scale of your consumer rights management needs"
+    },
+    {
+      "id": "opt_out_mechanisms",
+      "question": "What opt-out mechanisms do you currently provide?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "'Do Not Sell My Personal Information' link on website",
+        "'Do Not Share My Personal Information' link on website",
+        "Limit Use of My Sensitive Personal Information option",
+        "Email unsubscribe options",
+        "Account preference settings",
+        "Customer service contact for opt-out",
+        "Toll-free phone number for requests",
+        "We don't currently provide opt-out mechanisms"
+      ],
+      "help": "CCPA requires specific opt-out mechanisms for sale and sharing of personal information"
+    },
+    {
+      "id": "third_party_data_sharing",
+      "question": "Which third parties do you share personal information with?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Advertising networks and platforms",
+        "Social media platforms",
+        "Analytics providers",
+        "Marketing service providers",
+        "Data management platforms",
+        "Customer relationship management (CRM) providers",
+        "Payment processors",
+        "Shipping and logistics providers",
+        "Professional service providers (legal, accounting)",
+        "Subsidiaries or affiliated companies",
+        "Government agencies (when required by law)",
+        "We don't share personal information with third parties"
+      ],
+      "help": "Understanding data sharing helps determine sale/sharing obligations and disclosures needed"
+    },
+    {
+      "id": "data_retention_practices_california",
+      "question": "How do you determine data retention periods for California consumers?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Business purpose-specific retention periods",
+        "Industry standard retention periods",
+        "Legal requirement-based retention",
+        "Customer relationship-based retention",
+        "We retain data indefinitely unless requested to delete",
+        "We don't have specific retention periods"
+      ],
+      "help": "CCPA requires retention only for disclosed business purposes and reasonable periods"
+    },
+    {
+      "id": "consumer_verification_methods",
+      "question": "How do you verify the identity of consumers making privacy requests?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Email verification (send link to registered email)",
+        "Account login verification",
+        "Matching personal information provided",
+        "Government-issued ID verification",
+        "Two-factor authentication",
+        "Security question verification",
+        "Phone number verification",
+        "We don't currently have verification procedures"
+      ],
+      "help": "CCPA requires reasonable verification methods to protect consumer data"
+    },
+    {
+      "id": "employee_privacy_rights",
+      "question": "Do you provide CCPA privacy rights to your employees?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Yes, same rights as consumers",
+        "Yes, with employment-specific modifications",
+        "Limited rights in employment context",
+        "No, we rely on employment exemption",
+        "We haven't determined our approach"
+      ],
+      "help": "Employee data has specific considerations under CCPA/CPRA"
+    },
+    {
+      "id": "household_data_processing",
+      "question": "Do you process personal information at the household level?",
+      "type": "yesno",
+      "required": false,
+      "help": "Household data processing has specific notice and rights requirements"
+    },
+    {
+      "id": "automated_decision_making_california",
+      "question": "Do you use automated decision-making that affects California consumers?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Credit scoring or loan approvals",
+        "Employment screening or hiring decisions",
+        "Insurance underwriting or claims processing",
+        "Pricing or discount algorithms",
+        "Content recommendation systems",
+        "Fraud detection systems",
+        "Risk assessment algorithms",
+        "We don't use automated decision-making"
+      ],
+      "help": "Automated decision-making may require specific disclosures and opt-out rights"
+    },
+    {
+      "id": "california_privacy_policy",
+      "question": "Does your privacy policy include CCPA-required disclosures?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Categories of personal information collected",
+        "Categories of sources of personal information",
+        "Business or commercial purposes for collection",
+        "Categories of third parties with whom we share",
+        "Categories of personal information sold or shared",
+        "Consumer rights under CCPA",
+        "How to submit consumer requests",
+        "Non-discrimination policy",
+        "Contact information for privacy requests",
+        "Our privacy policy doesn't include these disclosures"
+      ],
+      "help": "CCPA requires specific disclosures in privacy policies"
+    },
+    {
+      "id": "service_provider_contracts",
+      "question": "Do your service provider contracts include CCPA-required provisions?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Yes, all contracts include CCPA provisions",
+        "Some contracts include CCPA provisions",
+        "We're in process of updating contracts",
+        "No, our contracts don't include CCPA provisions",
+        "We don't know what our contracts contain"
+      ],
+      "help": "CCPA requires specific contractual provisions with service providers",
+      "show_if": {
+        "field": "third_party_data_sharing",
+        "not_contains": "We don't share personal information with third parties"
+      }
+    },
+    {
+      "id": "global_privacy_control",
+      "question": "Do you recognize and honor Global Privacy Control (GPC) signals?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Yes, we automatically honor GPC signals",
+        "We recognize GPC but require additional verification",
+        "We're implementing GPC recognition",
+        "No, we don't currently honor GPC signals",
+        "We don't know what GPC is"
+      ],
+      "help": "CPRA requires businesses to honor consumer preference signals like GPC"
+    },
+    {
+      "id": "privacy_impact_assessments",
+      "question": "Do you conduct privacy impact assessments for processing activities?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Yes, for all significant processing activities",
+        "Yes, for high-risk processing only",
+        "We're developing a PIA process",
+        "No, we don't conduct PIAs",
+        "We don't know if PIAs are required"
+      ],
+      "help": "PIAs help demonstrate compliance and identify privacy risks"
+    }
+  ],
   "categories": [
     {
-      "id": "notice",
-      "name": "Notice Requirements"
+      "id": "notice_requirements",
+      "name": "Notice Requirements",
+      "description": "Obligations to provide clear information to consumers about data collection and use"
     },
     {
       "id": "consumer_rights",
-      "name": "Consumer Rights"
+      "name": "Consumer Rights",
+      "description": "Rights that must be provided to consumers under CCPA/CPRA"
     },
     {
-      "id": "opt_out",
-      "name": "Opt-Out Requirements"
+      "id": "opt_out_requirements",
+      "name": "Opt-Out Requirements",
+      "description": "Requirements for opt-out mechanisms and processing opt-out requests"
     },
     {
       "id": "data_security",
-      "name": "Data Security Requirements"
+      "name": "Data Security Requirements",
+      "description": "Security measures and breach notification requirements"
     },
     {
       "id": "service_providers",
-      "name": "Service Provider Requirements"
+      "name": "Service Provider Requirements",
+      "description": "Contractual and operational requirements for service providers"
     },
     {
-      "id": "children",
-      "name": "Children's Data Requirements"
+      "id": "children_data",
+      "name": "Children's Data Requirements",
+      "description": "Special requirements for processing children's personal information"
     }
   ],
   "requirements": [
     {
       "id": "ccpa-notice-1",
-      "category": "notice",
-      "description": "Notice at collection of personal information",
+      "category": "notice_requirements",
+      "title": "Notice at collection of personal information",
+      "description": "Businesses must inform consumers of data collection practices at or before collection",
       "severity": "high",
       "details": "A business shall, at or before the point of collection of personal information, inform consumers of the categories of personal information to be collected and the purposes for which the categories of personal information are collected or used.",
-      "articleReference": "Sec. 1798.100(b), CCPA"
+      "articleReference": "Sec. 1798.100(b), CCPA",
+      "applicableWhen": {
+        "any": ["california_presence", "california_records > 0"]
+      },
+      "complianceChecks": [
+        {
+          "type": "policy_requirement",
+          "description": "Create notice at collection covering all required elements"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Provide notice at point of data collection across all channels"
+        }
+      ]
     },
     {
       "id": "ccpa-notice-2",
-      "category": "notice",
-      "description": "Privacy policy covering CCPA requirements",
+      "category": "notice_requirements",
+      "title": "Privacy policy covering CCPA requirements",
+      "description": "Businesses must maintain comprehensive privacy policy with CCPA disclosures",
       "severity": "high",
       "details": "A business shall maintain a privacy policy that includes information on consumers' rights under the CCPA, categories of personal information collected, sold, or disclosed, and other required disclosures.",
-      "articleReference": "Sec. 1798.130(a)(5), CCPA"
+      "articleReference": "Sec. 1798.130(a)(5), CCPA",
+      "applicableWhen": {
+        "any": ["california_presence", "california_records > 0"]
+      },
+      "complianceChecks": [
+        {
+          "type": "policy_requirement",
+          "description": "Update privacy policy with all CCPA-required disclosures"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Ensure privacy policy is easily accessible from homepage"
+        }
+      ]
     },
     {
       "id": "ccpa-notice-3",
-      "category": "notice",
-      "description": "Just-in-time notice for mobile applications",
+      "category": "notice_requirements",
+      "title": "Just-in-time notice for mobile applications",
+      "description": "Mobile apps must provide just-in-time notice for unexpected data collection",
       "severity": "medium",
       "details": "When a business collects personal information from a consumer's mobile device for a purpose that the consumer would not reasonably expect, it shall provide a just-in-time notice containing a summary of the categories of personal information being collected and a link to the full notice at collection.",
-      "articleReference": "CCPA Regulations, 11 CCR § 999.305(a)(4)"
+      "articleReference": "CCPA Regulations, 11 CCR § 999.305(a)(4)",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "data_collection_method": "contains",
+          "value": "Mobile application"
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement just-in-time notices in mobile applications"
+        }
+      ]
     },
     {
       "id": "ccpa-rights-1",
       "category": "consumer_rights",
-      "description": "Right to know about personal information collected, disclosed, or sold",
+      "title": "Right to know about personal information collected, disclosed, or sold",
+      "description": "Consumers have the right to request disclosure of business data practices",
       "severity": "high",
       "details": "A consumer shall have the right to request that a business disclose the categories and specific pieces of personal information the business has collected about the consumer, the categories of sources from which the personal information is collected, the business purpose for collecting or selling personal information, and the categories of third parties with whom the business shares personal information.",
-      "articleReference": "Sec. 1798.110, CCPA"
+      "articleReference": "Sec. 1798.110, CCPA",
+      "applicableWhen": {
+        "any": ["california_presence", "california_records > 0"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement process for handling know requests within 45 days"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "Maintain systems capable of providing comprehensive data disclosures"
+        }
+      ]
     },
     {
       "id": "ccpa-rights-2",
       "category": "consumer_rights",
-      "description": "Right to delete personal information",
+      "title": "Right to delete personal information",
+      "description": "Consumers have the right to request deletion of their personal information",
       "severity": "high",
       "details": "A consumer shall have the right to request that a business delete any personal information about the consumer which the business has collected from the consumer.",
-      "articleReference": "Sec. 1798.105, CCPA"
+      "articleReference": "Sec. 1798.105, CCPA",
+      "applicableWhen": {
+        "any": ["california_presence", "california_records > 0"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement deletion process considering legal exceptions"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "Ensure technical capability to delete data across all systems"
+        }
+      ]
     },
     {
       "id": "ccpa-rights-3",
       "category": "consumer_rights",
-      "description": "Right to opt-out of sale of personal information",
+      "title": "Right to opt-out of sale of personal information",
+      "description": "Consumers have the right to opt-out of the sale of their personal information",
       "severity": "high",
       "details": "A consumer shall have the right, at any time, to direct a business that sells personal information about the consumer to third parties not to sell the consumer's personal information.",
-      "articleReference": "Sec. 1798.120, CCPA"
+      "articleReference": "Sec. 1798.120, CCPA",
+      "applicableWhen": {
+        "field": "sells_personal_info",
+        "value": true
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement 'Do Not Sell My Personal Information' mechanism"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Process opt-out requests and maintain opt-out status"
+        }
+      ]
     },
     {
       "id": "ccpa-rights-4",
       "category": "consumer_rights",
-      "description": "Right to non-discrimination",
+      "title": "Right to non-discrimination",
+      "description": "Businesses cannot discriminate against consumers for exercising CCPA rights",
       "severity": "high",
       "details": "A business shall not discriminate against a consumer because the consumer exercised any of the consumer's rights under the CCPA.",
-      "articleReference": "Sec. 1798.125, CCPA"
+      "articleReference": "Sec. 1798.125, CCPA",
+      "applicableWhen": {
+        "any": ["california_presence", "california_records > 0"]
+      },
+      "complianceChecks": [
+        {
+          "type": "policy_requirement",
+          "description": "Establish non-discrimination policies and training"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Monitor for discriminatory practices in service delivery"
+        }
+      ]
     },
     {
       "id": "ccpa-rights-5",
       "category": "consumer_rights",
-      "description": "Right to correct inaccurate personal information",
+      "title": "Right to correct inaccurate personal information",
+      "description": "Consumers have the right to request correction of inaccurate personal information",
       "severity": "high",
       "details": "A consumer shall have the right to request a business that maintains inaccurate personal information about the consumer to correct that inaccurate personal information.",
-      "articleReference": "Sec. 1798.106, CPRA"
+      "articleReference": "Sec. 1798.106, CPRA",
+      "applicableWhen": {
+        "any": ["california_presence", "california_records > 0"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement correction process for inaccurate data"
+        }
+      ]
     },
     {
       "id": "ccpa-rights-6",
       "category": "consumer_rights",
-      "description": "Right to limit use and disclosure of sensitive personal information",
+      "title": "Right to limit use and disclosure of sensitive personal information",
+      "description": "Consumers have the right to limit use of their sensitive personal information",
       "severity": "high",
       "details": "A consumer shall have the right to direct a business that collects sensitive personal information about the consumer to limit its use of the consumer's sensitive personal information.",
-      "articleReference": "Sec. 1798.121, CPRA"
+      "articleReference": "Sec. 1798.121, CPRA",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "data_categories_processed": "contains_any",
+          "values": ["Precise geolocation", "Health information", "Biometric information", "Genetic data"]
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement 'Limit Use of My Sensitive Personal Information' mechanism"
+        }
+      ]
     },
     {
       "id": "ccpa-opt-out-1",
-      "category": "opt_out",
-      "description": "Do Not Sell My Personal Information link",
+      "category": "opt_out_requirements",
+      "title": "Do Not Sell My Personal Information link",
+      "description": "Businesses must provide clear and conspicuous opt-out link",
       "severity": "high",
       "details": "A business that sells consumers' personal information shall provide a clear and conspicuous link on the business's internet homepage, titled 'Do Not Sell My Personal Information,' to a web page that enables a consumer to opt out of the sale of the consumer's personal information.",
-      "articleReference": "Sec. 1798.135(a), CCPA"
+      "articleReference": "Sec. 1798.135(a), CCPA",
+      "applicableWhen": {
+        "field": "sells_personal_info",
+        "value": true
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Add 'Do Not Sell My Personal Information' link to homepage"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "Create functional opt-out web page"
+        }
+      ]
     },
     {
       "id": "ccpa-opt-out-2",
-      "category": "opt_out",
-      "description": "Opt-out of sale request methods",
+      "category": "opt_out_requirements",
+      "title": "Opt-out of sale request methods",
+      "description": "Businesses must provide multiple methods for submitting opt-out requests",
       "severity": "high",
       "details": "A business shall provide two or more designated methods for submitting requests to opt out of sale, including, at a minimum, an interactive webform accessible via a clear and conspicuous link titled 'Do Not Sell My Personal Information,' on the business's website or mobile application.",
-      "articleReference": "CCPA Regulations, 11 CCR § 999.315(a)"
+      "articleReference": "CCPA Regulations, 11 CCR § 999.315(a)",
+      "applicableWhen": {
+        "field": "sells_personal_info",
+        "value": true
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement multiple opt-out request methods (web form, email, phone)"
+        }
+      ]
     },
     {
       "id": "ccpa-opt-out-3",
-      "category": "opt_out",
-      "description": "Opt-out of sharing for cross-context behavioral advertising",
+      "category": "opt_out_requirements",
+      "title": "Opt-out of sharing for cross-context behavioral advertising",
+      "description": "Businesses must provide opt-out mechanism for data sharing",
       "severity": "high",
       "details": "A business that shares consumers' personal information for cross-context behavioral advertising shall provide a clear and conspicuous link titled 'Do Not Share My Personal Information' to allow consumers to opt out of the sharing of their personal information.",
-      "articleReference": "Sec. 1798.135, CPRA"
+      "articleReference": "Sec. 1798.135, CPRA",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "and": [
+            {"processing_purpose": "Marketing and advertising campaigns"},
+            {"data_sharing": "contains_any", "values": ["Advertising networks", "Marketing partners"]}
+          ]
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Add 'Do Not Share My Personal Information' link to homepage"
+        }
+      ]
     },
     {
       "id": "ccpa-security-1",
       "category": "data_security",
-      "description": "Reasonable security procedures and practices",
+      "title": "Reasonable security procedures and practices",
+      "description": "Businesses must implement reasonable security measures",
       "severity": "high",
       "details": "A business that collects personal information about a consumer shall implement reasonable security procedures and practices appropriate to the nature of the personal information to protect the personal information from unauthorized or illegal access, destruction, use, modification, or disclosure.",
-      "articleReference": "Sec. 1798.100(e), CPRA"
+      "articleReference": "Sec. 1798.100(e), CPRA",
+      "applicableWhen": {
+        "any": ["california_presence", "california_records > 0"]
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement comprehensive security program appropriate to data types"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Document security procedures and conduct regular assessments"
+        }
+      ]
     },
     {
       "id": "ccpa-security-2",
       "category": "data_security",
-      "description": "Risk assessments for high-risk processing",
+      "title": "Risk assessments for high-risk processing",
+      "description": "Businesses must conduct risk assessments for certain processing activities",
       "severity": "medium",
       "details": "A business whose processing of consumers' personal information presents significant risk to consumers' privacy or security shall conduct a cybersecurity audit and submit a risk assessment to the California Privacy Protection Agency.",
-      "articleReference": "Sec. 1798.185(a)(15), CPRA"
+      "articleReference": "Sec. 1798.185(a)(15), CPRA",
+      "applicableWhen": {
+        "or": [
+          {"field": "california_records", "operator": "greater_than", "value": 100000},
+          {"field": "sensitive_personal_information", "not_empty": true}
+        ]
+      },
+      "complianceChecks": [
+        {
+          "type": "documentation_requirement",
+          "description": "Conduct and document cybersecurity audits and risk assessments"
+        }
+      ]
     },
     {
       "id": "ccpa-service-providers-1",
       "category": "service_providers",
-      "description": "Service provider contracts",
+      "title": "Service provider contracts",
+      "description": "Businesses must enter into compliant contracts with service providers",
       "severity": "high",
       "details": "A business that discloses personal information to a service provider shall enter into a written contract that prohibits the service provider from selling the personal information or retaining, using, or disclosing the personal information for any purpose other than the specific purpose of performing the services specified in the contract.",
-      "articleReference": "Sec. 1798.140(ag), CPRA"
+      "articleReference": "Sec. 1798.140(ag), CPRA",
+      "applicableWhen": {
+        "field": "third_party_data_sharing",
+        "not_contains": "We don't share personal information with third parties"
+      },
+      "complianceChecks": [
+        {
+          "type": "documentation_requirement",
+          "description": "Execute compliant service provider agreements"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Monitor service provider compliance with contractual obligations"
+        }
+      ]
     },
     {
       "id": "ccpa-service-providers-2",
       "category": "service_providers",
-      "description": "Third-party contracts",
+      "title": "Third-party contracts",
+      "description": "Businesses must ensure third parties comply with CCPA obligations",
       "severity": "high",
       "details": "A business that sells or shares personal information with a third party shall enter into an agreement with the third party that requires the third party to comply with applicable obligations under the CPRA and provide the same level of privacy protection as required by the CPRA.",
-      "articleReference": "Sec. 1798.100(d), CPRA"
+      "articleReference": "Sec. 1798.100(d), CPRA",
+      "applicableWhen": {
+        "field": "sells_personal_info",
+        "value": true
+      },
+      "complianceChecks": [
+        {
+          "type": "documentation_requirement",
+          "description": "Execute third-party agreements with CCPA compliance provisions"
+        }
+      ]
     },
     {
       "id": "ccpa-children-1",
-      "category": "children",
-      "description": "Opt-in consent for consumers under 16",
+      "category": "children_data",
+      "title": "Opt-in consent for consumers under 16",
+      "description": "Businesses must obtain opt-in consent for minors' data",
       "severity": "high",
       "details": "A business shall not sell or share the personal information of consumers if the business has actual knowledge that the consumer is less than 16 years of age, unless the consumer, in the case of consumers at least 13 years of age and less than 16 years of age, or the consumer's parent or guardian, in the case of consumers who are less than 13 years of age, has affirmatively authorized the sale or sharing of the consumer's personal information.",
-      "articleReference": "Sec. 1798.120(c), CPRA"
+      "articleReference": "Sec. 1798.120(c), CPRA",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "data_subjects": "contains",
+          "value": "Children (under 16)"
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement age verification and opt-in consent mechanisms"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "System controls to prevent sale/sharing of children's data without consent"
+        }
+      ]
     },
     {
       "id": "ccpa-children-2",
-      "category": "children",
-      "description": "Knowledge standard for children under 16",
+      "category": "children_data",
+      "title": "Knowledge standard for children under 16",
+      "description": "Businesses that willfully disregard age are deemed to have actual knowledge",
       "severity": "high",
       "details": "A business that willfully disregards the consumer's age shall be deemed to have had actual knowledge of the consumer's age.",
-      "articleReference": "Sec. 1798.120(c), CPRA"
+      "articleReference": "Sec. 1798.120(c), CPRA",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "data_subjects": "contains",
+          "value": "Children (under 16)"
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement reasonable age verification procedures"
+        }
+      ]
+    },
+    {
+      "id": "ccpa-verification-1",
+      "category": "consumer_rights",
+      "title": "Consumer request verification",
+      "description": "Businesses must verify consumer identity for privacy requests",
+      "severity": "high",
+      "details": "A business shall use reasonable methods to verify the identity of a consumer making a request and ensure that the person making the request is the consumer about whom the business has collected information or that person's authorized agent.",
+      "articleReference": "CCPA Regulations, 11 CCR § 999.323",
+      "applicableWhen": {
+        "any": ["california_presence", "california_records > 0"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement reasonable verification procedures for consumer requests"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "System to match verification information with collected data"
+        }
+      ]
+    },
+    {
+      "id": "ccpa-response-time-1",
+      "category": "consumer_rights",
+      "title": "Consumer request response timeframes",
+      "description": "Businesses must respond to consumer requests within specified timeframes",
+      "severity": "high",
+      "details": "A business shall respond to a consumer request within 45 days of receiving the request. The response period may be extended once by an additional 45 days when reasonably necessary, provided the consumer is informed of the extension within the first 45-day period.",
+      "articleReference": "CCPA Regulations, 11 CCR § 999.313",
+      "applicableWhen": {
+        "any": ["california_presence", "california_records > 0"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement request tracking and response procedures within 45 days"
+        }
+      ]
+    },
+    {
+      "id": "ccpa-gpc-1",
+      "category": "opt_out_requirements",
+      "title": "Global Privacy Control (GPC) signal recognition",
+      "description": "Businesses must honor opt-out preference signals",
+      "severity": "high",
+      "details": "A business shall treat user-enabled global privacy controls, such as a browser plugin or privacy setting, device setting, or other mechanism, that communicate or signal the consumer's choice to opt out of the sale and sharing of personal information as a valid request to opt out.",
+      "articleReference": "CCPA Regulations, 11 CCR § 999.315(c)",
+      "applicableWhen": {
+        "or": [
+          {"field": "sells_personal_info", "value": true},
+          {"field": "data_sale_activities", "not_contains": "None of the above"}
+        ]
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement Global Privacy Control signal detection and processing"
+        }
+      ]
+    },
+    {
+      "id": "ccpa-training-1",
+      "category": "service_providers",
+      "title": "Employee training on consumer rights",
+      "description": "Businesses must train employees who handle consumer requests",
+      "severity": "medium",
+      "details": "A business shall train all individuals responsible for handling consumer inquiries about the business's privacy practices and consumer rights to be knowledgeable on all requirements and how to direct consumers to exercise their rights.",
+      "articleReference": "CCPA Regulations, 11 CCR § 999.317",
+      "applicableWhen": {
+        "any": ["california_presence", "california_records > 0"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Provide CCPA training to customer-facing employees"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Document training programs and completion records"
+        }
+      ]
     }
-  ]
+  ],
+  "documentTemplates": {
+    "privacy_policy": {
+      "sections": [
+        "business_information",
+        "categories_of_information_collected",
+        "sources_of_information",
+        "business_purposes_for_collection",
+        "categories_shared_with_third_parties",
+        "sale_and_sharing_disclosures",
+        "consumer_rights_description",
+        "how_to_submit_requests",
+        "non_discrimination_policy",
+        "sensitive_personal_information_practices",
+        "retention_practices",
+        "contact_information"
+      ]
+    },
+    "notice_at_collection": {
+      "required_elements": [
+        "categories_of_personal_information",
+        "purposes_for_collection",
+        "categories_of_sources",
+        "business_commercial_purposes",
+        "categories_of_third_parties_shared",
+        "length_of_retention",
+        "consumer_rights_summary",
+        "link_to_full_privacy_policy"
+      ]
+    },
+    "consumer_request_forms": {
+      "request_types": [
+        "right_to_know_categories",
+        "right_to_know_specific_pieces",
+        "right_to_delete",
+        "right_to_correct",
+        "right_to_opt_out_sale",
+        "right_to_opt_out_sharing",
+        "right_to_limit_sensitive_use"
+      ],
+      "required_fields": [
+        "consumer_identification",
+        "verification_information",
+        "request_specification",
+        "authorized_agent_information"
+      ]
+    },
+    "opt_out_mechanisms": {
+      "website_links": {
+        "do_not_sell": "Do Not Sell My Personal Information",
+        "do_not_share": "Do Not Share My Personal Information",
+        "limit_sensitive_use": "Limit Use of My Sensitive Personal Information"
+      },
+      "alternative_methods": [
+        "toll_free_phone_number",
+        "email_address",
+        "online_form",
+        "postal_mail"
+      ]
+    }
+  },
+  "penalties": {
+    "civil_penalties": {
+      "intentional_violations": {
+        "max_amount": "7500_per_violation",
+        "description": "For intentional violations and violations involving minors"
+      },
+      "unintentional_violations": {
+        "max_amount": "2500_per_violation",
+        "description": "For unintentional violations with 30-day cure period"
+      }
+    },
+    "private_right_of_action": {
+      "data_breach_statutory_damages": {
+        "amount_range": "100_to_750_per_consumer_per_incident",
+        "description": "For data breaches involving certain categories of personal information"
+      }
+    },
+    "enforcement_authority": {
+      "agency": "California Privacy Protection Agency (CPPA)",
+      "established": "2020",
+      "full_enforcement_authority": "2023"
+    }
+  },
+  "exemptions": {
+    "ccpa_exemptions": [
+      {
+        "exemption_type": "employee_data",
+        "description": "Employment-related personal information (sunset January 1, 2023)",
+        "status": "expired"
+      },
+      {
+        "exemption_type": "b2b_communications",
+        "description": "Business-to-business communications (sunset January 1, 2023)",
+        "status": "expired"
+      },
+      {
+        "exemption_type": "medical_information",
+        "description": "Medical information governed by Confidentiality of Medical Information Act",
+        "status": "active"
+      },
+      {
+        "exemption_type": "hipaa_covered_entities",
+        "description": "Personal information collected by HIPAA covered entities",
+        "status": "active"
+      },
+      {
+        "exemption_type": "financial_institutions",
+        "description": "Personal information covered by Gramm-Leach-Bliley Act",
+        "status": "active"
+      },
+      {
+        "exemption_type": "consumer_reporting",
+        "description": "Information covered by Fair Credit Reporting Act",
+        "status": "active"
+      }
+    ]
+  }
 }
