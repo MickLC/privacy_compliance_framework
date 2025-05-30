@@ -1,11 +1,9 @@
-# modules/jurisdiction_registry.yml - Jurisdiction Registry Module
----
-# Jurisdiction registry - manages the repository of privacy laws
+# modules/jurisdiction_registry.yml - JSON-Driven Jurisdiction Registry Module
 ---
 objects from file:
-  - gdpr_requirements: gdpr_requirements.json
-  - ccpa_requirements: ccpa_requirements.json
-  - tdpsa_requirements: tdpsa_requirements.json
+  - gdpr_requirements: data/sources/jurisdictions/europe/gdpr_requirements.json
+  - ccpa_requirements: data/sources/jurisdictions/united_states/states/california/ccpa_requirements.json
+  - tdpsa_requirements: data/sources/jurisdictions/united_states/states/texas/tdpsa_requirements.json
 ---
 question: "Step 2: Jurisdictional Analysis"
 subquestion: |
@@ -21,89 +19,106 @@ continue button field: show_jurisdiction_intro
 ---
 code: |
   def load_jurisdiction_registry():
-    """Load the registry of all supported jurisdictions"""
+    """Load the registry from JSON files"""
     global jurisdiction_registry
     
     if not defined('jurisdiction_registry'):
       jurisdiction_registry = {
-        "jurisdictions": [
-          {
-            "id": "gdpr",
-            "name": "General Data Protection Regulation",
-            "short_name": "GDPR",
-            "region": "European Union",
-            "type": "comprehensive",
-            "effective_date": "2018-05-25",
-            "latest_amendment": "2023-01-01",
-            "requirements_file": "gdpr_requirements.json",
-            "applicability_function": "is_gdpr_applicable"
-          },
-          {
-            "id": "ccpa",
-            "name": "California Consumer Privacy Act / California Privacy Rights Act",
-            "short_name": "CCPA/CPRA",
-            "region": "California, USA",
-            "type": "comprehensive",
-            "effective_date": "2020-01-01",
-            "latest_amendment": "2023-01-01",
-            "requirements_file": "ccpa_requirements.json",
-            "applicability_function": "is_ccpa_applicable"
-          },
-          {
-            "id": "tdpsa",
-            "name": "Texas Data Privacy and Security Act",
-            "short_name": "TDPSA",
-            "region": "Texas, USA",
-            "type": "comprehensive",
-            "effective_date": "2024-07-01",
-            "latest_amendment": None,
-            "requirements_file": "tdpsa_requirements.json",
-            "applicability_function": "is_tdpsa_applicable"
-          },
-          {
-            "id": "hipaa",
-            "name": "Health Insurance Portability and Accountability Act",
-            "short_name": "HIPAA",
-            "region": "United States",
-            "type": "sectoral",
-            "effective_date": "2003-04-14",
-            "latest_amendment": "2013-03-26",
-            "requirements_file": "hipaa_requirements.json",
-            "applicability_function": "is_hipaa_applicable"
-          },
-          {
-            "id": "glba",
-            "name": "Gramm-Leach-Bliley Act",
-            "short_name": "GLBA",
-            "region": "United States",
-            "type": "sectoral",
-            "effective_date": "1999-11-12",
-            "latest_amendment": "2022-10-27",
-            "requirements_file": "glba_requirements.json",
-            "applicability_function": "is_glba_applicable"
-          }
-        ]
+        "jurisdictions": []
       }
+      
+      # Build registry from JSON files
+      jurisdiction_configs = {
+        'gdpr': gdpr_requirements,
+        'ccpa': ccpa_requirements,
+        'tdpsa': tdpsa_requirements
+      }
+      
+      for jurisdiction_id, config in jurisdiction_configs.items():
+        jurisdiction_info = {
+          "id": jurisdiction_id,
+          "name": config.get('name', jurisdiction_id.upper()),
+          "short_name": config.get('shortName', jurisdiction_id.upper()),
+          "region": config.get('region', 'Unknown'),
+          "type": config.get('type', 'comprehensive'),
+          "effective_date": config.get('effectiveDate', 'Unknown'),
+          "latest_amendment": config.get('latestAmendment'),
+          "applicability_function": f"is_{jurisdiction_id}_applicable"
+        }
+        jurisdiction_registry["jurisdictions"].append(jurisdiction_info)
     
     return jurisdiction_registry
 ---
 code: |
   def determine_applicable_jurisdictions():
-    """Determine which privacy jurisdictions apply to the business"""
+    """Determine which privacy jurisdictions apply using JSON-driven logic"""
     global applicable_jurisdictions
     applicable_jurisdictions = []
     
-    # For each jurisdiction in the registry, check applicability
-    for jurisdiction in jurisdiction_registry["jurisdictions"]:
-      # Get the appropriate applicability function
-      func_name = jurisdiction["applicability_function"]
-      
-      # Call the applicability function
-      if globals()[func_name]():
-        applicable_jurisdictions.append(jurisdiction["id"])
+    jurisdiction_configs = {
+      'gdpr': gdpr_requirements,
+      'ccpa': ccpa_requirements,
+      'tdpsa': tdpsa_requirements
+    }
+    
+    # For each jurisdiction, check applicability using JSON rules
+    for jurisdiction_id, config in jurisdiction_configs.items():
+      if check_jurisdiction_applicability(jurisdiction_id, config):
+        applicable_jurisdictions.append(jurisdiction_id)
     
     return applicable_jurisdictions
   
+  def check_jurisdiction_applicability(jurisdiction_id, config):
+    """Check if jurisdiction applies using JSON applicability checks"""
+    applicability_checks = config.get('applicabilityChecks', [])
+    
+    if not applicability_checks:
+      # Fallback to hardcoded functions if no JSON rules
+      func_name = f"is_{jurisdiction_id}_applicable"
+      if func_name in globals():
+        return globals()[func_name]()
+      return False
+    
+    # Evaluate JSON applicability rules
+    for check in applicability_checks:
+      if evaluate_applicability_check(check):
+        return True
+    
+    return False
+  
+  def evaluate_applicability_check(check):
+    """Evaluate individual applicability check from JSON"""
+    check_type = check.get('type')
+    field = check.get('field')
+    operator = check.get('operator', 'equals')
+    value = check.get('value')
+    
+    # Get the field value from globals
+    field_value = globals().get(field)
+    
+    if operator == 'equals':
+      return field_value == value
+    elif operator == 'greater_than':
+      return field_value > value if field_value else False
+    elif operator == 'greater_than_or_equal':
+      return field_value >= value if field_value else False
+    elif operator == 'contains':
+      return value in field_value if field_value else False
+    
+    # Handle complex conditions
+    additional_condition = check.get('additional_condition')
+    if additional_condition:
+      additional_field = additional_condition.get('field')
+      additional_operator = additional_condition.get('operator', 'equals')
+      additional_value = additional_condition.get('value')
+      additional_field_value = globals().get(additional_field)
+      
+      if additional_operator == 'equals':
+        return field_value >= value and additional_field_value == additional_value
+    
+    return False
+  
+  # Fallback applicability functions (for backward compatibility)
   def is_gdpr_applicable():
     """Determine if GDPR applies"""
     return serves_eu or has_eu_establishment
@@ -116,8 +131,8 @@ code: |
             ('California' in states_with_locations or california_records > 0))
   
   def is_tdpsa_applicable():
-    """Determine if Texas TDPSA applies - Enhanced with SBA size standards"""
-    # First check if business has Texas presence
+    """Determine if Texas TDPSA applies"""
+    # Check if business has Texas presence
     has_texas_presence = ('Texas' in states_with_locations or texas_records > 0)
     
     if not has_texas_presence:
@@ -155,9 +170,9 @@ code: |
       naics_suggests_hipaa = is_hipaa_applicable_by_naics(company.naics_code)
     
     # Combine NAICS indication with user responses
-    user_indicates_hipaa = (is_hipaa_covered_entity or 
-                           is_hipaa_business_associate or 
-                           processes_phi)
+    user_indicates_hipaa = (is_hipaa_covered_entity if defined('is_hipaa_covered_entity') else False or 
+                           is_hipaa_business_associate if defined('is_hipaa_business_associate') else False or 
+                           processes_phi if defined('processes_phi') else False)
     
     # HIPAA applies if either NAICS suggests it OR user confirmed it
     return naics_suggests_hipaa or user_indicates_hipaa
@@ -170,27 +185,29 @@ code: |
       naics_suggests_glba = is_glba_applicable_by_naics(company.naics_code)
     
     # Combine NAICS indication with user responses
-    user_indicates_glba = (is_glba_financial_institution or 
-                          (provides_financial_products and collects_npi))
+    user_indicates_glba = (is_glba_financial_institution if defined('is_glba_financial_institution') else False or 
+                          (provides_financial_products if defined('provides_financial_products') else False and 
+                           collects_npi if defined('collects_npi') else False))
     
     # GLBA applies if either NAICS suggests it OR user confirmed it
     return naics_suggests_glba or user_indicates_glba
 ---
 code: |
   def load_requirements_for_jurisdictions():
-    """Load detailed requirements for all applicable jurisdictions"""
+    """Load detailed requirements for all applicable jurisdictions from JSON"""
     global jurisdiction_requirements
     jurisdiction_requirements = {}
     
-    # For each applicable jurisdiction, use the imported objects
+    jurisdiction_configs = {
+      'gdpr': gdpr_requirements,
+      'ccpa': ccpa_requirements,
+      'tdpsa': tdpsa_requirements
+    }
+    
+    # For each applicable jurisdiction, store the full config
     for jurisdiction_id in applicable_jurisdictions:
-      if jurisdiction_id == "gdpr":
-        jurisdiction_requirements["gdpr"] = gdpr_requirements
-      elif jurisdiction_id == "ccpa":
-        jurisdiction_requirements["ccpa"] = ccpa_requirements
-      elif jurisdiction_id == "tdpsa":
-        jurisdiction_requirements["tdpsa"] = tdpsa_requirements
-      # Note: HIPAA and GLBA would need their own JSON files if detailed requirements needed
+      if jurisdiction_id in jurisdiction_configs:
+        jurisdiction_requirements[jurisdiction_id] = jurisdiction_configs[jurisdiction_id]
     
     return jurisdiction_requirements
 ---
@@ -208,7 +225,7 @@ subquestion: |
   % endfor
   
   % if "tdpsa" in applicable_jurisdictions:
-  **Note**: TDPSA applicability was determined using SBA size standards for your NAICS code (${ company_naics_display }).
+  **Note**: TDPSA applicability was determined using SBA size standards for your NAICS code (${ company_naics_display if defined('company_naics_display') else 'Not specified' }).
   % endif
   
   % if "hipaa" in applicable_jurisdictions and defined('company.naics_code'):
@@ -223,4 +240,4 @@ subquestion: |
   These laws will determine the requirements for your privacy documentation and practices.
 continue button field: applicable_law_continue
 continue button label: "Continue to Current Practices Assessment"
----
+---i

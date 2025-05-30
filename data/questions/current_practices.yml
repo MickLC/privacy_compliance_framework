@@ -1,222 +1,827 @@
-# modules/current_practices.yml - Current Practices Module
----
-# Current practices module - documents existing privacy practices
----
-question: "Step 3: Current Privacy Practices"
-subquestion: |
-  Next, let's document your current privacy practices.
-  
-  This will help identify any gaps between your current practices and legal requirements.
-continue button field: show_current_practices_intro
-continue button label: "Let's get started"
----
-# Existing policies screen
-question: Existing Privacy Documentation
-fields:
-  - "Do you have an existing privacy policy?": has_existing_policy
-    datatype: yesnowide
-  - "If yes, please describe its scope and when it was last updated:": existing_policy_details
-    show if: has_existing_policy
-    datatype: area
-  - "Do you have separate policies for different channels or purposes?": has_separate_policies
-    datatype: yesnowide
-  - "Do you have a written data retention policy?": has_retention_policy
-    datatype: yesnowide
-  - "Do you have documented procedures for handling data subject requests?": has_dsr_procedures
-    datatype: yesnowide
-  - "Do you have a data breach response plan?": has_breach_plan
-    datatype: yesnowide
-  - note: |
-      
-continue button field: existing_policies_complete
-continue button label: "Continue"
----
-# Data handling practices screen
-question: Data Handling Practices
-fields:
-  - note: |
-      Please tell us about your current data handling practices. These will be compared with the requirements of applicable laws.
-      
-  - "Do you inform individuals about your data collection practices before collecting their data?": informs_before_collection
-    datatype: yesnowide
-  - "How do you currently collect consent for data processing?": consent_collection_method
-    datatype: checkboxes
-    choices:
-      - We don't currently collect consent
-      - Checkbox on forms
-      - Click-through on website
-      - Written consent forms
-      - Verbal consent
-      - Implied consent through use of service
-    none of the above: False
-  - "Do you document and maintain records of consent?": documents_consent
-    datatype: yesnowide
-  - "Do you have a process for data minimization?": has_data_minimization
-    datatype: yesnowide
-    help: Collecting only what's necessary for your stated purposes
-  - "Do you have defined data retention periods?": has_retention_periods
-    datatype: yesnowide
-  - "Do you share data with third parties?": shares_with_third_parties
-    datatype: yesnowide
-  - "If yes, do you have data processing agreements with these parties?": has_dpas
-    datatype: yesnowide
-    show if: shares_with_third_parties
-  - "Do you transfer personal data to countries outside your primary jurisdiction?": transfers_data_internationally
-    datatype: yesnowide
-  - "If yes, what safeguards do you have in place for international transfers?": international_transfer_safeguards
-    datatype: checkboxes
-    choices:
-      - Standard Contractual Clauses (SCCs)
-      - Binding Corporate Rules (BCRs)
-      - Adequacy decisions
-      - Explicit consent
-      - None currently in place
-    show if: transfers_data_internationally
-  - note: |
-      
-continue button field: data_handling_practices_complete
-continue button label: "Continue"
----
-# Individual rights screen
-question: Individual Rights Practices
-fields:
-  - note: |
-      Privacy laws give individuals various rights over their personal data. Please indicate which rights you currently support.
-      
-  - "Do you have a process for individuals to request access to their personal information?": has_access_process
-    datatype: yesnowide
-  - "Do you have a process for individuals to request correction of their personal information?": has_correction_process
-    datatype: yesnowide
-  - "Do you have a process for individuals to request deletion of their personal information?": has_deletion_process
-    datatype: yesnowide
-  - "Do you have a process for individuals to opt-out of the sale of their personal information?": has_optout_sale_process
-    datatype: yesnowide
-  - "Do you have a process for individuals to opt-out of targeted advertising?": has_optout_targeting_process
-    datatype: yesnowide
-  - "Do you have a process for individuals to request their data in a portable format?": has_portability_process
-    datatype: yesnowide
-  - "Do you have a process for individuals to object to or restrict processing of their personal information?": has_objection_process
-    datatype: yesnowide
-  - "How long does it typically take to respond to individual rights requests?": rights_response_timeframe
-    choices:
-      - We don't currently process these requests
-      - Less than 15 days
-      - 15-30 days
-      - 31-45 days
-      - More than 45 days
-  - note: |
-      
-continue button field: individual_rights_complete
-continue button label: "Continue"
----
-# Security practices screen
-question: Security Practices
-fields:
-  - note: |
-      Protecting personal data with appropriate security measures is a key aspect of privacy compliance.
-      
-  - "Do you have a written information security policy?": has_security_policy
-    datatype: yesnowide
-  - "Do you use encryption for personal data?": uses_encryption
-    datatype: yesnowide
-    help: Either in transit, at rest, or both
-  - "Do you implement access controls for personal data?": has_access_controls
-    datatype: yesnowide
-  - "Do you conduct regular security assessments?": conducts_security_assessments
-    datatype: yesnowide
-  - "If yes, how frequently?": security_assessment_frequency
-    show if: conducts_security_assessments
-    choices:
-      - Monthly
-      - Quarterly
-      - Annually
-      - Every 2+ years
-  - "Do you provide privacy and security training to employees?": provides_security_training
-    datatype: yesnowide
-  - "If yes, how frequently is training provided?": security_training_frequency
-    show if: provides_security_training
-    choices:
-      - Upon hiring only
-      - Annually
-      - Bi-annually
-      - Quarterly
-  - "Have you experienced a data breach in the past 24 months?": had_data_breach
-    datatype: yesnowide
-  - "If yes, did you notify affected individuals and/or regulatory authorities?": notified_breach
-    datatype: yesnowide
-    show if: had_data_breach
-  - note: |
-      
-continue button field: security_practices_complete
-continue button label: "Continue"
----
-# HIPAA-specific practices screen
-question: HIPAA Compliance Practices
-fields:
-  - note: |
-      Since HIPAA applies to your organization, please provide information about your HIPAA compliance practices.
-      
-  - "Do you have a designated Privacy Officer?": has_privacy_officer
-    datatype: yesnowide
-  - "Do you have a designated Security Officer?": has_security_officer
-    datatype: yesnowide
-  - "Have you conducted a HIPAA Security Risk Assessment within the past year?": recent_hipaa_risk_assessment
-    datatype: yesnowide
-  - "Do you have a Notice of Privacy Practices (NPP)?": has_npp
-    datatype: yesnowide
-  - "Do you have Business Associate Agreements (BAAs) with all vendors who access PHI?": has_baas
-    datatype: yesnowide
-  - "Do you have a process for authorizations for uses and disclosures of PHI?": has_authorization_process
-    datatype: yesnowide
-  - "Do you have a process for accounting of disclosures?": has_accounting_disclosures
-    datatype: yesnowide
-  - "Do you have a sanctions policy for privacy/security violations?": has_sanctions_policy
-    datatype: yesnowide
-  - "Do you have a documented emergency access procedure?": has_emergency_access
-    datatype: yesnowide
-  - note: |
-      
-continue button field: hipaa_practices_complete
-continue button label: "Continue"
----
-# For showing HIPAA questions conditionally
-code: |
-  if 'hipaa' in applicable_jurisdictions:
-    hipaa_practices_complete
-  else:
-    hipaa_practices_complete = True
----
-# GLBA-specific practices screen
-question: GLBA Compliance Practices
-fields:
-  - note: |
-      Since GLBA applies to your organization, please provide information about your GLBA compliance practices.
-      
-  - "Do you provide initial privacy notices to customers?": provides_initial_notices
-    datatype: yesnowide
-  - "Do you provide annual privacy notices to customers?": provides_annual_notices
-    datatype: yesnowide
-  - "Do you have an information security program as required by the Safeguards Rule?": has_safeguards_program
-    datatype: yesnowide
-  - "Have you designated a qualified individual to implement and supervise your information security program?": has_designated_individual
-    datatype: yesnowide
-  - "Have you conducted a risk assessment of your information security program?": conducted_safeguards_risk_assessment
-    datatype: yesnowide
-  - "Do you have written policies and procedures for your information security program?": has_written_safeguards
-    datatype: yesnowide
-  - "Do you monitor and test the effectiveness of your information security program?": tests_safeguards
-    datatype: yesnowide
-  - "Do you require your service providers to maintain appropriate safeguards?": requires_provider_safeguards
-    datatype: yesnowide
-  - note: |
-      
-continue button field: glba_practices_complete
-continue button label: "Continue"
----
-# For showing GLBA questions conditionally
-code: |
-  if 'glba' in applicable_jurisdictions:
-    glba_practices_complete
-  else:
-    glba_practices_complete = True
----
+{
+  "jurisdictionId": "tdpsa",
+  "name": "Texas Data Privacy and Security Act",
+  "shortName": "TDPSA",
+  "jurisdiction": "texas",
+  "region": "united_states",
+  "type": "comprehensive",
+  "effectiveDate": "2024-07-01",
+  "latestAmendment": null,
+  "applicabilityChecks": [
+    {
+      "type": "geographic",
+      "field": "texas_presence",
+      "operator": "equals",
+      "value": true,
+      "description": "Business has presence or conducts business in Texas"
+    },
+    {
+      "type": "data_volume",
+      "field": "texas_records",
+      "operator": "greater_than_or_equal",
+      "value": 100000,
+      "description": "Processes personal data of 100,000+ Texas residents annually"
+    },
+    {
+      "type": "data_volume_with_sale",
+      "field": "texas_records",
+      "operator": "greater_than_or_equal",
+      "value": 25000,
+      "additional_condition": {
+        "field": "sells_personal_info",
+        "operator": "equals",
+        "value": true
+      },
+      "description": "Processes personal data of 25,000+ Texas residents and sells personal data"
+    },
+    {
+      "type": "small_business_exemption",
+      "field": "is_small_business",
+      "operator": "equals",
+      "value": false,
+      "description": "Does not qualify for small business exemption under SBA size standards"
+    }
+  ],
+  "lawfulBasisValidation": {
+    "rules": [
+      {
+        "id": "sensitive_data_consent_required",
+        "condition": {
+          "data_categories_processed": "contains_any",
+          "values": ["Health information", "Biometric information", "Genetic data", "Precise geolocation data"]
+        },
+        "required_lawful_basis": "Consent",
+        "severity": "high",
+        "message": "Sensitive data under TDPSA requires explicit consent unless exemption applies",
+        "remediation": "Implement explicit consent mechanism for sensitive personal data processing"
+      },
+      {
+        "id": "children_data_consent_required",
+        "condition": {
+          "data_categories_processed": "contains",
+          "value": "Children's data (under 13 years old)"
+        },
+        "required_lawful_basis": "COPPA Compliance",
+        "severity": "high",
+        "message": "Processing of known child data must comply with COPPA requirements",
+        "remediation": "Implement COPPA-compliant consent mechanisms for children under 13"
+      },
+      {
+        "id": "targeted_advertising_opt_out",
+        "condition": {
+          "processing_purpose": "Targeted advertising"
+        },
+        "required_mechanism": "Opt-out",
+        "severity": "high",
+        "message": "Targeted advertising processing requires opt-out mechanism",
+        "remediation": "Implement clear opt-out mechanism for targeted advertising"
+      },
+      {
+        "id": "sale_opt_out_required",
+        "condition": {
+          "processing_purpose": "Sale of personal data"
+        },
+        "required_mechanism": "Opt-out",
+        "severity": "high",
+        "message": "Sale of personal data requires opt-out mechanism",
+        "remediation": "Implement opt-out mechanism for sale of personal data"
+      },
+      {
+        "id": "data_minimization_requirement",
+        "condition": {
+          "data_collection": "any"
+        },
+        "requirement": "Data minimization",
+        "severity": "high",
+        "message": "Personal data collection must be limited to what is adequate, relevant, and reasonably necessary",
+        "remediation": "Review and limit data collection to necessary purposes only"
+      },
+      {
+        "id": "purpose_limitation_requirement",
+        "condition": {
+          "data_processing": "secondary_use"
+        },
+        "requirement": "Consent or compatibility",
+        "severity": "high",
+        "message": "Processing for purposes not disclosed requires consent or compatibility assessment",
+        "remediation": "Obtain consent for new purposes or demonstrate purpose compatibility"
+      }
+    ]
+  },
+  "complianceAnalysis": {
+    "processingActivityAnalysis": {
+      "description": "System analyzes each processing activity against TDPSA requirements",
+      "validationProcess": [
+        "Check data minimization compliance",
+        "Verify purpose limitation adherence",
+        "Validate consent mechanisms for sensitive data",
+        "Assess opt-out mechanisms for sale and targeting",
+        "Check retention period appropriateness",
+        "Validate security measures appropriateness",
+        "Verify processor contract requirements"
+      ],
+      "outputFormat": {
+        "activity_assessment": {
+          "activity_name": "string",
+          "compliance_status": "compliant|non_compliant|needs_review",
+          "identified_issues": ["array of compliance gaps"],
+          "recommendations": ["array of remediation actions"],
+          "priority": "high|medium|low"
+        }
+      }
+    }
+  },
+  "assessmentQuestions": [
+    {
+      "id": "texas_presence",
+      "question": "Does your business have presence or conduct business in Texas?",
+      "type": "yesno",
+      "required": true,
+      "help": "This includes physical locations, employees, or regular business activities in Texas"
+    },
+    {
+      "id": "texas_records",
+      "question": "Approximately how many Texas residents' personal data do you process annually?",
+      "type": "integer",
+      "required": true,
+      "help": "Include customers, employees, vendors, website visitors, etc."
+    },
+    {
+      "id": "sells_personal_info",
+      "question": "Do you sell personal information to third parties?",
+      "type": "yesno",
+      "required": true,
+      "help": "Sale includes sharing for monetary or other valuable consideration"
+    },
+    {
+      "id": "targeted_advertising",
+      "question": "Do you process personal data for targeted advertising?",
+      "type": "yesno",
+      "required": false,
+      "help": "Targeted advertising displays ads based on personal data obtained from consumer's activities"
+    },
+    {
+      "id": "sensitive_data_types",
+      "question": "Which types of sensitive personal data do you process?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Racial or ethnic origin",
+        "Religious beliefs",
+        "Health diagnosis or treatment information",
+        "Biometric data for identification purposes",
+        "Genetic data",
+        "Precise geolocation data",
+        "Private communications contents",
+        "Personal data from known children",
+        "None of the above"
+      ],
+      "help": "Sensitive data requires explicit consent under TDPSA"
+    },
+    {
+      "id": "data_sharing_practices",
+      "question": "How do you currently share personal data with third parties?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Service providers with contracts",
+        "Business partners for joint activities",
+        "Marketing and advertising networks",
+        "Data brokers or aggregators",
+        "Affiliated companies",
+        "Government agencies when required",
+        "We don't share personal data with third parties"
+      ],
+      "help": "Different sharing practices have different TDPSA requirements"
+    },
+    {
+      "id": "processor_contracts",
+      "question": "Do you have written contracts with service providers who process personal data on your behalf?",
+      "type": "yesno",
+      "required": false,
+      "help": "TDPSA requires specific contract terms with processors"
+    },
+    {
+      "id": "consumer_rights_requests",
+      "question": "How many consumer rights requests have you received in the past 12 months?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "None",
+        "1-10 requests",
+        "11-50 requests",
+        "51-100 requests",
+        "More than 100 requests"
+      ],
+      "help": "This helps assess your current rights management processes"
+    },
+    {
+      "id": "opt_out_mechanisms",
+      "question": "What opt-out mechanisms do you currently provide?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Website opt-out forms",
+        "Email unsubscribe links",
+        "Account preference settings",
+        "Phone-based opt-out",
+        "Written request processing",
+        "We don't currently provide opt-out mechanisms"
+      ],
+      "help": "TDPSA requires accessible opt-out mechanisms for sale and targeted advertising"
+    },
+    {
+      "id": "security_measures_implemented",
+      "question": "What security measures do you have in place for personal data?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Encryption of data in transit",
+        "Encryption of data at rest",
+        "Access controls and authentication",
+        "Regular security assessments",
+        "Employee training on data security",
+        "Incident response procedures",
+        "Secure data disposal procedures",
+        "Limited security measures in place"
+      ],
+      "help": "TDPSA requires reasonable security practices appropriate to the nature of personal data"
+    },
+    {
+      "id": "breach_response_capability",
+      "question": "Do you have procedures in place for responding to data breaches?",
+      "type": "yesno",
+      "required": false,
+      "help": "TDPSA requires breach notification in accordance with Texas Business & Commerce Code Section 521.053"
+    },
+    {
+      "id": "privacy_policy_elements",
+      "question": "What elements does your current privacy policy include?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Categories of personal data collected",
+        "Purposes for processing personal data",
+        "Categories of third parties with whom data is shared",
+        "Consumer rights information",
+        "How consumers can exercise their rights",
+        "Contact information for privacy inquiries",
+        "We don't have a privacy policy"
+      ],
+      "help": "TDPSA requires specific disclosures in privacy notices"
+    }
+  ],
+  "categories": [
+    {
+      "id": "transparency",
+      "name": "Transparency Requirements",
+      "description": "Obligations to provide clear privacy notices to consumers"
+    },
+    {
+      "id": "consumer_rights",
+      "name": "Consumer Rights",
+      "description": "Rights that must be provided to consumers under TDPSA"
+    },
+    {
+      "id": "data_processing",
+      "name": "Data Processing Requirements",
+      "description": "Fundamental principles governing how personal data may be processed"
+    },
+    {
+      "id": "sensitive_data",
+      "name": "Sensitive Data Processing",
+      "description": "Special requirements for processing sensitive personal data"
+    },
+    {
+      "id": "contracts",
+      "name": "Contract Requirements",
+      "description": "Required contractual protections for data sharing and processing"
+    },
+    {
+      "id": "security",
+      "name": "Security Requirements",
+      "description": "Technical and organizational measures for protecting personal data"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "tdpsa-trans-1",
+      "category": "transparency",
+      "title": "Privacy notice must be reasonably accessible, clear, and conspicuous",
+      "description": "A controller shall provide consumers with a reasonably accessible, clear, and conspicuous privacy notice",
+      "severity": "high",
+      "details": "A controller shall provide consumers with a reasonably accessible, clear, and conspicuous privacy notice that includes the required disclosures under the TDPSA.",
+      "articleReference": "Sec. 541.151, TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "policy_requirement",
+          "description": "Create TDPSA-compliant privacy notice with all required elements"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Ensure privacy notice is easily accessible to consumers"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-trans-2",
+      "category": "transparency",
+      "title": "Privacy notice must describe categories of personal and sensitive data processed",
+      "description": "Privacy notice shall include comprehensive information about data processing activities",
+      "severity": "high",
+      "details": "A privacy notice shall include the categories of personal data and sensitive data processed by the controller, the purpose for processing personal data, categories of personal data shared with third parties, categories of third parties with whom personal data is shared, and how consumers may exercise their rights.",
+      "articleReference": "Sec. 541.151, TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "policy_requirement",
+          "description": "Include comprehensive data processing disclosures in privacy notice"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-trans-3",
+      "category": "transparency",
+      "title": "Changes to privacy notice require notification",
+      "description": "Controllers must notify consumers of material changes to privacy practices",
+      "severity": "medium",
+      "details": "A controller shall notify consumers of any changes to the privacy notice before processing personal data for purposes not disclosed in the privacy notice in effect at the time of collection.",
+      "articleReference": "Sec. 541.151(c), TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement notification process for privacy notice changes"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-rights-1",
+      "category": "consumer_rights",
+      "title": "Right to access personal data",
+      "description": "Consumers have the right to confirm and access their personal data",
+      "severity": "high",
+      "details": "A consumer has the right to confirm whether a controller is processing the consumer's personal data and to access the consumer's personal data.",
+      "articleReference": "Sec. 541.201(1), TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement process for handling access requests within required timeframe"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "Maintain systems capable of locating and extracting consumer's data"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-rights-2",
+      "category": "consumer_rights",
+      "title": "Right to correct inaccurate personal data",
+      "description": "Consumers have the right to correct inaccuracies in their personal data",
+      "severity": "high",
+      "details": "A consumer has the right to correct inaccuracies in the consumer's personal data, taking into account the nature of the personal data and the purposes of the processing of the consumer's personal data.",
+      "articleReference": "Sec. 541.201(2), TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement process for correcting inaccurate data"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-rights-3",
+      "category": "consumer_rights",
+      "title": "Right to delete personal data",
+      "description": "Consumers have the right to delete their personal data",
+      "severity": "high",
+      "details": "A consumer has the right to delete personal data provided by or obtained about the consumer.",
+      "articleReference": "Sec. 541.201(3), TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement deletion process considering legal grounds and exceptions"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "Ensure technical capability to delete data across all systems"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-rights-4",
+      "category": "consumer_rights",
+      "title": "Right to data portability",
+      "description": "Consumers have the right to obtain their data in a portable format",
+      "severity": "high",
+      "details": "A consumer has the right to obtain a copy of the consumer's personal data previously provided to the controller in a portable and, to the extent technically feasible, readily usable format that allows the consumer to transmit the data to another controller without hindrance, where the processing is carried out by automated means.",
+      "articleReference": "Sec. 541.201(4), TDPSA",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "data_categories_processed": "contains_any",
+          "values": ["Basic contact information", "Behavioral information", "Technical information"]
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement data export functionality in machine-readable format"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-rights-5",
+      "category": "consumer_rights",
+      "title": "Right to opt out of targeted advertising",
+      "description": "Consumers have the right to opt out of targeted advertising",
+      "severity": "high",
+      "details": "A consumer has the right to opt out of the processing of personal data for purposes of targeted advertising.",
+      "articleReference": "Sec. 541.201(5)(A), TDPSA",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "processing_purpose": "contains",
+          "value": "Targeted advertising"
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement opt-out mechanism for targeted advertising"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "Technical systems to honor opt-out preferences"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-rights-6",
+      "category": "consumer_rights",
+      "title": "Right to opt out of sale of personal data",
+      "description": "Consumers have the right to opt out of the sale of their personal data",
+      "severity": "high",
+      "details": "A consumer has the right to opt out of the sale of personal data.",
+      "articleReference": "Sec. 541.201(5)(B), TDPSA",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "processing_purpose": "contains",
+          "value": "Sale of personal data"
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement opt-out mechanism for sale of personal data"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "Technical systems to prevent sale after opt-out"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-processing-1",
+      "category": "data_processing",
+      "title": "Data minimization",
+      "description": "Controllers must limit collection to what is necessary",
+      "severity": "high",
+      "details": "A controller shall limit the collection of personal data to what is adequate, relevant, and reasonably necessary in relation to the disclosed purposes for which the data is processed.",
+      "articleReference": "Sec. 541.101(a), TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Review and limit data collection to necessary purposes only"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Document necessity justification for each data element collected"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-processing-2",
+      "category": "data_processing",
+      "title": "Purpose limitation",
+      "description": "Controllers may not process data for incompatible purposes without consent",
+      "severity": "high",
+      "details": "A controller may not process personal data for purposes that are not reasonably necessary to or compatible with the disclosed purposes for which the personal data is processed, unless the controller obtains the consumer's consent.",
+      "articleReference": "Sec. 541.101(b), TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Obtain consent for processing incompatible with original purposes"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Document purpose compatibility assessments"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-processing-3",
+      "category": "data_processing",
+      "title": "Reasonable security practices",
+      "description": "Controllers must implement reasonable security measures",
+      "severity": "high",
+      "details": "A controller shall establish, implement, and maintain reasonable administrative, technical, and physical data security practices to protect the confidentiality, integrity, and accessibility of personal data.",
+      "articleReference": "Sec. 541.103, TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement comprehensive security controls appropriate to data sensitivity"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Document security measures and conduct regular assessments"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-processing-4",
+      "category": "data_processing",
+      "title": "Non-discrimination",
+      "description": "Controllers may not discriminate against consumers exercising their rights",
+      "severity": "high",
+      "details": "A controller may not process personal data in violation of state or federal laws that prohibit discrimination against consumers nor discriminate against a consumer for exercising their rights under the TDPSA.",
+      "articleReference": "Sec. 541.104, TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Establish non-discrimination policies and procedures"
+        },
+        {
+          "type": "training_requirement",
+          "description": "Train staff on non-discrimination requirements"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-sensitive-1",
+      "category": "sensitive_data",
+      "title": "Consent for processing sensitive data",
+      "description": "Processing sensitive data requires explicit consent",
+      "severity": "high",
+      "details": "A controller may not process sensitive data concerning a consumer without obtaining the consumer's consent, or, in the case of the processing of sensitive data concerning a known child, without processing the data in accordance with the Children's Online Privacy Protection Act.",
+      "articleReference": "Sec. 541.102, TDPSA",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "data_categories_processed": "contains_any",
+          "values": ["Health information", "Biometric information", "Genetic data", "Precise geolocation data"]
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement explicit consent mechanisms for sensitive data"
+        },
+        {
+          "type": "validation_rule",
+          "rule_id": "sensitive_data_consent_required"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-sensitive-2",
+      "category": "sensitive_data",
+      "title": "Definition of sensitive data",
+      "description": "TDPSA defines specific categories as sensitive data requiring special protection",
+      "severity": "medium",
+      "details": "Sensitive data includes personal data that reveals racial or ethnic origin, religious beliefs, health diagnosis, biometric data for identification purposes, genetic data, precise geolocation data, contents of communications to which the controller is not a recipient, and personal data collected from a known child.",
+      "articleReference": "Sec. 541.003(22), TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "documentation_requirement",
+          "description": "Identify and classify sensitive data in processing activities"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-contracts-1",
+      "category": "contracts",
+      "title": "Contract requirements for processors",
+      "description": "Controllers must have written contracts with processors",
+      "severity": "high",
+      "details": "A controller that discloses personal data to a processor shall enter into a contract that sets forth instructions for processing personal data, the nature and purpose of processing, type of data subject to processing, duration of processing, and rights and obligations of both parties.",
+      "articleReference": "Sec. 541.052(a), TDPSA",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "data_sharing": "contains_any",
+          "values": ["Service providers with contracts", "Business partners for joint activities"]
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "documentation_requirement",
+          "description": "Implement comprehensive processor agreements with required terms"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-contracts-2",
+      "category": "contracts",
+      "title": "Processor restrictions",
+      "description": "Processors must adhere to controller instructions and assist with TDPSA compliance",
+      "severity": "high",
+      "details": "A processor shall adhere to the controller's instructions and shall assist the controller in meeting obligations under the TDPSA, including data security and breach notification.",
+      "articleReference": "Sec. 541.052(b), TDPSA",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "data_sharing": "contains_any",
+          "values": ["Service providers with contracts"]
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Monitor processor compliance with contractual obligations"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-contracts-3",
+      "category": "contracts",
+      "title": "Subprocessor requirements",
+      "description": "Processors must obtain controller approval for subprocessors",
+      "severity": "medium",
+      "details": "A processor shall provide a controller with reasonable opportunity to object before engaging a subprocessor, and shall ensure the subprocessor is bound by a written contract with the same obligations as the processor.",
+      "articleReference": "Sec. 541.052(c), TDPSA",
+      "applicableWhen": {
+        "processing_activities": "exists_with_conditions",
+        "conditions": {
+          "data_sharing": "contains",
+          "value": "Service providers with contracts"
+        }
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement subprocessor approval and contracting process"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-security-1",
+      "category": "security",
+      "title": "Data breach notification",
+      "description": "Controllers must provide breach notification in accordance with Texas law",
+      "severity": "high",
+      "details": "A controller shall provide notice to consumers of a breach of system security as defined by Section 521.053, Business & Commerce Code, in accordance with that section.",
+      "articleReference": "Sec. 541.153, TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement breach detection and notification process per Texas Business & Commerce Code"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Maintain breach response procedures and notification templates"
+        }
+      ]
+    },
+    {
+      "id": "tdpsa-security-2",
+      "category": "security",
+      "title": "Data security requirements",
+      "description": "Security practices must be appropriate to the data and business context",
+      "severity": "high",
+      "details": "Security practices shall be appropriate to the volume and nature of the personal data at issue and the size and complexity of the business and its operations.",
+      "articleReference": "Sec. 541.103, TDPSA",
+      "applicableWhen": {
+        "any": ["texas_presence", "texas_records_threshold"]
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement risk-based security controls scaled to business operations"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Conduct regular security assessments and updates"
+        }
+      ]
+    }
+  ],
+  "documentTemplates": {
+    "privacy_notice": {
+      "sections": [
+        "controller_information",
+        "data_categories_collected",
+        "processing_purposes",
+        "third_party_sharing",
+        "consumer_rights",
+        "exercise_rights_process",
+        "contact_information",
+        "notice_updates"
+      ]
+    },
+    "consent_form": {
+      "required_elements": [
+        "clear_purpose_statement",
+        "sensitive_data_categories",
+        "consent_scope",
+        "withdrawal_mechanism",
+        "consequences_of_refusal"
+      ]
+    },
+    "opt_out_form": {
+      "required_elements": [
+        "opt_out_options",
+        "identity_verification",
+        "processing_timeframe",
+        "contact_information"
+      ]
+    }
+  },
+  "penalties": {
+    "civil_penalties": {
+      "per_violation": "$7500",
+      "considerations": [
+        "Seriousness of violation",
+        "History of previous violations", 
+        "Amount of economic benefit derived",
+        "Demonstrated good faith efforts to comply"
+      ]
+    },
+    "injunctive_relief": {
+      "available": true,
+      "description": "Attorney General may seek injunctive relief to prevent violations"
+    }
+  },
+  "exemptions": {
+    "small_business": {
+      "description": "Businesses meeting SBA size standards for their NAICS code are exempt from TDPSA",
+      "criteria": "Must meet Small Business Administration size standards based on NAICS code",
+      "additional_criteria": "Alternative exemption for businesses with fewer than 100 employees AND less than $10 million annual revenue"
+    },
+    "employee_data": {
+      "description": "Limited exemption for employment-related data processing",
+      "scope": "Data processed solely for employment purposes within the controller's organization"
+    },
+    "public_information": {
+      "description": "Publicly available information is excluded from TDPSA coverage",
+      "scope": "Information lawfully made available to the general public"
+    },
+    "regulated_entities": {
+      "description": "Entities already subject to specific federal privacy regulations may have limited exemptions",
+      "examples": ["HIPAA covered entities", "GLBA financial institutions", "FERPA educational institutions"]
+    }
+  },
+  "enforcement": {
+    "enforcement_authority": "Texas Attorney General",
+    "private_right_of_action": false,
+    "cure_period": {
+      "duration": "30 days",
+      "description": "Businesses have 30 days to cure violations after notice from Attorney General",
+      "conditions": "Only available if violation is cured and reasonable written plan provided to prevent future violations"
+    }
+  },
+  "effectiveDates": {
+    "general_effective_date": "2024-07-01",
+    "small_business_determination": "Based on SBA size standards in effect at time of assessment",
+    "compliance_timeline": {
+      "immediate": "Data minimization, purpose limitation, security requirements",
+      "within_90_days": "Privacy notice updates, consumer rights processes",
+      "ongoing": "Regular compliance assessments and updates"
+    }
+  }
+}

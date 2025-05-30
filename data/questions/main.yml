@@ -1,16 +1,17 @@
-# Privacy Compliance Framework - Main Interview
+# Privacy Compliance Framework - Main Interview (JSON-Driven)
 ---
 include:
   - business_assessment.yml
   - jurisdiction_registry.yml
   - current_practices.yml
+  - dynamic_questions.yml
   - gap_analysis.yml
   - document_builder.yml
 ---
 objects from file:
-  - gdpr_requirements: gdpr_requirements.json
-  - ccpa_requirements: ccpa_requirements.json
-  - tdpsa_requirements: tdpsa_requirements.json
+  - gdpr_requirements: data/sources/jurisdictions/europe/gdpr_requirements.json
+  - ccpa_requirements: data/sources/jurisdictions/united_states/states/california/ccpa_requirements.json
+  - tdpsa_requirements: data/sources/jurisdictions/united_states/states/texas/tdpsa_requirements.json
 ---
 metadata:
   title: Privacy Compliance Framework
@@ -19,7 +20,7 @@ metadata:
   authors:
     - name: Mickey Chandler
       organization: Whizardries Inc.
-  revision_date: 2025-05-26
+  revision_date: 2025-05-30
 ---
 features:
   css: privacy_framework.css
@@ -31,7 +32,7 @@ objects:
 ---
 mandatory: True
 code: |
-  # Load jurisdiction registry
+  # Load jurisdiction registry from JSON
   load_jurisdiction_registry()
   
   # Main interview flow - Step by step
@@ -52,22 +53,20 @@ code: |
   # Step 1d: Geographic scope must complete after Step 1c
   geographic_scope_complete
 
-  # Step 2: Jurisdictional Analysis  
+  # Step 2: Jurisdictional Analysis using JSON-driven logic
   applicable_jurisdictions = determine_applicable_jurisdictions()
   load_requirements_for_jurisdictions()
   applicable_law_continue
   
-  # Step 3: Current Practices - trigger intro then wait for completion
+  # Step 3: Current Practices - minimal generic questions + JSON-driven jurisdiction-specific questions
   show_current_practices_intro
-  # Wait for all current practices to be documented
-  wait_for_current_practices_complete
+  current_practices_complete
   
-  # Step 4: Gap Analysis - trigger intro then wait for completion
+  # Step 4: Gap Analysis using JSON requirements
   show_gap_analysis_intro
-  # Wait for gap analysis to complete
-  wait_for_gap_analysis_complete
+  continue_gap_summary
   
-  # Step 5: Document Generation
+  # Step 5: Document Generation using JSON-driven templates
   show_document_generation_intro
   if generate_internal_policy:
     internal_policy = generate_internal_policy_document()
@@ -79,25 +78,6 @@ code: |
     remediation_plan_doc = create_remediation_plan()
   
   final_screen
----
-# Wait for current practices completion
-code: |
-  wait_for_current_practices_complete = (
-    existing_policies_complete and
-    data_handling_practices_complete and
-    individual_rights_complete and
-    security_practices_complete and
-    hipaa_practices_complete and
-    glba_practices_complete
-  )
----
-# Wait for gap analysis completion  
-code: |
-  wait_for_gap_analysis_complete = (
-    compliance_gaps is not None and
-    gap_report is not None and
-    continue_gap_summary
-  )
 ---
 question: |
   Privacy Compliance Framework
@@ -129,7 +109,7 @@ subquestion: |
   
   **Company**: ${ company.name }  
   **Industry**: ${ company.industry }  
-  **NAICS Code**: ${ company_naics_display }
+  **NAICS Code**: ${ company_naics_display if defined('company_naics_display') else 'Not specified' }
   
   **Applicable Laws**: 
   % if applicable_jurisdictions:
@@ -163,7 +143,7 @@ subquestion: |
   ## Key Insights
   
   % if "tdpsa" in applicable_jurisdictions:
-  * **TDPSA Compliance**: Your business does not qualify for the small business exemption under SBA size standards for NAICS code ${ company_naics_display }.
+  * **TDPSA Compliance**: Your business does not qualify for the small business exemption under SBA size standards for NAICS code ${ company_naics_display if defined('company_naics_display') else 'Not specified' }.
   % endif
   
   % if "hipaa" in applicable_jurisdictions:
