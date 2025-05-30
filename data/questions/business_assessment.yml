@@ -261,6 +261,8 @@ fields:
   - Annual Revenue (USD): company.annual_revenue
     datatype: currency
     required: True
+    min: 0
+    default: 0
 continue button field: basic_business_info_complete
 continue button label: "Continue"
 ---

@@ -60,6 +60,9 @@ code: |
   
   # Step 3: Current Practices - minimal generic questions + JSON-driven jurisdiction-specific questions
   show_current_practices_intro
+  basic_policies_complete
+  security_practices_complete
+  jurisdiction_questions_complete
   current_practices_complete
   
   # Step 4: Gap Analysis using JSON requirements
