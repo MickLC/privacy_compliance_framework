@@ -1,9 +1,9 @@
 # modules/gap_analysis.yml - JSON-Driven Gap Analysis Module
 ---
 objects from file:
-  - gdpr_requirements: jurisdictions/europe/gdpr_requirements.json
-  - ccpa_requirements: jurisdictions/united_states/states/california/ccpa_requirements.json
-  - tdpsa_requirements: jurisdictions/united_states/states/texas/tdpsa_requirements.json
+  - gdpr_requirements: gdpr_requirements.json
+  - ccpa_requirements: ccpa_requirements.json
+  - tdpsa_requirements: texas/tdpsa_requirements.json
 ---
 question: "Step 4: Gap Analysis"
 subquestion: |
