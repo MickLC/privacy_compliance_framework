@@ -1,9 +1,9 @@
 # dynamic_questions.yml - Simplified JSON-Driven Question System
 ---
 objects from file:
-  - gdpr_requirements: data/sources/jurisdictions/europe/gdpr_requirements.json
-  - ccpa_requirements: data/sources/jurisdictions/united_states/states/california/ccpa_requirements.json
-  - tdpsa_requirements: data/sources/jurisdictions/united_states/states/texas/tdpsa_requirements.json
+  - gdpr_requirements: dpr_requirements.json
+  - ccpa_requirements: ccpa_requirements.json
+  - tdpsa_requirements: tdpsa_requirements.json
 ---
 code: |
   def load_jurisdiction_specific_questions():

@@ -9,9 +9,9 @@ include:
   - document_builder.yml
 ---
 objects from file:
-  - gdpr_requirements: data/sources/jurisdictions/europe/gdpr_requirements.json
-  - ccpa_requirements: data/sources/jurisdictions/united_states/states/california/ccpa_requirements.json
-  - tdpsa_requirements: data/sources/jurisdictions/united_states/states/texas/tdpsa_requirements.json
+  - gdpr_requirements: gdpr_requirements.json
+  - ccpa_requirements: ccpa_requirements.json
+  - tdpsa_requirements: tdpsa_requirements.json
 ---
 metadata:
   title: Privacy Compliance Framework
