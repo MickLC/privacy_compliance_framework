@@ -102,8 +102,7 @@ code: |
         'question': question_text,
         'field': question_data['id'],
         'datatype': 'yesnowide',
-        'help': question_config.get('help', ''),
-        'required': question_config.get('required', False)
+        'help': question_config.get('help', '')
       }
     elif question_type == 'checkboxes':
       return {
@@ -111,8 +110,7 @@ code: |
         'field': question_data['id'],
         'datatype': 'checkboxes',
         'choices': question_config.get('choices', []),
-        'help': question_config.get('help', ''),
-        'required': question_config.get('required', False)
+        'help': question_config.get('help', '')
       }
     elif question_type == 'radio':
       return {
@@ -120,39 +118,34 @@ code: |
         'field': question_data['id'],
         'datatype': 'radio',
         'choices': question_config.get('choices', []),
-        'help': question_config.get('help', ''),
-        'required': question_config.get('required', False)
+        'help': question_config.get('help', '')
       }
     elif question_type == 'integer':
       return {
         'question': question_text,
         'field': question_data['id'],
         'datatype': 'integer',
-        'help': question_config.get('help', ''),
-        'required': question_config.get('required', False)
+        'help': question_config.get('help', '')
       }
     elif question_type == 'currency':
       return {
         'question': question_text,
         'field': question_data['id'],
         'datatype': 'currency',
-        'help': question_config.get('help', ''),
-        'required': question_config.get('required', False)
+        'help': question_config.get('help', '')
       }
     elif question_type == 'textarea':
       return {
         'question': question_text,
         'field': question_data['id'],
         'datatype': 'area',
-        'help': question_config.get('help', ''),
-        'required': question_config.get('required', False)
+        'help': question_config.get('help', '')
       }
     else:
       return {
         'question': question_text,
         'field': question_data['id'],
-        'help': question_config.get('help', ''),
-        'required': question_config.get('required', False)
+        'help': question_config.get('help', '')
       }
   
   def advance_question():
@@ -167,9 +160,6 @@ field: ${ current_question_block['field'] }
 datatype: ${ current_question_block.get('datatype', 'text') }
 choices: ${ current_question_block.get('choices', []) }
 help: ${ current_question_block.get('help', '') }
-required: ${ current_question_block.get('required', False) }
-continue button field: question_answered
-continue button label: "Continue"
 ---
 # Question flow control
 code: |
@@ -180,11 +170,8 @@ code: |
     # All questions answered
     jurisdiction_questions_complete = True
   else:
-    # Show the question and wait for answer
-    question_answered
-    # Advance to next question
+    # Show the question, then advance
+    need(current_question_block['field'])
     advance_question()
-    # Reset for next iteration
-    undefine('question_answered')
     undefine('current_question_block')
 ---
