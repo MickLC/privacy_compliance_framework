@@ -152,10 +152,20 @@ code: |
   
   def is_ccpa_applicable():
     """Determine if CCPA/CPRA applies"""
-    return ((company.annual_revenue >= 25000000 or 
-             california_records >= 100000 or
-             (california_records >= 50000 and sells_personal_info)) and
-            ('California' in states_with_locations or california_records > 0))
+    has_california_connection = (
+        (defined('states_with_locations') and states_with_locations['California']) or
+    california_records > 0
+    )
+    
+    if not has_california_connection:
+        return False
+    
+    # Then check thresholds
+    revenue_threshold = company.annual_revenue >= 25000000
+    volume_threshold = california_records >= 100000
+    sale_threshold = (california_records >= 50000 and sells_personal_info)
+    
+    return revenue_threshold or volume_threshold or sale_threshold
   
   def is_tdpsa_applicable():
     """Determine if Texas TDPSA applies"""
