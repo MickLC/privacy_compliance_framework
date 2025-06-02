@@ -219,6 +219,24 @@ code: |
     # GLBA applies if either NAICS suggests it OR user confirmed it
     return naics_suggests_glba or user_indicates_glba
 ---
+question: Debug Information
+subquestion: |
+  **Debug Values:**
+  
+  * california_records: ${ california_records }
+  * states_with_locations: ${ states_with_locations }
+  * company.annual_revenue: ${ company.annual_revenue }
+  * sells_personal_info: ${ sells_personal_info }
+  
+  **CCPA Check Results:**
+  
+  * Revenue threshold met: ${ company.annual_revenue >= 25000000 }
+  * California records threshold: ${ california_records >= 100000 }
+  * California presence: ${ 'California' in states_with_locations }
+  * California records > 0: ${ california_records > 0 }
+  
+continue button field: debug_values
+---
 question: Applicable Privacy Laws
 subquestion: |
   Based on your responses, the following privacy laws apply to your organization:
