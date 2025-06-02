@@ -242,7 +242,9 @@ subquestion: |
   
   * Revenue threshold met: ${ company.annual_revenue >= 25000000 }
   * California records threshold: ${ california_records >= 100000 }
-  * California presence: ${ 'California' in states_with_locations }
+  * California presence: ${ 'California' in states_with_locations.true_values() }
+  * California in true_values: ${ 'California' in states_with_locations.true_values() }
+  * California checkbox value: ${ states_with_locations.get('California', 'Not set') }
   * California records > 0: ${ california_records > 0 }
   
 continue button field: debug_values
