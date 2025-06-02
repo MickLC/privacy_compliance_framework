@@ -44,6 +44,7 @@ code: |
   
   # Step 1d: Geographic scope must complete after Step 1c
   geographic_scope_complete
+  debug_values
 
   # Step 2: Jurisdictional Analysis using fresh-loaded JSON data
   applicable_jurisdictions = determine_applicable_jurisdictions()
