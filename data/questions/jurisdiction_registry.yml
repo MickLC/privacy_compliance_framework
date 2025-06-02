@@ -1,5 +1,9 @@
 # modules/jurisdiction_registry.yml - JSON-Driven Jurisdiction Registry Module with Lazy Loading
 ---
+# Initialize jurisdiction registry early
+code: |
+  jurisdiction_registry = load_jurisdiction_registry()
+---
 question: "Step 2: Jurisdictional Analysis"
 subquestion: |
   Based on your business profile, we'll now determine which privacy laws apply to your operations.

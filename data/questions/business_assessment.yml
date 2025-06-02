@@ -27,7 +27,7 @@ code: |
       
       # Sort by NAICS code and limit to prevent session bloat
       choices.sort(key=lambda x: x[0])
-      return choices[:100] if len(choices) > 100 else choices
+      return choices
       
     except Exception as e:
       log(f"NAICS loading error: {e}")
