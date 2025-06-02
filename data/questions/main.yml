@@ -1,4 +1,4 @@
-# Privacy Compliance Framework - Main Interview (JSON-Driven)
+# Privacy Compliance Framework - Main Interview (JSON-Driven with Lazy Loading)
 ---
 include:
   - business_assessment.yml
@@ -7,11 +7,6 @@ include:
   - dynamic_questions.yml
   - gap_analysis.yml
   - document_builder.yml
----
-objects from file:
-  - gdpr_requirements: gdpr_requirements.json
-  - ccpa_requirements: ccpa_requirements.json
-  - tdpsa_requirements: texas/tdpsa_requirements.json
 ---
 metadata:
   title: Privacy Compliance Framework
@@ -32,10 +27,7 @@ objects:
 ---
 mandatory: True
 code: |
-  # Load jurisdiction registry from JSON
-  load_jurisdiction_registry()
-  
-  # Main interview flow - Step by step
+  # Main interview flow - Step by step with lazy loading
   show_intro_screen
   
   # Step 1: Business Assessment - Ensure proper sequential completion
@@ -53,9 +45,8 @@ code: |
   # Step 1d: Geographic scope must complete after Step 1c
   geographic_scope_complete
 
-  # Step 2: Jurisdictional Analysis using JSON-driven logic
+  # Step 2: Jurisdictional Analysis using fresh-loaded JSON data
   applicable_jurisdictions = determine_applicable_jurisdictions()
-  load_requirements_for_jurisdictions()
   applicable_law_continue
   
   # Step 3: Current Practices - minimal generic questions + JSON-driven jurisdiction-specific questions
@@ -65,20 +56,20 @@ code: |
   jurisdiction_questions_complete
   current_practices_complete
   
-  # Step 4: Gap Analysis using JSON requirements
+  # Step 4: Gap Analysis using fresh-loaded JSON requirements
   show_gap_analysis_intro
   continue_gap_summary
   
-  # Step 5: Document Generation using JSON-driven templates
+  # Step 5: Document Generation using fresh-loaded JSON-driven templates
   show_document_generation_intro
   if generate_internal_policy:
-    internal_policy = generate_internal_policy_document()
+    internal_policy_file = generate_internal_policy_document()  # Returns DAFile
   if generate_public_documents:
-    public_documents = generate_public_facing_documents()
+    public_documents_files = generate_public_facing_documents()  # Returns DAFile objects
   if generate_gap_report:
-    gap_report_download_link = generate_gap_report_download()
+    gap_report_file = generate_gap_report_download()  # Returns DAFile
   if generate_remediation_plan:
-    remediation_plan_doc = create_remediation_plan()
+    remediation_plan_file = create_remediation_plan()  # Returns DAFile
   
   final_screen
 ---
@@ -127,20 +118,19 @@ subquestion: |
   
   ## Generated Documents
   
-  % if generate_internal_policy and defined('internal_policy_download_link'):
-  [Download Internal Privacy Policy](${ internal_policy_download_link })
+  % if generate_internal_policy and defined('internal_policy_file'):
+  [Download Internal Privacy Policy](${ internal_policy_file.url_for() })
   % endif
-  % if generate_public_documents and defined('website_privacy_notice_download_link'):
-  [Download Website Privacy Notice](${ website_privacy_notice_download_link })
+  % if generate_public_documents and defined('public_documents_files'):
+  % for doc_name, doc_file in public_documents_files.items():
+  [Download ${ doc_name.replace('_', ' ').title() }](${ doc_file.url_for() })
+  % endfor
   % endif
-  % if generate_physical_notice and defined('physical_notice_download_link'):
-  [Download Physical Location Privacy Notice](${ physical_notice_download_link })
+  % if generate_gap_report and defined('gap_report_file'):
+  [Download Gap Analysis Report](${ gap_report_file.url_for() })
   % endif
-  % if generate_gap_report and defined('gap_report_download_link'):
-  [Download Gap Analysis Report](${ gap_report_download_link })
-  % endif
-  % if generate_remediation_plan and defined('remediation_plan_download_link'):
-  [Download Remediation Plan](${ remediation_plan_download_link })
+  % if generate_remediation_plan and defined('remediation_plan_file'):
+  [Download Remediation Plan](${ remediation_plan_file.url_for() })
   % endif
   
   ## Key Insights

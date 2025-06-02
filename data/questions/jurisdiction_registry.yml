@@ -1,9 +1,4 @@
-# modules/jurisdiction_registry.yml - JSON-Driven Jurisdiction Registry Module
----
-objects from file:
-  - gdpr_requirements: gdpr_requirements.json
-  - ccpa_requirements: ccpa_requirements.json
-  - tdpsa_requirements: texas/tdpsa_requirements.json
+# modules/jurisdiction_registry.yml - JSON-Driven Jurisdiction Registry Module with Lazy Loading
 ---
 question: "Step 2: Jurisdictional Analysis"
 subquestion: |
@@ -18,58 +13,86 @@ subquestion: |
 continue button field: show_jurisdiction_intro
 ---
 code: |
+  def get_jurisdiction_requirements(jurisdiction_id):
+    """Load jurisdiction requirements fresh each time - no session storage"""
+    jurisdiction_files = {
+      'gdpr': 'data/sources/gdpr_requirements.json',
+      'ccpa': 'data/sources/ccpa_requirements.json',
+      'tdpsa': 'data/sources/tdpsa_requirements.json'
+    }
+    
+    file_path = jurisdiction_files.get(jurisdiction_id)
+    if file_path:
+      try:
+        import json
+        json_file = path_and_mimetype(file_path)[0]
+        with open(json_file, 'r') as f:
+          return json.load(f)
+      except Exception as e:
+        log(f"Error loading {jurisdiction_id}: {e}")
+        return {}
+    return {}
+
   def load_jurisdiction_registry():
-    """Load the registry from JSON files"""
+    """Load the registry metadata without storing full requirements"""
     global jurisdiction_registry
     
     if not defined('jurisdiction_registry'):
       jurisdiction_registry = {
-        "jurisdictions": []
+        "jurisdictions": [
+          {
+            "id": "gdpr",
+            "name": "General Data Protection Regulation",
+            "short_name": "GDPR",
+            "region": "europe",
+            "type": "comprehensive",
+            "effective_date": "2018-05-25",
+            "latest_amendment": "2023-01-01",
+            "applicability_function": "is_gdpr_applicable"
+          },
+          {
+            "id": "ccpa",
+            "name": "California Consumer Privacy Act / California Privacy Rights Act",
+            "short_name": "CCPA/CPRA",
+            "region": "united_states",
+            "type": "comprehensive",
+            "effective_date": "2020-01-01",
+            "latest_amendment": "2023-01-01",
+            "applicability_function": "is_ccpa_applicable"
+          },
+          {
+            "id": "tdpsa",
+            "name": "Texas Data Privacy and Security Act",
+            "short_name": "TDPSA",
+            "region": "united_states",
+            "type": "comprehensive",
+            "effective_date": "2024-07-01",
+            "latest_amendment": None,
+            "applicability_function": "is_tdpsa_applicable"
+          }
+        ]
       }
-      
-      # Build registry from JSON files
-      jurisdiction_configs = {
-        'gdpr': gdpr_requirements,
-        'ccpa': ccpa_requirements,
-        'tdpsa': tdpsa_requirements
-      }
-      
-      for jurisdiction_id, config in jurisdiction_configs.items():
-        jurisdiction_info = {
-          "id": jurisdiction_id,
-          "name": config.get('name', jurisdiction_id.upper()),
-          "short_name": config.get('shortName', jurisdiction_id.upper()),
-          "region": config.get('region', 'Unknown'),
-          "type": config.get('type', 'comprehensive'),
-          "effective_date": config.get('effectiveDate', 'Unknown'),
-          "latest_amendment": config.get('latestAmendment'),
-          "applicability_function": f"is_{jurisdiction_id}_applicable"
-        }
-        jurisdiction_registry["jurisdictions"].append(jurisdiction_info)
     
     return jurisdiction_registry
 ---
 code: |
   def determine_applicable_jurisdictions():
-    """Determine which privacy jurisdictions apply using JSON-driven logic"""
+    """Determine which privacy jurisdictions apply using lazy loading"""
     global applicable_jurisdictions
     applicable_jurisdictions = []
     
-    jurisdiction_configs = {
-      'gdpr': gdpr_requirements,
-      'ccpa': ccpa_requirements,
-      'tdpsa': tdpsa_requirements
-    }
+    jurisdiction_ids = ['gdpr', 'ccpa', 'tdpsa']
     
-    # For each jurisdiction, check applicability using JSON rules
-    for jurisdiction_id, config in jurisdiction_configs.items():
+    # For each jurisdiction, check applicability using fresh-loaded config
+    for jurisdiction_id in jurisdiction_ids:
+      config = get_jurisdiction_requirements(jurisdiction_id)
       if check_jurisdiction_applicability(jurisdiction_id, config):
         applicable_jurisdictions.append(jurisdiction_id)
     
     return applicable_jurisdictions
   
   def check_jurisdiction_applicability(jurisdiction_id, config):
-    """Check if jurisdiction applies using JSON applicability checks"""
+    """Check if jurisdiction applies using fresh-loaded config"""
     applicability_checks = config.get('applicabilityChecks', [])
     
     if not applicability_checks:
@@ -191,25 +214,6 @@ code: |
     
     # GLBA applies if either NAICS suggests it OR user confirmed it
     return naics_suggests_glba or user_indicates_glba
----
-code: |
-  def load_requirements_for_jurisdictions():
-    """Load detailed requirements for all applicable jurisdictions from JSON"""
-    global jurisdiction_requirements
-    jurisdiction_requirements = {}
-    
-    jurisdiction_configs = {
-      'gdpr': gdpr_requirements,
-      'ccpa': ccpa_requirements,
-      'tdpsa': tdpsa_requirements
-    }
-    
-    # For each applicable jurisdiction, store the full config
-    for jurisdiction_id in applicable_jurisdictions:
-      if jurisdiction_id in jurisdiction_configs:
-        jurisdiction_requirements[jurisdiction_id] = jurisdiction_configs[jurisdiction_id]
-    
-    return jurisdiction_requirements
 ---
 question: Applicable Privacy Laws
 subquestion: |

@@ -1,9 +1,4 @@
-# modules/gap_analysis.yml - JSON-Driven Gap Analysis Module
----
-objects from file:
-  - gdpr_requirements: gdpr_requirements.json
-  - ccpa_requirements: ccpa_requirements.json
-  - tdpsa_requirements: texas/tdpsa_requirements.json
+# modules/gap_analysis.yml - JSON-Driven Gap Analysis Module with Lazy Loading
 ---
 question: "Step 4: Gap Analysis"
 subquestion: |
@@ -23,7 +18,7 @@ code: |
 ---
 code: |
   def perform_gap_analysis():
-    """Compare current practices against regulatory requirements using JSON data"""
+    """Compare current practices against regulatory requirements using fresh loading"""
     gaps = {
       "policy_gaps": [],
       "operational_gaps": [],
@@ -31,21 +26,16 @@ code: |
       "technical_gaps": []
     }
     
-    jurisdiction_configs = {
-      'gdpr': gdpr_requirements,
-      'ccpa': ccpa_requirements,
-      'tdpsa': tdpsa_requirements
-    }
-    
-    # Analyze each applicable jurisdiction using JSON requirements
+    # Analyze each applicable jurisdiction using fresh-loaded config
     for jurisdiction_id in applicable_jurisdictions:
-      if jurisdiction_id in jurisdiction_configs:
-        analyze_jurisdiction_gaps(jurisdiction_id, jurisdiction_configs[jurisdiction_id], gaps)
+      jurisdiction_config = get_jurisdiction_requirements(jurisdiction_id)  # Fresh load
+      if jurisdiction_config:
+        analyze_jurisdiction_gaps(jurisdiction_id, jurisdiction_config, gaps)
     
     return gaps
   
   def analyze_jurisdiction_gaps(jurisdiction_id, jurisdiction_config, gaps):
-    """Analyze gaps for a specific jurisdiction using JSON requirements"""
+    """Analyze gaps for a specific jurisdiction using fresh-loaded config"""
     requirements = jurisdiction_config.get('requirements', [])
     
     for requirement in requirements:
@@ -209,7 +199,7 @@ code: |
     return category_mapping.get(category, 'operational_gaps')
   
   def generate_gap_report():
-    """Generate formatted gap analysis report using JSON data"""
+    """Generate formatted gap analysis report using fresh data"""
     report = {
       "summary": {
         "total_gaps": sum(len(gaps) for gaps in compliance_gaps.values()),

@@ -1,15 +1,12 @@
-# modules/business_assessment.yml - Business Assessment Module
+# modules/business_assessment.yml - Business Assessment Module with Optimized Loading
 ---
 objects:
   - company: DAObject
 ---
 code: |
   def get_naics_choices_for_dropdown():
-    """Load NAICS data and convert to dropdown choices format"""
-    import json
-    
+    """Load NAICS choices fresh each time, don't store in session"""
     try:
-      # Load from sources folder
       naics_file = path_and_mimetype('data/sources/naics.json')[0]
       
       with open(naics_file, 'r') as f:
@@ -26,15 +23,14 @@ code: |
           if len(description) > 80:
             description = description[:77] + "..."
           
-          choice_text = description
-          choices.append((naics_code, choice_text))
+          choices.append((naics_code, description))
       
-      # Sort by NAICS code
+      # Sort by NAICS code and limit to prevent session bloat
       choices.sort(key=lambda x: x[0])
+      return choices[:100] if len(choices) > 100 else choices
       
-      return choices if len(choices) > 0 else get_fallback_naics_choices()
-      
-    except Exception:
+    except Exception as e:
+      log(f"NAICS loading error: {e}")
       return get_fallback_naics_choices()
   
   def get_fallback_naics_choices():
@@ -54,8 +50,21 @@ code: |
       ('999999', 'Other - Please specify in additional information')
     ]
   
+  def get_naics_info_for_code(naics_code):
+    """Get specific NAICS info without storing full dataset"""
+    try:
+      naics_file = path_and_mimetype('data/sources/naics.json')[0]
+      with open(naics_file, 'r') as f:
+        naics_data = json.load(f)
+      
+      # Find the NAICS entry
+      return next((item for item in naics_data if str(item.get('id')) == str(naics_code)), None)
+    except Exception as e:
+      log(f"NAICS info loading error: {e}")
+      return None
+  
   def get_industry_from_naics(naics_code):
-    """Determine broad industry category from NAICS code"""
+    """Determine broad industry category from NAICS code without storing full dataset"""
     if not naics_code:
       return "Other"
     
@@ -64,45 +73,39 @@ code: |
       naics_code = str(naics_code).split(':')[0].strip()
     
     try:
-      # Load NAICS data to find industry mapping
-      import json
-      naics_file = path_and_mimetype('data/sources/naics.json')[0]
-      with open(naics_file, 'r') as f:
-        naics_data = json.load(f)
+      # Get NAICS info for this specific code
+      naics_info = get_naics_info_for_code(naics_code)
+      if naics_info:
+        sector_desc = naics_info.get('sectorDescription', '')
+        
+        # Map sector descriptions to simplified categories
+        sector_mapping = {
+          'Agriculture, Forestry, Fishing and Hunting': 'Agriculture',
+          'Mining, Quarrying, and Oil and Gas Extraction': 'Mining',
+          'Utilities': 'Utilities',
+          'Construction': 'Construction',
+          'Manufacturing': 'Manufacturing',
+          'Wholesale Trade': 'Wholesale Trade',
+          'Retail Trade': 'Retail',
+          'Transportation and Warehousing': 'Transportation',
+          'Information': 'Technology',
+          'Finance and Insurance': 'Financial Services',
+          'Real Estate and Rental and Leasing': 'Real Estate',
+          'Professional, Scientific, and Technical Services': 'Professional Services',
+          'Management of Companies and Enterprises': 'Management',
+          'Administrative and Support and Waste Management and Remediation Services': 'Administrative Services',
+          'Educational Services': 'Education',
+          'Health Care and Social Assistance': 'Healthcare',
+          'Arts, Entertainment, and Recreation': 'Arts & Entertainment',
+          'Accommodation and Food Services': 'Food Service',
+          'Other Services (except Public Administration)': 'Other Services',
+          'Public Administration': 'Public Administration'
+        }
+        
+        return sector_mapping.get(sector_desc, 'Other')
       
-      # Find the NAICS entry
-      for item in naics_data:
-        if isinstance(item, dict) and str(item.get('id')) == str(naics_code):
-          sector_desc = item.get('sectorDescription', '')
-          
-          # Map sector descriptions to simplified categories
-          sector_mapping = {
-            'Agriculture, Forestry, Fishing and Hunting': 'Agriculture',
-            'Mining, Quarrying, and Oil and Gas Extraction': 'Mining',
-            'Utilities': 'Utilities',
-            'Construction': 'Construction',
-            'Manufacturing': 'Manufacturing',
-            'Wholesale Trade': 'Wholesale Trade',
-            'Retail Trade': 'Retail',
-            'Transportation and Warehousing': 'Transportation',
-            'Information': 'Technology',
-            'Finance and Insurance': 'Financial Services',
-            'Real Estate and Rental and Leasing': 'Real Estate',
-            'Professional, Scientific, and Technical Services': 'Professional Services',
-            'Management of Companies and Enterprises': 'Management',
-            'Administrative and Support and Waste Management and Remediation Services': 'Administrative Services',
-            'Educational Services': 'Education',
-            'Health Care and Social Assistance': 'Healthcare',
-            'Arts, Entertainment, and Recreation': 'Arts & Entertainment',
-            'Accommodation and Food Services': 'Food Service',
-            'Other Services (except Public Administration)': 'Other Services',
-            'Public Administration': 'Public Administration'
-          }
-          
-          return sector_mapping.get(sector_desc, 'Other')
-      
-    except Exception:
-      pass
+    except Exception as e:
+      log(f"Industry mapping error: {e}")
     
     # Fallback to sector-based mapping using first 2 digits
     sector = str(naics_code)[:2] if len(str(naics_code)) >= 2 else ""
@@ -120,25 +123,14 @@ code: |
     return fallback_mapping.get(sector, 'Other')
   
   def is_small_business_under_tdpsa(naics_code, employee_count, annual_revenue):
-    """Determine if business qualifies as small business under TDPSA using SBA size standards"""
+    """Determine if business qualifies as small business under TDPSA using SBA size standards without storing full dataset"""
     try:
       # Extract just the code
       if ':' in str(naics_code):
         naics_code = str(naics_code).split(':')[0].strip()
       
-      # Load NAICS data to get size standards
-      import json
-      naics_file = path_and_mimetype('data/sources/naics.json')[0]
-      with open(naics_file, 'r') as f:
-        naics_data = json.load(f)
-      
-      # Find the NAICS entry
-      naics_info = None
-      for item in naics_data:
-        if isinstance(item, dict) and str(item.get('id')) == str(naics_code):
-          naics_info = item
-          break
-      
+      # Get NAICS info for this specific code
+      naics_info = get_naics_info_for_code(naics_code)
       if not naics_info:
         # TDPSA general small business exemption: < 100 employees AND < $10M revenue
         return employee_count < 100 and annual_revenue < 10000000
@@ -166,12 +158,13 @@ code: |
       # Business is small if it meets EITHER SBA standards OR TDPSA general standards
       return sba_qualifies_as_small or tdpsa_qualifies_as_small
         
-    except Exception:
+    except Exception as e:
+      log(f"Small business determination error: {e}")
       # Conservative fallback - use TDPSA general standards
       return employee_count < 100 and annual_revenue < 10000000
   
   def is_hipaa_applicable_by_naics(naics_code):
-    """Check if NAICS code indicates HIPAA applicability"""
+    """Check if NAICS code indicates HIPAA applicability without storing full dataset"""
     if not naics_code:
       return False
     
@@ -180,21 +173,15 @@ code: |
       naics_code = str(naics_code).split(':')[0].strip()
     
     try:
-      # Load NAICS data to check sector
-      import json
-      naics_file = path_and_mimetype('data/sources/naics.json')[0]
-      with open(naics_file, 'r') as f:
-        naics_data = json.load(f)
+      # Get NAICS info for this specific code
+      naics_info = get_naics_info_for_code(naics_code)
+      if naics_info:
+        sector_desc = naics_info.get('sectorDescription', '')
+        # Healthcare sector indicates potential HIPAA applicability
+        return 'Health Care' in sector_desc
       
-      # Find the NAICS entry
-      for item in naics_data:
-        if isinstance(item, dict) and str(item.get('id')) == str(naics_code):
-          sector_desc = item.get('sectorDescription', '')
-          # Healthcare sector indicates potential HIPAA applicability
-          return 'Health Care' in sector_desc
-      
-    except Exception:
-      pass
+    except Exception as e:
+      log(f"HIPAA applicability check error: {e}")
     
     # Fallback to subsector check
     healthcare_subsectors = ['621', '622', '623']  # Ambulatory, Hospitals, Nursing
@@ -202,7 +189,7 @@ code: |
     return naics_prefix in healthcare_subsectors
   
   def is_glba_applicable_by_naics(naics_code):
-    """Check if NAICS code indicates GLBA applicability"""  
+    """Check if NAICS code indicates GLBA applicability without storing full dataset"""  
     if not naics_code:
       return False
     
@@ -211,21 +198,15 @@ code: |
       naics_code = str(naics_code).split(':')[0].strip()
     
     try:
-      # Load NAICS data to check sector
-      import json
-      naics_file = path_and_mimetype('data/sources/naics.json')[0]
-      with open(naics_file, 'r') as f:
-        naics_data = json.load(f)
+      # Get NAICS info for this specific code
+      naics_info = get_naics_info_for_code(naics_code)
+      if naics_info:
+        sector_desc = naics_info.get('sectorDescription', '')
+        # Finance and Insurance sector indicates GLBA applicability
+        return 'Finance and Insurance' in sector_desc
       
-      # Find the NAICS entry
-      for item in naics_data:
-        if isinstance(item, dict) and str(item.get('id')) == str(naics_code):
-          sector_desc = item.get('sectorDescription', '')
-          # Finance and Insurance sector indicates GLBA applicability
-          return 'Finance and Insurance' in sector_desc
-      
-    except Exception:
-      pass
+    except Exception as e:
+      log(f"GLBA applicability check error: {e}")
     
     # Fallback to subsector check
     financial_subsectors = ['521', '522', '523', '524', '525']

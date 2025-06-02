@@ -1,11 +1,6 @@
-# modules/document_builder.yml - Document Builder Module
+# modules/document_builder.yml - Document Builder Module with Lazy Loading
 ---
-# Document builder module - generates privacy documentation
----
-objects from file:
-  - gdpr_requirements: gdpr_requirements.json
-  - ccpa_requirements: ccpa_requirements.json
-  - tdpsa_requirements: texas/tdpsa_requirements.json
+# Document builder module - generates privacy documentation using fresh data loading
 ---
 question: |
   Step 5: Document Generation
@@ -34,10 +29,8 @@ continue button field: show_document_generation_intro
 ---
 code: |
   def generate_internal_policy_document():
-    """Generate internal privacy policy document using imported requirements"""
-    global internal_policy
-    
-    # Build context for template using imported data
+    """Generate internal privacy policy document using fresh-loaded requirements"""
+    # Build context for template using fresh data
     context = {
       "company_name": company.name,
       "effective_date": today().strftime("%B %d, %Y"),
@@ -106,17 +99,20 @@ code: |
     # Format the template with context
     internal_policy = template.format(**context)
     
-    # Make it available for download
-    internal_policy_download_link = pdf_concatenate(internal_policy, filename="internal_privacy_policy.pdf")
+    # Create DAFile instead of storing in session
+    policy_file = DAFile()
+    policy_file.initialize(filename="internal_privacy_policy.md")
+    policy_file.write(internal_policy)
     
-    return internal_policy
+    return policy_file
 ---
 code: |
   def format_applicable_laws():
-    """Format the list of applicable laws for the template using imported data"""
+    """Format the list of applicable laws for the template using fresh data"""
     laws_text = ""
     for jurisdiction_id in applicable_jurisdictions:
-      law_name = next((j["name"] for j in jurisdiction_registry["jurisdictions"] if j["id"] == jurisdiction_id), jurisdiction_id)
+      jurisdiction_config = get_jurisdiction_requirements(jurisdiction_id)  # Fresh load
+      law_name = jurisdiction_config.get('name', jurisdiction_id.upper())
       laws_text += f"* {law_name}\n"
     return laws_text
   
@@ -193,31 +189,34 @@ code: |
 ---
 code: |
   def format_individual_rights():
-    """Format the individual rights section using imported requirements"""
+    """Format the individual rights section using fresh-loaded requirements"""
     rights_text = "Our organization respects individual rights regarding personal data. The following rights must be honored according to applicable laws:\n\n"
     
     # Add GDPR-specific rights if applicable
     if "gdpr" in applicable_jurisdictions:
       rights_text += "### GDPR Rights\n"
-      gdpr_rights_reqs = [req for req in gdpr_requirements["requirements"] if req["category"] == "individual_rights"]
+      gdpr_config = get_jurisdiction_requirements('gdpr')  # Fresh load
+      gdpr_rights_reqs = [req for req in gdpr_config.get("requirements", []) if req.get("category") == "individual_rights"]
       for req in gdpr_rights_reqs:
-        rights_text += f"* **{req['description']}**: {req.get('details', 'Required by GDPR')}\n"
+        rights_text += f"* **{req.get('description', '')}**: {req.get('details', 'Required by GDPR')}\n"
       rights_text += "\n"
     
     # Add CCPA-specific rights if applicable
     if "ccpa" in applicable_jurisdictions:
       rights_text += "### CCPA Rights\n"
-      ccpa_rights_reqs = [req for req in ccpa_requirements["requirements"] if req["category"] == "consumer_rights"]
+      ccpa_config = get_jurisdiction_requirements('ccpa')  # Fresh load
+      ccpa_rights_reqs = [req for req in ccpa_config.get("requirements", []) if req.get("category") == "consumer_rights"]
       for req in ccpa_rights_reqs:
-        rights_text += f"* **{req['description']}**: {req.get('details', 'Required by CCPA')}\n"
+        rights_text += f"* **{req.get('description', '')}**: {req.get('details', 'Required by CCPA')}\n"
       rights_text += "\n"
     
     # Add TDPSA-specific rights if applicable
     if "tdpsa" in applicable_jurisdictions:
       rights_text += "### TDPSA Rights\n"
-      tdpsa_rights_reqs = [req for req in tdpsa_requirements["requirements"] if req["category"] == "consumer_rights"]
+      tdpsa_config = get_jurisdiction_requirements('tdpsa')  # Fresh load
+      tdpsa_rights_reqs = [req for req in tdpsa_config.get("requirements", []) if req.get("category") == "consumer_rights"]
       for req in tdpsa_rights_reqs:
-        rights_text += f"* **{req['description']}**: {req.get('details', 'Required by TDPSA')}\n"
+        rights_text += f"* **{req.get('description', '')}**: {req.get('details', 'Required by TDPSA')}\n"
       rights_text += "\n"
     
     rights_text += "### Request Handling\n"
@@ -229,7 +228,7 @@ code: |
     return rights_text
   
   def format_security_measures():
-    """Format the security measures section using imported requirements"""
+    """Format the security measures section using fresh-loaded requirements"""
     content_parts = [
       "This section outlines the security measures that must be implemented to protect personal data.",
       "",
@@ -263,7 +262,7 @@ code: |
     return "\n".join(content_parts)
   
   def format_breach_response():
-    """Format the breach response section using imported requirements"""
+    """Format the breach response section using fresh-loaded requirements"""
     content_parts = [
       "This section outlines procedures for responding to suspected or confirmed data breaches.",
       "",
@@ -286,7 +285,7 @@ code: |
     
     breach_text = "\n".join(content_parts)
     
-    # Add jurisdiction-specific notification requirements
+    # Add jurisdiction-specific notification requirements using fresh loading
     if "gdpr" in applicable_jurisdictions:
       breach_text += "\n* **GDPR**: 72 hours to supervisory authority, without undue delay to individuals if high risk"
     if "ccpa" in applicable_jurisdictions:
@@ -345,26 +344,23 @@ code: |
 ---
 code: |
   def generate_public_facing_documents():
-    """Generate public-facing privacy documents"""
-    global public_documents, website_privacy_notice_download_link, physical_notice_download_link
+    """Generate public-facing privacy documents using fresh data"""
     public_documents = {}
     
     # Generate website privacy statement
     if business_has_website:
-      public_documents["privacy_statement"] = generate_privacy_statement()
-      website_privacy_notice_download_link = pdf_concatenate(public_documents["privacy_statement"], filename="website_privacy_notice.pdf")
+      policy_file = generate_privacy_statement()
+      public_documents["privacy_statement"] = policy_file
     
     # Generate physical privacy notice
     if business_has_physical_location and generate_physical_notice:
-      public_documents["physical_notice"] = generate_physical_notice()
-      physical_notice_download_link = pdf_concatenate(public_documents["physical_notice"], filename="physical_privacy_notice.pdf")
+      notice_file = generate_physical_notice()
+      public_documents["physical_notice"] = notice_file
     
     return public_documents
   
   def generate_privacy_statement():
-    """Generate website privacy statement using imported requirements"""
-    global privacy_statement
-    
+    """Generate website privacy statement using fresh-loaded requirements"""
     template_parts = [
       "# Privacy Statement for {company_name}",
       "",
@@ -423,7 +419,12 @@ code: |
     # Format the template with context
     privacy_statement = template.format(**context)
     
-    return privacy_statement
+    # Create DAFile instead of storing content in session
+    statement_file = DAFile()
+    statement_file.initialize(filename="website_privacy_statement.md")
+    statement_file.write(privacy_statement)
+    
+    return statement_file
 ---
 code: |
   def format_public_information_collected():
@@ -476,7 +477,7 @@ code: |
 ---
 code: |
   def format_public_privacy_rights():
-    """Format the privacy rights section for public notice using imported requirements"""
+    """Format the privacy rights section for public notice using fresh-loaded requirements"""
     rights_text = ""
     
     if "ccpa" in applicable_jurisdictions:
@@ -489,10 +490,11 @@ code: |
       ]
       rights_text += "\n".join(ccpa_parts) + "\n"
       
-      # Use imported CCPA requirements for rights descriptions
-      ccpa_rights_reqs = [req for req in ccpa_requirements["requirements"] if req["category"] == "consumer_rights"]
+      # Use fresh-loaded CCPA requirements for rights descriptions
+      ccpa_config = get_jurisdiction_requirements('ccpa')  # Fresh load
+      ccpa_rights_reqs = [req for req in ccpa_config.get("requirements", []) if req.get("category") == "consumer_rights"]
       for req in ccpa_rights_reqs:
-        rights_text += f"* **{req['description']}**: You have the right as described in the CCPA.\n"
+        rights_text += f"* **{req.get('description', '')}**: You have the right as described in the CCPA.\n"
       
       exercising_parts = [
         "",
@@ -512,10 +514,11 @@ code: |
       ]
       rights_text += "\n".join(tdpsa_parts) + "\n"
       
-      # Use imported TDPSA requirements for rights descriptions
-      tdpsa_rights_reqs = [req for req in tdpsa_requirements["requirements"] if req["category"] == "consumer_rights"]
+      # Use fresh-loaded TDPSA requirements for rights descriptions
+      tdpsa_config = get_jurisdiction_requirements('tdpsa')  # Fresh load
+      tdpsa_rights_reqs = [req for req in tdpsa_config.get("requirements", []) if req.get("category") == "consumer_rights"]
       for req in tdpsa_rights_reqs:
-        rights_text += f"* **{req['description']}**: You have the right as described in the TDPSA.\n"
+        rights_text += f"* **{req.get('description', '')}**: You have the right as described in the TDPSA.\n"
       
       exercising_parts = [
         "",
@@ -535,10 +538,11 @@ code: |
       ]
       rights_text += "\n".join(gdpr_parts) + "\n"
       
-      # Use imported GDPR requirements for rights descriptions
-      gdpr_rights_reqs = [req for req in gdpr_requirements["requirements"] if req["category"] == "individual_rights"]
+      # Use fresh-loaded GDPR requirements for rights descriptions
+      gdpr_config = get_jurisdiction_requirements('gdpr')  # Fresh load
+      gdpr_rights_reqs = [req for req in gdpr_config.get("requirements", []) if req.get("category") == "individual_rights"]
       for req in gdpr_rights_reqs:
-        rights_text += f"* **{req['description']}**: You have the right as described in the GDPR.\n"
+        rights_text += f"* **{req.get('description', '')}**: You have the right as described in the GDPR.\n"
       
       exercising_parts = [
         "",
@@ -607,9 +611,7 @@ code: |
 ---
 code: |
   def generate_physical_notice():
-    """Generate physical location privacy notice"""
-    global physical_notice
-    
+    """Generate physical location privacy notice using fresh data"""
     template_parts = [
       "# Privacy Notice for {company_name} Location",
       "",
@@ -649,7 +651,12 @@ code: |
     # Format the template with context
     physical_notice = template.format(**context)
     
-    return physical_notice
+    # Create DAFile instead of storing content in session
+    notice_file = DAFile()
+    notice_file.initialize(filename="physical_privacy_notice.md")
+    notice_file.write(physical_notice)
+    
+    return notice_file
   
   def format_physical_information_collected():
     """Format the information collected section for physical notice"""
@@ -738,9 +745,7 @@ code: |
 ---
 code: |
   def create_remediation_plan():
-    """Generate remediation plan document"""
-    global remediation_plan_doc, remediation_plan_download_link
-    
+    """Generate remediation plan document using fresh data"""
     template_parts = [
       "# Privacy Compliance Remediation Plan for {company_name}",
       "",
@@ -791,10 +796,12 @@ code: |
     # Format the template with context
     remediation_plan_doc = template.format(**context)
     
-    # Make it available for download
-    remediation_plan_download_link = pdf_concatenate(remediation_plan_doc, filename="remediation_plan.pdf")
+    # Create DAFile instead of storing content in session
+    plan_file = DAFile()
+    plan_file.initialize(filename="remediation_plan.md")
+    plan_file.write(remediation_plan_doc)
     
-    return remediation_plan_doc
+    return plan_file
 ---
 code: |
   def format_priority_actions(priority):
@@ -888,9 +895,7 @@ code: |
 ---
 code: |
   def generate_gap_report_download():
-    """Generate gap report download link using imported requirements"""
-    global gap_report_download_link
-    
+    """Generate gap report download using fresh-loaded requirements"""
     # Create a formatted gap report
     gap_report_parts = [
       f"# Privacy Compliance Gap Analysis Report for {company.name}",
@@ -916,9 +921,10 @@ code: |
     
     gap_report_text = "\n".join(gap_report_parts)
     
-    # Add applicable laws
+    # Add applicable laws using fresh data
     for jurisdiction_id in applicable_jurisdictions:
-      law_name = next((j["name"] for j in jurisdiction_registry["jurisdictions"] if j["id"] == jurisdiction_id), jurisdiction_id)
+      jurisdiction_config = get_jurisdiction_requirements(jurisdiction_id)  # Fresh load
+      law_name = jurisdiction_config.get('name', jurisdiction_id.upper())
       gap_report_text += f"* **{law_name}** ({jurisdiction_id.upper()})\n"
     
     # Add detailed gap analysis by category
@@ -971,13 +977,15 @@ code: |
     
     gap_report_text += "\n".join(conclusion_parts)
     
-    # Make it available for download
-    gap_report_download_link = pdf_concatenate(gap_report_text, filename="gap_analysis_report.pdf")
+    # Create DAFile instead of storing content in session
+    report_file = DAFile()
+    report_file.initialize(filename="gap_analysis_report.md")
+    report_file.write(gap_report_text)
     
-    return gap_report_download_link
+    return report_file
 ---
+# Initialize download links as global variables (but don't store file content)
 code: |
-  # Initialize download links as global variables
   gap_report_download_link = None
   internal_policy_download_link = None
   website_privacy_notice_download_link = None

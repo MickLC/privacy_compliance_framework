@@ -1,20 +1,20 @@
-# dynamic_questions.yml - Simplified JSON-Driven Question System
----
-objects from file:
-  - gdpr_requirements: gdpr_requirements.json
-  - ccpa_requirements: ccpa_requirements.json
-  - tdpsa_requirements: texas/tdpsa_requirements.json
+# dynamic_questions.yml - Simplified JSON-Driven Question System with Lazy Loading
 ---
 code: |
   def load_jurisdiction_specific_questions():
-    """Load and organize all questions for applicable jurisdictions from JSON"""
+    """Load and organize questions for applicable jurisdictions from fresh JSON"""
     global jurisdiction_questions_complete
     
-    jurisdiction_configs = {
-      'gdpr': gdpr_requirements,
-      'ccpa': ccpa_requirements,
-      'tdpsa': tdpsa_requirements
-    }
+    # Load questions from applicable jurisdictions only - limit to prevent session bloat
+    all_questions = []
+    for jurisdiction_id in applicable_jurisdictions:
+      jurisdiction_config = get_jurisdiction_requirements(jurisdiction_id)  # Fresh load
+      questions = jurisdiction_config.get('assessmentQuestions', [])
+      
+      # Limit questions to prevent session bloat
+      for question in questions[:5]:  # Max 5 questions per jurisdiction
+        question['source_jurisdiction'] = jurisdiction_id
+        all_questions.append(question)
     
     # For now, just mark as complete - we'll add specific questions later
     # This allows the system to work without jurisdiction-specific questions
