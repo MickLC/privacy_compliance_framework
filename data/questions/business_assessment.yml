@@ -318,7 +318,6 @@ continue button label: "Continue"
 question: "Step 1d: Geographic and Operational Scope"
 subquestion: |
   Now let's determine your geographic and operational scope to identify applicable privacy laws.
-
 fields:
   - "Does your business have a website?": business_has_website
     datatype: yesnowide
@@ -327,57 +326,12 @@ fields:
   - "In which states/provinces do you have business locations?": states_with_locations
     datatype: checkboxes
     choices:
-      - Alabama
-      - Alaska
-      - Arizona
-      - Arkansas
       - California
-      - Colorado
-      - Connecticut
-      - Delaware
-      - Florida
-      - Georgia
-      - Hawaii
-      - Idaho
-      - Illinois
-      - Indiana
-      - Iowa
-      - Kansas
-      - Kentucky
-      - Louisiana
-      - Maine
-      - Maryland
-      - Massachusetts
-      - Michigan
-      - Minnesota
-      - Mississippi
-      - Missouri
-      - Montana
-      - Nebraska
-      - Nevada
-      - New Hampshire
-      - New Jersey
-      - New Mexico
-      - New York
-      - North Carolina
-      - North Dakota
-      - Ohio
-      - Oklahoma
-      - Oregon
-      - Pennsylvania
-      - Rhode Island
-      - South Carolina
-      - South Dakota
-      - Tennessee
       - Texas
-      - Utah
-      - Vermont
+      - New York
       - Virginia
-      - Washington
-      - West Virginia
-      - Wisconsin
-      - Wyoming
-    none of the above: False
+      - Other (please specify in additional information)
+    required: False
   - "Do you serve customers or clients in the European Union?": serves_eu
     datatype: yesnowide
   - "Do you have an establishment (office, subsidiary, etc.) in the EU?": has_eu_establishment
