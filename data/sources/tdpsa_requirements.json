@@ -9,39 +9,62 @@
   "latestAmendment": null,
   "applicabilityChecks": [
     {
-      "type": "geographic",
-      "field": "texas_presence",
-      "operator": "equals",
-      "value": true,
-      "description": "Business has presence or conducts business in Texas"
-    },
-    {
-      "type": "data_volume",
-      "field": "texas_records",
-      "operator": "greater_than_or_equal",
-      "value": 100000,
-      "description": "Processes personal data of 100,000+ Texas residents annually"
-    },
-    {
-      "type": "data_volume_with_sale",
-      "field": "texas_records",
-      "operator": "greater_than_or_equal",
-      "value": 25000,
-      "additional_condition": {
-        "field": "sells_personal_info",
-        "operator": "equals",
-        "value": true
-      },
-      "description": "Processes personal data of 25,000+ Texas residents and sells personal data"
-    },
-    {
-      "type": "small_business_exemption",
-      "field": "is_small_business",
-      "operator": "equals",
-      "value": false,
-      "description": "Does not qualify for small business exemption under SBA size standards"
+        "type": "compound",
+        "operator": "and",
+        "conditions": [
+            {
+                "type": "texas_connection",
+                "operator": "or",
+                "conditions": [
+                    {
+                        "field": "texas_records",
+                        "operator": "greater_than",
+                        "value": 0
+                    },
+                    {
+                        "field": "states_with_locations",
+                        "operator": "contains",
+                        "value": "Texas"
+                    }
+                ]
+            },
+            {
+                "type": "data_volume_threshold",
+                "operator": "or",
+                "conditions": [
+                    {
+                        "field": "texas_records",
+                        "operator": "greater_than_or_equal",
+                        "value": 100000
+                    },
+                    {
+                        "type": "compound",
+                        "operator": "and",
+                        "conditions": [
+                            {
+                                "field": "texas_records",
+                                "operator": "greater_than_or_equal",
+                                "value": 25000
+                            },
+                            {
+                                "field": "sells_personal_info",
+                                "operator": "equals",
+                                "value": true
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "type": "not_small_business",
+                "field": "is_small_business_under_tdpsa_check",
+                "operator": "equals",
+                "value": false,
+                "description": "Does not qualify for small business exemption"
+            }
+        ]
     }
-  ],
+],
   "lawfulBasisValidation": {
     "rules": [
       {

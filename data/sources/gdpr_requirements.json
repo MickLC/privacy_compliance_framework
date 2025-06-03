@@ -7,29 +7,32 @@
   "type": "comprehensive",
   "effectiveDate": "2018-05-25",
   "latestAmendment": "2023-01-01",
-  "applicabilityChecks": [
+"applicabilityChecks": [
     {
-      "type": "geographic",
-      "field": "serves_eu",
-      "operator": "equals",
-      "value": true,
-      "description": "Business serves customers in the European Union"
-    },
-    {
-      "type": "geographic", 
-      "field": "has_eu_establishment",
-      "operator": "equals",
-      "value": true,
-      "description": "Business has establishment in the European Union"
-    },
-    {
-      "type": "data_processing",
-      "field": "eu_data_subjects",
-      "operator": "greater_than",
-      "value": 0,
-      "description": "Processes personal data of EU data subjects"
+        "type": "eu_connection",
+        "operator": "or",
+        "conditions": [
+            {
+                "field": "serves_eu",
+                "operator": "equals",
+                "value": true,
+                "description": "Business serves customers in the European Union"
+            },
+            {
+                "field": "has_eu_establishment",
+                "operator": "equals",
+                "value": true,
+                "description": "Business has establishment in the European Union"
+            },
+            {
+                "field": "eu_data_subjects",
+                "operator": "greater_than",
+                "value": 0,
+                "description": "Processes personal data of EU data subjects"
+            }
+        ]
     }
-  ],
+],
   "lawfulBasisValidation": {
     "rules": [
       {

@@ -9,37 +9,60 @@
   "latestAmendment": "2023-01-01",
   "applicabilityChecks": [
     {
-      "type": "geographic",
-      "field": "california_records",
-      "operator": "greater_than",
-      "value": 0,
-      "description": "Processes personal information of California residents"
-    },
-    {
-      "type": "revenue",
-      "field": "company.annual_revenue",
-      "operator": "greater_than_or_equal",
-      "value": 25000000,
-      "description": "Annual gross revenues exceed $25 million"
-    },
-    {
-      "type": "data_volume",
-      "field": "california_records",
-      "operator": "greater_than_or_equal",
-      "value": 100000,
-      "description": "Buys, receives, sells, or shares personal information of 100,000 or more California consumers"
-    },
-    {
-      "type": "data_volume_with_sale",
-      "condition": {
-        "and": [
-          {"field": "california_records", "operator": "greater_than_or_equal", "value": 50000},
-          {"field": "sells_personal_info", "operator": "equals", "value": true}
+        "type": "compound",
+        "operator": "and",
+        "conditions": [
+            {
+                "type": "geographic_connection",
+                "operator": "or",
+                "conditions": [
+                    {
+                        "field": "california_records",
+                        "operator": "greater_than",
+                        "value": 0
+                    },
+                    {
+                        "field": "states_with_locations",
+                        "operator": "contains",
+                        "value": "California"
+                    }
+                ]
+            },
+            {
+                "type": "qualifying_threshold",
+                "operator": "or", 
+                "conditions": [
+                    {
+                        "field": "company.annual_revenue",
+                        "operator": "greater_than_or_equal",
+                        "value": 25000000
+                    },
+                    {
+                        "field": "california_records",
+                        "operator": "greater_than_or_equal",
+                        "value": 100000
+                    },
+                    {
+                        "type": "compound",
+                        "operator": "and",
+                        "conditions": [
+                            {
+                                "field": "california_records",
+                                "operator": "greater_than_or_equal", 
+                                "value": 50000
+                            },
+                            {
+                                "field": "sells_personal_info",
+                                "operator": "equals",
+                                "value": true
+                            }
+                        ]
+                    }
+                ]
+            }
         ]
-      },
-      "description": "Derives 50% or more of annual revenues from selling or sharing consumers' personal information"
     }
-  ],
+],
   "lawfulBasisValidation": {
     "rules": [
       {
