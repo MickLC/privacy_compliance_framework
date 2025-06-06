@@ -322,7 +322,7 @@ code: |
     # GLBA applies if either NAICS suggests it OR user confirmed it
     return naics_suggests_glba or user_indicates_glba
 ---
-question: Comprehensive Jurisdiction Debug Test
+question: Comprehensive Jurisdiction Debug Analysis
 subquestion: |
   ## Business Profile Values
   
@@ -338,16 +338,19 @@ subquestion: |
   **Location and Presence:**
   * Business has website: ${ business_has_website if defined('business_has_website') else 'Not set' }
   * Business has physical location: ${ business_has_physical_location if defined('business_has_physical_location') else 'Not set' }
-  * States with locations: ${ states_with_locations if defined('states_with_locations') else 'Not set' }
-  * States with locations (true_values): ${ states_with_locations.true_values() if defined('states_with_locations') and hasattr(states_with_locations, 'true_values') else 'Not available' }
+  * States with locations (raw): ${ states_with_locations if defined('states_with_locations') else 'Not set' }
+  * States with locations (true_values): ${ list(states_with_locations.true_values()) if defined('states_with_locations') and hasattr(states_with_locations, 'true_values') else 'Not available' }
+  * States with locations (all keys): ${ list(states_with_locations.keys()) if defined('states_with_locations') and hasattr(states_with_locations, 'keys') else 'Not available' }
   
   **California-Specific:**
   * California records: ${ california_records if defined('california_records') else 'Not set' }
-  * California in states: ${ 'California' in states_with_locations.true_values() if defined('states_with_locations') and hasattr(states_with_locations, 'true_values') else 'Cannot determine' }
+  * California in states (bracket): ${ states_with_locations.get('California', 'Not found') if defined('states_with_locations') and hasattr(states_with_locations, 'get') else 'Cannot check' }
+  * California in states (true_values): ${ 'California' in states_with_locations.true_values() if defined('states_with_locations') and hasattr(states_with_locations, 'true_values') else 'Cannot check' }
   
   **Texas-Specific:**
   * Texas records: ${ texas_records if defined('texas_records') else 'Not set' }
-  * Texas in states: ${ 'Texas' in states_with_locations.true_values() if defined('states_with_locations') and hasattr(states_with_locations, 'true_values') else 'Cannot determine' }
+  * Texas in states (bracket): ${ states_with_locations.get('Texas', 'Not found') if defined('states_with_locations') and hasattr(states_with_locations, 'get') else 'Cannot check' }
+  * Texas in states (true_values): ${ 'Texas' in states_with_locations.true_values() if defined('states_with_locations') and hasattr(states_with_locations, 'true_values') else 'Cannot check' }
   
   **EU-Specific:**
   * Serves EU: ${ serves_eu if defined('serves_eu') else 'Not set' }
@@ -369,35 +372,47 @@ subquestion: |
   * Provides financial products: ${ provides_financial_products if defined('provides_financial_products') else 'Not set' }
   * Collects NPI: ${ collects_npi if defined('collects_npi') else 'Not set' }
   
-  ## Jurisdiction Applicability Tests
+  ## Applicability Function Tests
   
   **CCPA/CPRA Analysis:**
   * CCPA Revenue threshold (≥$25M): ${ company.annual_revenue >= 25000000 if defined('company.annual_revenue') else 'Cannot determine' }
   * CCPA Volume threshold (≥100K CA records): ${ california_records >= 100000 if defined('california_records') else 'Cannot determine' }
   * CCPA Sale threshold (≥50K CA records + sells info): ${ (california_records >= 50000 and sells_personal_info) if defined('california_records') and defined('sells_personal_info') else 'Cannot determine' }
-  * CCPA California connection: ${ ('California' in states_with_locations.true_values() or california_records > 0) if defined('states_with_locations') and defined('california_records') and hasattr(states_with_locations, 'true_values') else 'Cannot determine' }
+  * CCPA California connection test: ${ ('California' in states_with_locations.true_values() or california_records > 0) if defined('states_with_locations') and defined('california_records') and hasattr(states_with_locations, 'true_values') else 'Cannot determine' }
   * **CCPA Final Result**: ${ is_ccpa_applicable() if 'is_ccpa_applicable' in globals() else 'Function not available' }
   
   **TDPSA Analysis:**
   * TDPSA Volume threshold (≥100K TX records): ${ texas_records >= 100000 if defined('texas_records') else 'Cannot determine' }
   * TDPSA Sale threshold (≥25K TX records + sells info): ${ (texas_records >= 25000 and sells_personal_info) if defined('texas_records') and defined('sells_personal_info') else 'Cannot determine' }
-  * TDPSA Texas connection: ${ ('Texas' in states_with_locations.true_values() or texas_records > 0) if defined('states_with_locations') and defined('texas_records') and hasattr(states_with_locations, 'true_values') else 'Cannot determine' }
+  * TDPSA Texas connection test: ${ ('Texas' in states_with_locations.true_values() or texas_records > 0) if defined('states_with_locations') and defined('texas_records') and hasattr(states_with_locations, 'true_values') else 'Cannot determine' }
   * TDPSA Small business exemption: ${ is_small_business_under_tdpsa(company.naics_code, company.employee_count, company.annual_revenue) if defined('company.naics_code') and defined('company.employee_count') and defined('company.annual_revenue') and 'is_small_business_under_tdpsa' in globals() else 'Cannot determine' }
   * **TDPSA Final Result**: ${ is_tdpsa_applicable() if 'is_tdpsa_applicable' in globals() else 'Function not available' }
   
   **GDPR Analysis:**
-  * GDPR EU connection: ${ (serves_eu or has_eu_establishment) if defined('serves_eu') and defined('has_eu_establishment') else 'Cannot determine' }
+  * GDPR EU connection test: ${ (serves_eu or has_eu_establishment) if defined('serves_eu') and defined('has_eu_establishment') else 'Cannot determine' }
   * **GDPR Final Result**: ${ is_gdpr_applicable() if 'is_gdpr_applicable' in globals() else 'Function not available' }
   
   **HIPAA Analysis:**
   * HIPAA NAICS indication: ${ is_hipaa_applicable_by_naics(company.naics_code) if defined('company.naics_code') and 'is_hipaa_applicable_by_naics' in globals() else 'Cannot determine' }
-  * HIPAA user confirmation: ${ (is_hipaa_covered_entity or is_hipaa_business_associate or processes_phi) if defined('is_hipaa_covered_entity') and defined('is_hipaa_business_associate') and defined('processes_phi') else 'Cannot determine' }
+  * HIPAA user confirmation test: ${ (is_hipaa_covered_entity or is_hipaa_business_associate or processes_phi) if defined('is_hipaa_covered_entity') and defined('is_hipaa_business_associate') and defined('processes_phi') else 'Cannot determine' }
   * **HIPAA Final Result**: ${ is_hipaa_applicable() if 'is_hipaa_applicable' in globals() else 'Function not available' }
   
   **GLBA Analysis:**
   * GLBA NAICS indication: ${ is_glba_applicable_by_naics(company.naics_code) if defined('company.naics_code') and 'is_glba_applicable_by_naics' in globals() else 'Cannot determine' }
-  * GLBA user confirmation: ${ (is_glba_financial_institution or (provides_financial_products and collects_npi)) if defined('is_glba_financial_institution') and defined('provides_financial_products') and defined('collects_npi') else 'Cannot determine' }
+  * GLBA user confirmation test: ${ (is_glba_financial_institution or (provides_financial_products and collects_npi)) if defined('is_glba_financial_institution') and defined('provides_financial_products') and defined('collects_npi') else 'Cannot determine' }
   * **GLBA Final Result**: ${ is_glba_applicable() if 'is_glba_applicable' in globals() else 'Function not available' }
+  
+  ## System Function Availability
+  
+  **Function Status:**
+  * is_ccpa_applicable function: ${ 'Available' if 'is_ccpa_applicable' in globals() else 'Not Available' }
+  * is_tdpsa_applicable function: ${ 'Available' if 'is_tdpsa_applicable' in globals() else 'Not Available' }
+  * is_gdpr_applicable function: ${ 'Available' if 'is_gdpr_applicable' in globals() else 'Not Available' }
+  * is_hipaa_applicable function: ${ 'Available' if 'is_hipaa_applicable' in globals() else 'Not Available' }
+  * is_glba_applicable function: ${ 'Available' if 'is_glba_applicable' in globals() else 'Not Available' }
+  * is_small_business_under_tdpsa function: ${ 'Available' if 'is_small_business_under_tdpsa' in globals() else 'Not Available' }
+  * is_hipaa_applicable_by_naics function: ${ 'Available' if 'is_hipaa_applicable_by_naics' in globals() else 'Not Available' }
+  * is_glba_applicable_by_naics function: ${ 'Available' if 'is_glba_applicable_by_naics' in globals() else 'Not Available' }
   
   ## Final System Results
   
@@ -415,18 +430,33 @@ subquestion: |
   
   ## JSON-Based Evaluation Debug
   
+  **JSON System Status:**
+  * Jurisdiction registry loaded: ${ 'Yes' if defined('jurisdiction_registry') and jurisdiction_registry else 'No' }
+  * Registry jurisdiction count: ${ len(jurisdiction_registry["jurisdictions"]) if defined('jurisdiction_registry') and jurisdiction_registry and "jurisdictions" in jurisdiction_registry else 'Cannot determine' }
+  
   **JSON Evaluation Results:**
-  % if defined('jurisdiction_registry'):
+  % if defined('jurisdiction_registry') and jurisdiction_registry:
   % for jurisdiction in jurisdiction_registry["jurisdictions"]:
   * **${ jurisdiction["id"].upper() }**: 
     - JSON config loaded: ${ 'Yes' if get_jurisdiction_requirements(jurisdiction["id"]) else 'No' }
+    - JSON config size: ${ len(str(get_jurisdiction_requirements(jurisdiction["id"]))) if get_jurisdiction_requirements(jurisdiction["id"]) else 'Empty' } characters
     - JSON applicability result: ${ check_jurisdiction_applicability(jurisdiction["id"], get_jurisdiction_requirements(jurisdiction["id"])) if 'check_jurisdiction_applicability' in globals() else 'Function not available' }
   % endfor
   % else:
-  * Jurisdiction registry not loaded
+  * Jurisdiction registry not loaded - cannot test JSON evaluation
   % endif
   
+  ## Workflow Status
+  
+  **Completion Status:**
+  * basic_business_info_complete: ${ basic_business_info_complete if defined('basic_business_info_complete') else 'Not set' }
+  * naics_selection_complete: ${ naics_selection_complete if defined('naics_selection_complete') else 'Not set' }
+  * business_profile_complete: ${ business_profile_complete if defined('business_profile_complete') else 'Not set' }
+  * geographic_scope_complete: ${ geographic_scope_complete if defined('geographic_scope_complete') else 'Not set' }
+  * show_jurisdiction_intro: ${ show_jurisdiction_intro if defined('show_jurisdiction_intro') else 'Not set' }
+
 continue button field: debug_values
+continue button label: "Continue Analysis"
 ---
 question: Applicable Privacy Laws
 subquestion: |
