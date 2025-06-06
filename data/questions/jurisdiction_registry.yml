@@ -167,232 +167,160 @@ code: |
     return evaluate_operator(field_value, operator, value, field)
 
   def get_field_value(field):
-      """Get field value with support for nested attributes and special cases"""
-      if '.' in field:
-          # Handle nested attributes like company.annual_revenue
-          parts = field.split('.')
-          field_value = globals().get(parts[0])
-          for part in parts[1:]:
-              if field_value is None:
-                  return None
-              field_value = getattr(field_value, part, None)
-          return field_value
-      else:
-          return globals().get(field)
+    """Get field value with support for nested attributes and special cases"""
+    if '.' in field:
+      # Handle nested attributes like company.annual_revenue
+      parts = field.split('.')
+      field_value = globals().get(parts[0])
+      for part in parts[1:]:
+        if field_value is None:
+          return None
+        field_value = getattr(field_value, part, None)
+      return field_value
+    else:
+      return globals().get(field)
 
   def evaluate_operator(field_value, operator, value, field_name):
-      """Evaluate operator with proper handling for different field types"""
-      # Handle checkbox fields (DADict)
-      if field_name == 'states_with_locations' and hasattr(field_value, 'true_values'):
-          if operator == 'contains':
-              return value in field_value.true_values()
-          elif operator == 'contains_any':
-              return any(v in field_value.true_values() for v in value)
-      
-      # Handle None values
-      if field_value is None:
-          return operator in ['equals', 'not_equals'] and value is None
-      
-      # Standard operators
-      if operator == 'equals':
-          return field_value == value
-      elif operator == 'not_equals':
-          return field_value != value
-      elif operator == 'greater_than':
-          try:
-              return float(field_value) > float(value)
-          except (ValueError, TypeError):
-              return False
-      elif operator == 'greater_than_or_equal':
-          try:
-              return float(field_value) >= float(value)
-          except (ValueError, TypeError):
-              return False
-      elif operator == 'less_than':
-          try:
-              return float(field_value) < float(value)
-          except (ValueError, TypeError):
-              return False
-      elif operator == 'less_than_or_equal':
-          try:
-              return float(field_value) <= float(value)
-          except (ValueError, TypeError):
-              return False
-      elif operator == 'contains':
-          if hasattr(field_value, '__contains__'):
-              return value in field_value
-          return False
+    """Evaluate operator with proper handling for different field types"""
+    # Handle checkbox fields (DADict)
+    if field_name == 'states_with_locations' and hasattr(field_value, 'true_values'):
+      if operator == 'contains':
+        return value in field_value.true_values()
       elif operator == 'contains_any':
-          if hasattr(field_value, '__contains__'):
-              return any(v in field_value for v in value)
-          return False
-      elif operator == 'not_contains':
-          if hasattr(field_value, '__contains__'):
-              return value not in field_value
-          return True
-      elif operator == 'in_list':
-          return field_value in value if isinstance(value, list) else False
-      elif operator == 'not_in_list':
-          return field_value not in value if isinstance(value, list) else True
-      else:
-          log(f"Unknown operator: {operator}")
-          return False
-
-  def get_field_value(field):
-      """Get field value with support for nested attributes and special cases"""
-      if '.' in field:
-          # Handle nested attributes like company.annual_revenue
-          parts = field.split('.')
-          field_value = globals().get(parts[0])
-          for part in parts[1:]:
-              if field_value is None:
-                  return None
-              field_value = getattr(field_value, part, None)
-          return field_value
-      else:
-          return globals().get(field)
-
-  def evaluate_operator(field_value, operator, value, field_name):
-      """Evaluate operator with proper handling for different field types"""
-      # Handle checkbox fields (DADict)
-      if field_name == 'states_with_locations' and hasattr(field_value, 'true_values'):
-          if operator == 'contains':
-              return value in field_value.true_values()
-          elif operator == 'contains_any':
-              return any(v in field_value.true_values() for v in value)
-      
-      # Handle None values
-      if field_value is None:
-          return operator in ['equals', 'not_equals'] and value is None
-      
-      # Standard operators
-      if operator == 'equals':
-          return field_value == value
-      elif operator == 'not_equals':
-          return field_value != value
-      elif operator == 'greater_than':
-          try:
-              return float(field_value) > float(value)
-          except (ValueError, TypeError):
-              return False
-      elif operator == 'greater_than_or_equal':
-          try:
-              return float(field_value) >= float(value)
-          except (ValueError, TypeError):
-              return False
-      elif operator == 'less_than':
-          try:
-              return float(field_value) < float(value)
-          except (ValueError, TypeError):
-              return False
-      elif operator == 'less_than_or_equal':
-          try:
-              return float(field_value) <= float(value)
-          except (ValueError, TypeError):
-              return False
-      elif operator == 'contains':
-          if hasattr(field_value, '__contains__'):
-              return value in field_value
-          return False
-      elif operator == 'contains_any':
-          if hasattr(field_value, '__contains__'):
-              return any(v in field_value for v in value)
-          return False
-      elif operator == 'not_contains':
-          if hasattr(field_value, '__contains__'):
-              return value not in field_value
-          return True
-      elif operator == 'in_list':
-          return field_value in value if isinstance(value, list) else False
-      elif operator == 'not_in_list':
-          return field_value not in value if isinstance(value, list) else True
-      else:
-          log(f"Unknown operator: {operator}")
-          return False
+        return any(v in field_value.true_values() for v in value)
     
-    # Fallback applicability functions (for backward compatibility)
-    def is_gdpr_applicable():
-      """Determine if GDPR applies"""
-      return serves_eu or has_eu_establishment
+    # Handle None values
+    if field_value is None:
+      return operator in ['equals', 'not_equals'] and value is None
     
-    def is_ccpa_applicable():
-      """Determine if CCPA/CPRA applies"""
-      has_california_connection = (
-          (defined('states_with_locations') and states_with_locations['California']) or
-      california_records > 0
+    # Standard operators
+    if operator == 'equals':
+      return field_value == value
+    elif operator == 'not_equals':
+      return field_value != value
+    elif operator == 'greater_than':
+      try:
+        return float(field_value) > float(value)
+      except (ValueError, TypeError):
+        return False
+    elif operator == 'greater_than_or_equal':
+      try:
+        return float(field_value) >= float(value)
+      except (ValueError, TypeError):
+        return False
+    elif operator == 'less_than':
+      try:
+        return float(field_value) < float(value)
+      except (ValueError, TypeError):
+        return False
+    elif operator == 'less_than_or_equal':
+      try:
+        return float(field_value) <= float(value)
+      except (ValueError, TypeError):
+        return False
+    elif operator == 'contains':
+      if hasattr(field_value, '__contains__'):
+        return value in field_value
+      return False
+    elif operator == 'contains_any':
+      if hasattr(field_value, '__contains__'):
+        return any(v in field_value for v in value)
+      return False
+    elif operator == 'not_contains':
+      if hasattr(field_value, '__contains__'):
+        return value not in field_value
+      return True
+    elif operator == 'in_list':
+      return field_value in value if isinstance(value, list) else False
+    elif operator == 'not_in_list':
+      return field_value not in value if isinstance(value, list) else True
+    else:
+      log(f"Unknown operator: {operator}")
+      return False
+
+  # Fallback applicability functions (for backward compatibility)
+  def is_gdpr_applicable():
+    """Determine if GDPR applies"""
+    return serves_eu or has_eu_establishment
+  
+  def is_ccpa_applicable():
+    """Determine if CCPA/CPRA applies"""
+    has_california_connection = (
+        (defined('states_with_locations') and states_with_locations['California']) or
+    california_records > 0
+    )
+    
+    if not has_california_connection:
+        return False
+    
+    # Then check thresholds
+    revenue_threshold = company.annual_revenue >= 25000000
+    volume_threshold = california_records >= 100000
+    sale_threshold = (california_records >= 50000 and sells_personal_info)
+    
+    return revenue_threshold or volume_threshold or sale_threshold
+  
+  def is_tdpsa_applicable():
+    """Determine if Texas TDPSA applies"""
+    # Check if business has Texas presence
+    has_texas_presence = ('Texas' in states_with_locations or texas_records > 0)
+    
+    if not has_texas_presence:
+      return False
+    
+    # Check data volume thresholds
+    meets_data_thresholds = (texas_records >= 100000 or 
+                            (texas_records >= 25000 and sells_personal_info))
+    
+    if not meets_data_thresholds:
+      return False
+    
+    # Check if business qualifies as small business (exempt from TDPSA)
+    if (defined('company.naics_code') and defined('company.employee_count') and 
+        defined('company.annual_revenue')):
+      
+      is_small_business = is_small_business_under_tdpsa(
+        company.naics_code, 
+        company.employee_count, 
+        company.annual_revenue
       )
       
-      if not has_california_connection:
-          return False
-      
-      # Then check thresholds
-      revenue_threshold = company.annual_revenue >= 25000000
-      volume_threshold = california_records >= 100000
-      sale_threshold = (california_records >= 50000 and sells_personal_info)
-      
-      return revenue_threshold or volume_threshold or sale_threshold
+      # TDPSA applies if NOT a small business
+      return not is_small_business
+    else:
+      # Fallback to simple check if NAICS data not available
+      is_small_business = company.employee_count < 100 and company.annual_revenue < 10000000
+      return not is_small_business
+  
+  def is_hipaa_applicable():
+    """Determine if HIPAA applies - Enhanced with NAICS code analysis"""
+    # First check NAICS code indication
+    naics_suggests_hipaa = False
+    if defined('company.naics_code') and company.naics_code:
+      naics_suggests_hipaa = is_hipaa_applicable_by_naics(company.naics_code)
     
-    def is_tdpsa_applicable():
-      """Determine if Texas TDPSA applies"""
-      # Check if business has Texas presence
-      has_texas_presence = ('Texas' in states_with_locations or texas_records > 0)
-      
-      if not has_texas_presence:
-        return False
-      
-      # Check data volume thresholds
-      meets_data_thresholds = (texas_records >= 100000 or 
-                              (texas_records >= 25000 and sells_personal_info))
-      
-      if not meets_data_thresholds:
-        return False
-      
-      # Check if business qualifies as small business (exempt from TDPSA)
-      if (defined('company.naics_code') and defined('company.employee_count') and 
-          defined('company.annual_revenue')):
-        
-        is_small_business = is_small_business_under_tdpsa(
-          company.naics_code, 
-          company.employee_count, 
-          company.annual_revenue
-        )
-        
-        # TDPSA applies if NOT a small business
-        return not is_small_business
-      else:
-        # Fallback to simple check if NAICS data not available
-        is_small_business = company.employee_count < 100 and company.annual_revenue < 10000000
-        return not is_small_business
+    # Combine NAICS indication with user responses
+    user_indicates_hipaa = (is_hipaa_covered_entity if defined('is_hipaa_covered_entity') else False or 
+                          is_hipaa_business_associate if defined('is_hipaa_business_associate') else False or 
+                          processes_phi if defined('processes_phi') else False)
     
-    def is_hipaa_applicable():
-      """Determine if HIPAA applies - Enhanced with NAICS code analysis"""
-      # First check NAICS code indication
-      naics_suggests_hipaa = False
-      if defined('company.naics_code') and company.naics_code:
-        naics_suggests_hipaa = is_hipaa_applicable_by_naics(company.naics_code)
-      
-      # Combine NAICS indication with user responses
-      user_indicates_hipaa = (is_hipaa_covered_entity if defined('is_hipaa_covered_entity') else False or 
-                            is_hipaa_business_associate if defined('is_hipaa_business_associate') else False or 
-                            processes_phi if defined('processes_phi') else False)
-      
-      # HIPAA applies if either NAICS suggests it OR user confirmed it
-      return naics_suggests_hipaa or user_indicates_hipaa
+    # HIPAA applies if either NAICS suggests it OR user confirmed it
+    return naics_suggests_hipaa or user_indicates_hipaa
+  
+  def is_glba_applicable():
+    """Determine if GLBA applies - Enhanced with NAICS code analysis"""
+    # First check NAICS code indication
+    naics_suggests_glba = False
+    if defined('company.naics_code') and company.naics_code:
+      naics_suggests_glba = is_glba_applicable_by_naics(company.naics_code)
     
-    def is_glba_applicable():
-      """Determine if GLBA applies - Enhanced with NAICS code analysis"""
-      # First check NAICS code indication
-      naics_suggests_glba = False
-      if defined('company.naics_code') and company.naics_code:
-        naics_suggests_glba = is_glba_applicable_by_naics(company.naics_code)
-      
-      # Combine NAICS indication with user responses
-      user_indicates_glba = (is_glba_financial_institution if defined('is_glba_financial_institution') else False or 
-                            (provides_financial_products if defined('provides_financial_products') else False and 
-                            collects_npi if defined('collects_npi') else False))
-      
-      # GLBA applies if either NAICS suggests it OR user confirmed it
-      return naics_suggests_glba or user_indicates_glba
+    # Combine NAICS indication with user responses
+    user_indicates_glba = (is_glba_financial_institution if defined('is_glba_financial_institution') else False or 
+                          (provides_financial_products if defined('provides_financial_products') else False and 
+                          collects_npi if defined('collects_npi') else False))
+    
+    # GLBA applies if either NAICS suggests it OR user confirmed it
+    return naics_suggests_glba or user_indicates_glba
 ---
 question: Debug Information
 subquestion: |
