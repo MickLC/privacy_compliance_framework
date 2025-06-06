@@ -326,7 +326,6 @@ question: Debug Information
 subquestion: |
   **Debug Values:**
   
-  * california_records: ${ california_records }
   * states_with_locations: ${ states_with_locations }
   * company.annual_revenue: ${ company.annual_revenue }
   * sells_personal_info: ${ sells_personal_info }
@@ -334,11 +333,31 @@ subquestion: |
   **CCPA Check Results:**
   
   * Revenue threshold met: ${ company.annual_revenue >= 25000000 }
+  * California records: ${ california_records }
   * California records threshold: ${ california_records >= 100000 }
   * California presence: ${ 'California' in states_with_locations.true_values() }
   * California in true_values: ${ 'California' in states_with_locations.true_values() }
   * California checkbox value: ${ states_with_locations.get('California', 'Not set') }
   * California records > 0: ${ california_records > 0 }
+
+  **TDPSA Check Results:**
+  
+  * Revenue threshold met: ${ company.annual_revenue >= 25000000 }
+  * Texas records: ${ texas_records >= 100000 }
+  * Texas presence: ${ 'Texas' in states_with_locations.true_values() }
+  * Texas in true_values: ${ 'Texas' in states_with_locations.true_values() }
+  * Texas checkbox value: ${ states_with_locations.get('Texas', 'Not set') }
+  * Texas records > 0: ${ texas_records > 0 }
+  * Not small business: ${ not_small_business_tdpsa }
+  * SBA smail: ${ sba_qualifies_as_small }
+  * Employee limit: ${ employee_limit }
+  * Revenue limit: ${ revenue_limit }
+
+  **GDPR Check Results:**
+  
+  * European presence: ${ has_eu_establishment }
+  * Serve the European Union: ${ serves_eu }
+  * European data subjects: ${ eu_data_subjects }
   
 continue button field: debug_values
 ---
