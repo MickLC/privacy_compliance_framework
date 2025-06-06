@@ -125,10 +125,10 @@ code: |
           company.employee_count if defined('company.employee_count') else 0,
           company.annual_revenue if defined('company.annual_revenue') else 0
         )
-        # Add more custom functions as needed
-        else:
-          log(f"Unknown custom function: {function_name}")
-          return False
+      # Add more custom functions as needed
+      else:
+        log(f"Unknown custom function: {function_name}")
+        return False
       
     # Handle compound conditions
     if check_type == 'compound':
