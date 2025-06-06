@@ -9,60 +9,63 @@
   "latestAmendment": "2023-01-01",
   "applicabilityChecks": [
     {
-        "type": "compound",
-        "operator": "and",
-        "conditions": [
+      "type": "compound",
+      "operator": "and",
+      "description": "Requires both California connection and qualifying threshold",
+      "conditions": [
+        {
+          "type": "compound",
+          "operator": "or",
+          "description": "California connection required",
+          "conditions": [
             {
-                "type": "geographic_connection",
-                "operator": "or",
-                "conditions": [
-                    {
-                        "field": "california_records",
-                        "operator": "greater_than",
-                        "value": 0
-                    },
-                    {
-                        "field": "states_with_locations",
-                        "operator": "contains",
-                        "value": "California"
-                    }
-                ]
+              "field": "california_records",
+              "operator": "greater_than",
+              "value": 0
             },
             {
-                "type": "qualifying_threshold",
-                "operator": "or", 
-                "conditions": [
-                    {
-                        "field": "company.annual_revenue",
-                        "operator": "greater_than_or_equal",
-                        "value": 25000000
-                    },
-                    {
-                        "field": "california_records",
-                        "operator": "greater_than_or_equal",
-                        "value": 100000
-                    },
-                    {
-                        "type": "compound",
-                        "operator": "and",
-                        "conditions": [
-                            {
-                                "field": "california_records",
-                                "operator": "greater_than_or_equal", 
-                                "value": 50000
-                            },
-                            {
-                                "field": "sells_personal_info",
-                                "operator": "equals",
-                                "value": true
-                            }
-                        ]
-                    }
-                ]
+                "field": "states_with_locations",
+                "operator": "contains",
+                "value": "California"
             }
-        ]
+         ]
+        },
+        {
+          "type": "compound",
+          "operator": "or",
+          "description": "Must meet at least one threshold",
+          "conditions": [
+            {
+                "field": "company.annual_revenue",
+                "operator": "greater_than_or_equal",
+                "value": 25000000
+            },
+            {
+                "field": "california_records",
+                "operator": "greater_than_or_equal",
+                "value": 100000
+            },
+            {
+              "type": "compound",
+              "operator": "and",
+              "conditions": [
+                {
+                    "field": "california_records",
+                    "operator": "greater_than_or_equal",
+                    "value": 50000
+                },
+                {
+                    "field": "sells_personal_info",
+                    "operator": "equals",
+                    "value": true
+                }
+              ]
+            }
+          ]
+        }
+      ] 
     }
-],
+  ],
   "lawfulBasisValidation": {
     "rules": [
       {

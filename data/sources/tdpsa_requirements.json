@@ -11,10 +11,12 @@
     {
         "type": "compound",
         "operator": "and",
+        "description": "Requires Texas connection, data thresholds, and not small business",
         "conditions": [
             {
-                "type": "texas_connection",
+                "type": "compound",
                 "operator": "or",
+                "description": "Texas connection required",
                 "conditions": [
                     {
                         "field": "texas_records",
@@ -29,8 +31,9 @@
                 ]
             },
             {
-                "type": "data_volume_threshold",
+                "type": "compound",
                 "operator": "or",
+                "description": "Must meet data volume thresholds",
                 "conditions": [
                     {
                         "field": "texas_records",
@@ -56,11 +59,9 @@
                 ]
             },
             {
-                "type": "not_small_business",
-                "field": "is_small_business_under_tdpsa_check",
-                "operator": "equals",
-                "value": false,
-                "description": "Does not qualify for small business exemption"
+                "type": "custom_function",
+                "function": "not_small_business_tdpsa",
+                "description": "Must not qualify for small business exemption"
             }
         ]
     }
