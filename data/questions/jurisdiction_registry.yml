@@ -138,23 +138,23 @@ code: |
           return False
         return True
 
-    def evaluate_applicability_check(check):
-    """Enhanced version with custom function support"""
-    check_type = check.get('type')
-    
-    # Handle custom functions
-    if check_type == 'custom_function':
-        function_name = check.get('function')
-        if function_name == 'not_small_business_tdpsa':
-            return not is_small_business_under_tdpsa(
-                company.naics_code if defined('company.naics_code') else None,
-                company.employee_count if defined('company.employee_count') else 0,
-                company.annual_revenue if defined('company.annual_revenue') else 0
-            )
-        # Add more custom functions as needed
-        else:
-            log(f"Unknown custom function: {function_name}")
-            return False
+  def evaluate_applicability_check(check):
+  """Enhanced version with custom function support"""
+  check_type = check.get('type')
+  
+  # Handle custom functions
+  if check_type == 'custom_function':
+      function_name = check.get('function')
+      if function_name == 'not_small_business_tdpsa':
+          return not is_small_business_under_tdpsa(
+              company.naics_code if defined('company.naics_code') else None,
+              company.employee_count if defined('company.employee_count') else 0,
+              company.annual_revenue if defined('company.annual_revenue') else 0
+          )
+      # Add more custom functions as needed
+      else:
+          log(f"Unknown custom function: {function_name}")
+          return False
             
     # Handle simple field checks
     field = check.get('field')
