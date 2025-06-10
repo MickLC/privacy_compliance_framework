@@ -1,0 +1,1364 @@
+{
+  "jurisdictionId": "hipaa",
+  "name": "Health Insurance Portability and Accountability Act",
+  "shortName": "HIPAA",
+  "jurisdiction": "federal_united_states",
+  "region": "united_states",
+  "type": "sectoral",
+  "effectiveDate": "2003-04-14",
+  "latestAmendment": "2013-09-23",
+  "applicabilityChecks": [
+    {
+      "type": "compound",
+      "operator": "or",
+      "description": "HIPAA applies to covered entities and business associates",
+      "conditions": [
+        {
+          "type": "custom_function",
+          "function": "is_healthcare_provider",
+          "description": "Healthcare providers who transmit health information electronically"
+        },
+        {
+          "type": "custom_function", 
+          "function": "is_health_plan",
+          "description": "Health plans including insurance companies and HMOs"
+        },
+        {
+          "type": "custom_function",
+          "function": "is_healthcare_clearinghouse",
+          "description": "Healthcare clearinghouses that process health information"
+        },
+        {
+          "type": "custom_function",
+          "function": "is_business_associate",
+          "description": "Business associates of covered entities"
+        }
+      ]
+    }
+  ],
+  "lawfulBasisValidation": {
+    "rules": [
+      {
+        "id": "minimum_necessary_standard",
+        "condition": {
+          "phi_processing": "any"
+        },
+        "requirement": "Minimum necessary standard",
+        "severity": "high",
+        "message": "Uses and disclosures of PHI must be limited to minimum necessary to accomplish purpose",
+        "remediation": "Implement minimum necessary policies and procedures for all PHI uses and disclosures"
+      },
+      {
+        "id": "authorization_required",
+        "condition": {
+          "phi_disclosure": "not_permitted_without_authorization"
+        },
+        "requirement": "Written authorization",
+        "severity": "high",
+        "message": "Uses and disclosures not permitted by Privacy Rule require individual authorization",
+        "remediation": "Obtain valid written authorization meeting all HIPAA requirements"
+      },
+      {
+        "id": "psychotherapy_notes_special_protection",
+        "condition": {
+          "phi_type": "psychotherapy_notes"
+        },
+        "requirement": "Specific authorization",
+        "severity": "high",
+        "message": "Psychotherapy notes require specific authorization separate from other PHI",
+        "remediation": "Implement separate authorization process for psychotherapy notes"
+      },
+      {
+        "id": "marketing_authorization_required",
+        "condition": {
+          "phi_use": "marketing"
+        },
+        "requirement": "Marketing authorization",
+        "severity": "high",
+        "message": "Marketing communications using PHI require specific authorization",
+        "remediation": "Obtain marketing-specific authorization before using PHI for promotional purposes"
+      },
+      {
+        "id": "sale_of_phi_prohibited",
+        "condition": {
+          "phi_disclosure": "sale"
+        },
+        "requirement": "Prohibition with limited exceptions",
+        "severity": "high",
+        "message": "Sale of PHI is generally prohibited with very limited exceptions",
+        "remediation": "Ensure PHI disclosures do not constitute prohibited sale"
+      }
+    ]
+  },
+  "complianceAnalysis": {
+    "phiProcessingAnalysis": {
+      "description": "System analyzes PHI processing activities against HIPAA Privacy Rule requirements",
+      "validationProcess": [
+        "Check lawful basis for each PHI use and disclosure",
+        "Validate minimum necessary implementation",
+        "Verify individual rights procedures",
+        "Assess administrative safeguards",
+        "Check Notice of Privacy Practices compliance",
+        "Validate breach notification procedures"
+      ],
+      "outputFormat": {
+        "activity_assessment": {
+          "activity_name": "string",
+          "compliance_status": "compliant|non_compliant|needs_review",
+          "identified_issues": ["array of compliance gaps"],
+          "recommendations": ["array of remediation actions"],
+          "priority": "high|medium|low"
+        }
+      }
+    }
+  },
+  "assessmentQuestions": [
+    {
+      "id": "entity_type",
+      "question": "What type of entity is your organization?",
+      "type": "radio",
+      "required": true,
+      "choices": [
+        "Healthcare provider (hospitals, clinics, doctors, etc.)",
+        "Health plan (insurance, HMO, employer health plan, etc.)",
+        "Healthcare clearinghouse",
+        "Business associate of a covered entity",
+        "Hybrid entity (both covered and non-covered functions)",
+        "None of the above"
+      ],
+      "help": "HIPAA applies to covered entities and their business associates"
+    },
+    {
+      "id": "electronic_transactions",
+      "question": "Do you transmit health information electronically in connection with standard transactions?",
+      "type": "yesno",
+      "required": true,
+      "help": "Standard transactions include claims, eligibility inquiries, referral authorizations, etc.",
+      "show_if": {
+        "field": "entity_type",
+        "contains": "Healthcare provider"
+      }
+    },
+    {
+      "id": "covered_entity_relationship",
+      "question": "Which covered entities do you provide services to?",
+      "type": "checkboxes",
+      "required": true,
+      "choices": [
+        "Hospitals and health systems",
+        "Medical practices and clinics", 
+        "Health insurance companies",
+        "Health maintenance organizations (HMOs)",
+        "Healthcare clearinghouses",
+        "Government health programs (Medicare, Medicaid)",
+        "Other healthcare entities"
+      ],
+      "help": "Business associates must have contracts with covered entities",
+      "show_if": {
+        "field": "entity_type",
+        "contains": "Business associate"
+      }
+    },
+    {
+      "id": "phi_volume",
+      "question": "Approximately how many individuals' PHI do you handle annually?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Less than 500",
+        "500 - 4,999",
+        "5,000 - 49,999", 
+        "50,000 or more"
+      ],
+      "help": "Volume affects some HIPAA requirements and breach notification thresholds"
+    },
+    {
+      "id": "phi_types_handled",
+      "question": "What types of protected health information do you handle?",
+      "type": "checkboxes",
+      "required": true,
+      "choices": [
+        "Medical records and treatment information",
+        "Billing and payment information",
+        "Health insurance information",
+        "Prescription information",
+        "Mental health records",
+        "Psychotherapy notes",
+        "Substance abuse treatment records",
+        "Genetic information",
+        "Reproductive health information",
+        "Pharmacy records",
+        "Laboratory results",
+        "Medical imaging and reports"
+      ],
+      "help": "Different types of PHI may have different protection requirements"
+    },
+    {
+      "id": "phi_uses_disclosures",
+      "question": "For what purposes do you use or disclose PHI?",
+      "type": "checkboxes",
+      "required": true,
+      "choices": [
+        "Treatment and care coordination",
+        "Payment and billing operations",
+        "Healthcare operations (quality assurance, training, etc.)",
+        "Research activities",
+        "Public health reporting",
+        "Marketing and promotional activities",
+        "Legal proceedings and law enforcement",
+        "Emergency situations",
+        "Directory information",
+        "Family/friend communications as permitted",
+        "Business associate services",
+        "Disclosure to other covered entities"
+      ],
+      "help": "Different purposes have different HIPAA requirements"
+    },
+    {
+      "id": "marketing_activities",
+      "question": "Do you engage in marketing activities using PHI?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "No marketing activities using PHI",
+        "Face-to-face communications only",
+        "Promotional gifts of nominal value only",
+        "Treatment communications (appointment reminders, etc.)",
+        "Marketing communications with authorization",
+        "We're not sure if our activities constitute marketing"
+      ],
+      "help": "Marketing with PHI generally requires authorization",
+      "show_if": {
+        "field": "phi_uses_disclosures",
+        "contains": "Marketing and promotional activities"
+      }
+    },
+    {
+      "id": "research_activities",
+      "question": "Do you conduct or participate in research involving PHI?",
+      "type": "yesno",
+      "required": false,
+      "help": "Research using PHI has specific authorization and IRB requirements",
+      "show_if": {
+        "field": "phi_uses_disclosures",
+        "contains": "Research activities"
+      }
+    },
+    {
+      "id": "research_protections",
+      "question": "What protections do you have for research involving PHI?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "IRB or Privacy Board approval",
+        "Individual authorization for research",
+        "De-identification procedures",
+        "Limited data set agreements",
+        "Waiver of authorization documentation",
+        "None of the above"
+      ],
+      "help": "Research requires specific HIPAA protections",
+      "show_if": {
+        "field": "research_activities",
+        "value": true
+      }
+    },
+    {
+      "id": "individual_rights_procedures",
+      "question": "Do you have procedures for handling individual rights requests?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Access to PHI requests",
+        "Amendment/correction requests",
+        "Accounting of disclosures",
+        "Restriction requests",
+        "Confidential communications requests",
+        "Complaint procedures",
+        "We don't have established procedures"
+      ],
+      "help": "HIPAA grants individuals specific rights regarding their PHI"
+    },
+    {
+      "id": "access_request_timeframe",
+      "question": "How long does it typically take to respond to access requests?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Within 30 days",
+        "31-60 days (with extension)",
+        "More than 60 days",
+        "We haven't received any requests",
+        "We don't track response times"
+      ],
+      "help": "HIPAA requires response within 30 days, extendable once by 30 days",
+      "show_if": {
+        "field": "individual_rights_procedures",
+        "contains": "Access to PHI requests"
+      }
+    },
+    {
+      "id": "minimum_necessary_implementation",
+      "question": "How do you implement the minimum necessary standard?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Written policies identifying minimum necessary for routine uses",
+        "Role-based access controls limiting PHI access",
+        "Case-by-case review for non-routine disclosures",
+        "Training on minimum necessary requirements",
+        "Regular review and updating of access levels",
+        "We rely on professional judgment only",
+        "We haven't implemented minimum necessary procedures"
+      ],
+      "help": "Minimum necessary is required for all PHI uses and disclosures except treatment"
+    },
+    {
+      "id": "business_associate_agreements",
+      "question": "Do you have business associate agreements (BAAs) with all entities that handle PHI on your behalf?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Yes, all vendors have current BAAs",
+        "Most vendors have BAAs, some may be missing",
+        "Some vendors have BAAs, many may be missing",
+        "We don't have BAAs with vendors",
+        "We don't use outside vendors for PHI processing"
+      ],
+      "help": "BAAs are required for all business associates handling PHI"
+    },
+    {
+      "id": "baa_requirements",
+      "question": "What requirements do your business associate agreements include?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Permitted uses and disclosures of PHI",
+        "Prohibition on further use or disclosure",
+        "Requirement to implement safeguards",
+        "Subcontractor requirements (if applicable)",
+        "Individual rights assistance obligations",
+        "Breach notification requirements",
+        "Return or destruction of PHI upon termination",
+        "Compliance monitoring and reporting"
+      ],
+      "help": "BAAs must include specific required provisions",
+      "show_if": {
+        "field": "business_associate_agreements",
+        "not_contains": "We don't"
+      }
+    },
+    {
+      "id": "notice_of_privacy_practices",
+      "question": "Do you have a current Notice of Privacy Practices?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Yes, current and compliant notice",
+        "Yes, but may need updates",
+        "We have an old notice that needs revision",
+        "We don't have a notice",
+        "Not required for our entity type"
+      ],
+      "help": "Most covered entities must provide Notice of Privacy Practices"
+    },
+    {
+      "id": "notice_distribution",
+      "question": "How do you distribute your Notice of Privacy Practices?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Provided at first service delivery",
+        "Posted prominently in facilities",
+        "Available on website",
+        "Given upon request",
+        "Mailed when required",
+        "Electronic delivery with patient consent",
+        "Emergency situation procedures"
+      ],
+      "help": "Notice must be provided according to HIPAA requirements",
+      "show_if": {
+        "field": "notice_of_privacy_practices",
+        "contains": "Yes"
+      }
+    },
+    {
+      "id": "breach_procedures",
+      "question": "Do you have procedures for identifying and responding to breaches?",
+      "type": "yesno",
+      "required": false,
+      "help": "HIPAA requires specific breach notification procedures"
+    },
+    {
+      "id": "breach_assessment_factors",
+      "question": "What factors do you consider when assessing whether an incident is a breach?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Nature and extent of PHI involved",
+        "Identity of unauthorized recipients",
+        "Whether PHI was actually acquired or viewed",
+        "Extent to which risk has been mitigated",
+        "Whether incident meets safe harbor exceptions",
+        "Risk assessment documentation",
+        "We haven't had any incidents to assess"
+      ],
+      "help": "Breach assessment requires considering specific risk factors",
+      "show_if": {
+        "field": "breach_procedures",
+        "value": true
+      }
+    },
+    {
+      "id": "breach_notification_timeframes",
+      "question": "What are your breach notification timeframes?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Individual notification within 60 days",
+        "HHS notification within 60 days (if >500 individuals)",
+        "HHS annual notification (if <500 individuals)",
+        "Media notification within 60 days (if >500 in same area)",
+        "Business associate notification without unreasonable delay",
+        "We're not familiar with the timeframes"
+      ],
+      "help": "Different breach types have different notification requirements",
+      "show_if": {
+        "field": "breach_procedures",
+        "value": true
+      }
+    },
+    {
+      "id": "administrative_safeguards",
+      "question": "Which administrative safeguards do you have in place?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Security Officer designation",
+        "Workforce training on HIPAA",
+        "Information access management procedures",
+        "Workforce security procedures",
+        "Assigned security responsibilities",
+        "Incident response procedures",
+        "Contingency plan for emergencies",
+        "Regular security evaluations"
+      ],
+      "help": "Administrative safeguards are required for PHI protection"
+    },
+    {
+      "id": "physical_safeguards",
+      "question": "Which physical safeguards do you have in place?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Controlled facility access",
+        "Workstation use restrictions",
+        "Device and media controls",
+        "Secure disposal procedures",
+        "Assigned facility access authorization",
+        "Maintenance record keeping",
+        "Physical access controls to PHI",
+        "Workstation security measures"
+      ],
+      "help": "Physical safeguards protect PHI from unauthorized physical access"
+    },
+    {
+      "id": "technical_safeguards",
+      "question": "Which technical safeguards do you have in place?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Access control systems",
+        "Audit controls and logging",
+        "Integrity controls for PHI",
+        "Person or entity authentication",
+        "Transmission security measures",
+        "Encryption of PHI at rest",
+        "Encryption of PHI in transit",
+        "Regular access reviews"
+      ],
+      "help": "Technical safeguards control electronic access to PHI"
+    },
+    {
+      "id": "workforce_training",
+      "question": "What HIPAA training do you provide to workforce members?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Initial HIPAA Privacy Rule training",
+        "Initial HIPAA Security Rule training", 
+        "Annual refresher training",
+        "Role-specific training",
+        "Incident response training",
+        "Training documentation and tracking",
+        "Training updates when policies change",
+        "We don't provide formal HIPAA training"
+      ],
+      "help": "Workforce training is required for all HIPAA covered entities"
+    },
+    {
+      "id": "privacy_officer",
+      "question": "Do you have a designated Privacy Officer?",
+      "type": "radio",
+      "required": false,
+      "choices": [
+        "Yes, dedicated Privacy Officer",
+        "Yes, Privacy Officer with other duties",
+        "No designated Privacy Officer",
+        "Privacy Officer role is shared",
+        "Not required for our organization"
+      ],
+      "help": "Covered entities must designate a Privacy Officer"
+    },
+    {
+      "id": "compliance_monitoring",
+      "question": "How do you monitor HIPAA compliance?",
+      "type": "checkboxes",
+      "required": false,
+      "choices": [
+        "Regular internal audits",
+        "Risk assessments",
+        "Incident tracking and analysis",
+        "Workforce compliance monitoring",
+        "Business associate monitoring", 
+        "Third-party compliance assessments",
+        "Complaint tracking and investigation",
+        "We don't have formal monitoring procedures"
+      ],
+      "help": "Regular compliance monitoring helps identify and address issues"
+    }
+  ],
+  "categories": [
+    {
+      "id": "administrative_requirements",
+      "name": "Administrative Requirements",
+      "description": "Organizational and procedural requirements for HIPAA compliance"
+    },
+    {
+      "id": "individual_rights",
+      "name": "Individual Rights",
+      "description": "Rights that must be provided to individuals regarding their PHI"
+    },
+    {
+      "id": "uses_disclosures",
+      "name": "Uses and Disclosures",
+      "description": "Rules governing when PHI may be used or disclosed"
+    },
+    {
+      "id": "safeguards",
+      "name": "Administrative, Physical, and Technical Safeguards",
+      "description": "Required protections for PHI security"
+    },
+    {
+      "id": "business_associates",
+      "name": "Business Associate Requirements",
+      "description": "Requirements for business associate relationships and agreements"
+    },
+    {
+      "id": "breach_notification",
+      "name": "Breach Notification",
+      "description": "Requirements for breach assessment and notification"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "hipaa-admin-1",
+      "category": "administrative_requirements",
+      "title": "Privacy Officer designation",
+      "description": "Covered entities must designate a Privacy Officer responsible for HIPAA compliance",
+      "severity": "high",
+      "details": "A covered entity must designate a privacy officer who is responsible for the development and implementation of the policies and procedures required by the Privacy Rule.",
+      "articleReference": "45 CFR § 164.530(a)(1)(i)",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Designate qualified Privacy Officer with appropriate authority"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Document Privacy Officer designation and responsibilities"
+        }
+      ],
+      "documentImpact": ["notice_of_privacy_practices", "privacy_policies"]
+    },
+    {
+      "id": "hipaa-admin-2",
+      "category": "administrative_requirements",
+      "title": "Workforce training requirements",
+      "description": "Covered entities must provide appropriate HIPAA training to workforce members",
+      "severity": "high",
+      "details": "A covered entity must train all members of its workforce on the policies and procedures with respect to protected health information as necessary and appropriate for the members of the workforce to carry out their function within the covered entity.",
+      "articleReference": "45 CFR § 164.530(b)(1)",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Provide initial and ongoing HIPAA training to all workforce members"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Document training completion and maintain training records"
+        }
+      ],
+      "documentImpact": ["training_procedures", "workforce_policies"]
+    },
+    {
+      "id": "hipaa-admin-3",
+      "category": "administrative_requirements",
+      "title": "Notice of Privacy Practices",
+      "description": "Covered entities must provide individuals with Notice of Privacy Practices",
+      "severity": "high",
+      "details": "A covered entity must provide a notice that is written in plain language and contains the elements required by the Privacy Rule.",
+      "articleReference": "45 CFR § 164.520",
+      "applicableWhen": {
+        "field": "entity_type",
+        "contains_any": ["Healthcare provider", "Health plan"]
+      },
+      "complianceChecks": [
+        {
+          "type": "policy_requirement",
+          "description": "Create compliant Notice of Privacy Practices with all required elements"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Provide notice to individuals as required by HIPAA"
+        }
+      ],
+      "documentImpact": ["notice_of_privacy_practices"]
+    },
+    {
+      "id": "hipaa-rights-1",
+      "category": "individual_rights",
+      "title": "Right of access to PHI",
+      "description": "Individuals have the right to inspect and obtain copies of their PHI",
+      "severity": "high",
+      "details": "An individual has a right of access to inspect and obtain a copy of protected health information about the individual in a designated record set.",
+      "articleReference": "45 CFR § 164.524",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement procedures for handling access requests within 30 days"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "Maintain systems capable of providing access to PHI"
+        }
+      ],
+      "documentImpact": ["access_procedures", "notice_of_privacy_practices"]
+    },
+    {
+      "id": "hipaa-rights-2",
+      "category": "individual_rights",
+      "title": "Right to request amendment",
+      "description": "Individuals have the right to request amendment of their PHI",
+      "severity": "high",
+      "details": "An individual has the right to have a covered entity amend protected health information or a record about the individual in a designated record set.",
+      "articleReference": "45 CFR § 164.526",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement procedures for processing amendment requests within 60 days"
+        }
+      ],
+      "documentImpact": ["amendment_procedures", "notice_of_privacy_practices"]
+    },
+    {
+      "id": "hipaa-rights-3",
+      "category": "individual_rights",
+      "title": "Right to accounting of disclosures",
+      "description": "Individuals have the right to receive an accounting of disclosures of their PHI",
+      "severity": "high",
+      "details": "An individual has a right to receive an accounting of disclosures of protected health information made by a covered entity.",
+      "articleReference": "45 CFR § 164.528",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Maintain disclosure tracking and provide accounting within 60 days"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "System to track and report disclosures"
+        }
+      ],
+      "documentImpact": ["disclosure_tracking_procedures", "notice_of_privacy_practices"]
+    },
+    {
+      "id": "hipaa-rights-4",
+      "category": "individual_rights",
+      "title": "Right to request restrictions",
+      "description": "Individuals have the right to request restrictions on uses and disclosures",
+      "severity": "medium",
+      "details": "An individual has the right to request that a covered entity restrict its uses or disclosures of protected health information to carry out treatment, payment, or health care operations.",
+      "articleReference": "45 CFR § 164.522(a)",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement procedures for considering and implementing restriction requests"
+        }
+      ],
+      "documentImpact": ["restriction_procedures", "notice_of_privacy_practices"]
+    },
+    {
+      "id": "hipaa-rights-5",
+      "category": "individual_rights",
+      "title": "Right to confidential communications",
+      "description": "Individuals have the right to request confidential communications",
+      "severity": "medium",
+      "details": "An individual has the right to request and must be accommodated in reasonable requests to receive communications of protected health information from the covered entity by alternative means or at alternative locations.",
+      "articleReference": "45 CFR § 164.522(b)",
+      "applicableWhen": {
+        "field": "entity_type",
+        "contains_any": ["Healthcare provider", "Health plan"]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Accommodate reasonable requests for confidential communications"
+        }
+      ],
+      "documentImpact": ["communication_procedures", "notice_of_privacy_practices"]
+    },
+    {
+      "id": "hipaa-uses-1",
+      "category": "uses_disclosures",
+      "title": "Minimum necessary standard",
+      "description": "Uses and disclosures must be limited to minimum necessary to accomplish purpose",
+      "severity": "high",
+      "details": "When using or disclosing protected health information or when requesting protected health information from another covered entity, a covered entity must make reasonable efforts to limit protected health information to the minimum necessary to accomplish the intended purpose of the use, disclosure, or request.",
+      "articleReference": "45 CFR § 164.502(b)",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "policy_requirement",
+          "description": "Develop minimum necessary policies and procedures"
+        },
+        {
+          "type": "technical_requirement",
+          "description": "Implement role-based access controls"
+        }
+      ],
+      "documentImpact": ["minimum_necessary_policies", "access_control_procedures"]
+    },
+    {
+      "id": "hipaa-uses-2",
+      "category": "uses_disclosures",
+      "title": "Authorization requirements",
+      "description": "Uses and disclosures not otherwise permitted require valid authorization",
+      "severity": "high",
+      "details": "A covered entity may not use or disclose protected health information, except as permitted or required by the Privacy Rule or as authorized by a valid authorization.",
+      "articleReference": "45 CFR § 164.502(a)",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Obtain valid authorizations for uses and disclosures not otherwise permitted"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Maintain authorization forms and tracking"
+        }
+      ],
+      "documentImpact": ["authorization_forms", "use_disclosure_procedures"]
+    },
+    {
+      "id": "hipaa-uses-3",
+      "category": "uses_disclosures",
+      "title": "Marketing restrictions",
+      "description": "Marketing communications using PHI require authorization",
+      "severity": "high",
+      "details": "A covered entity may not use or disclose protected health information for marketing purposes without a valid authorization, except for limited exceptions.",
+      "articleReference": "45 CFR § 164.508(a)(3)",
+      "applicableWhen": {
+        "field": "phi_uses_disclosures",
+        "contains": "Marketing and promotional activities"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Obtain marketing authorizations before using PHI for promotional purposes"
+        }
+      ],
+      "documentImpact": ["marketing_authorization_forms", "marketing_policies"]
+    },
+    {
+      "id": "hipaa-safeguards-1",
+      "category": "safeguards",
+      "title": "Administrative safeguards",
+      "description": "Implement administrative safeguards to protect PHI",
+      "severity": "high",
+      "details": "A covered entity must implement administrative safeguards to protect the privacy of protected health information and to conduct the covered entity's health care business in accordance with the administrative requirements of the Privacy Rule.",
+      "articleReference": "45 CFR § 164.530",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement required administrative safeguards including workforce training and access management"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Document administrative safeguard policies and procedures"
+        }
+      ],
+      "documentImpact": ["administrative_safeguards_policies", "workforce_procedures"]
+    },
+    {
+      "id": "hipaa-safeguards-2",
+      "category": "safeguards",
+      "title": "Physical safeguards",
+      "description": "Implement physical safeguards to protect PHI",
+      "severity": "high",
+      "details": "A covered entity must implement physical safeguards to protect the privacy of protected health information and to limit physical access to its facilities while ensuring that authorized access is allowed.",
+      "articleReference": "45 CFR § 164.530",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement physical access controls and facility security measures"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Establish workstation use and device control procedures"
+        }
+      ],
+      "documentImpact": ["physical_safeguards_policies", "facility_access_procedures"]
+    },
+    {
+      "id": "hipaa-safeguards-3",
+      "category": "safeguards",
+      "title": "Technical safeguards",
+      "description": "Implement technical safeguards to protect electronic PHI",
+      "severity": "high",
+      "details": "A covered entity must implement technical safeguards to protect the privacy of protected health information and to control access to protected health information that is transmitted electronically.",
+      "articleReference": "45 CFR § 164.530",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "technical_requirement",
+          "description": "Implement access controls, audit logs, integrity controls, and transmission security"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Establish user authentication and authorization procedures"
+        }
+      ],
+      "documentImpact": ["technical_safeguards_policies", "access_control_procedures"]
+    },
+    {
+      "id": "hipaa-ba-1",
+      "category": "business_associates",
+      "title": "Business associate agreements required",
+      "description": "Covered entities must have business associate agreements with entities that handle PHI",
+      "severity": "high",
+      "details": "A covered entity may disclose protected health information to a business associate and may allow a business associate to create, receive, maintain, or transmit protected health information on the covered entity's behalf only if the covered entity obtains satisfactory assurance that the business associate will appropriately safeguard the information.",
+      "articleReference": "45 CFR § 164.502(e)",
+      "applicableWhen": {
+        "field": "entity_type",
+        "contains_any": ["Healthcare provider", "Health plan", "Healthcare clearinghouse"]
+      },
+      "complianceChecks": [
+        {
+          "type": "documentation_requirement",
+          "description": "Execute compliant business associate agreements with all entities handling PHI"
+        },
+        {
+          "type": "operational_requirement",
+          "description": "Monitor business associate compliance with agreement terms"
+        }
+      ],
+      "documentImpact": ["business_associate_agreements"]
+    },
+    {
+      "id": "hipaa-ba-2",
+      "category": "business_associates",
+      "title": "Business associate compliance obligations",
+      "description": "Business associates must comply with specified HIPAA requirements",
+      "severity": "high",
+      "details": "A business associate must comply with the applicable requirements of the Privacy Rule with respect to protected health information.",
+      "articleReference": "45 CFR § 164.502(e)(2)",
+      "applicableWhen": {
+        "field": "entity_type",
+        "contains": "Business associate"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement HIPAA compliance program as business associate"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Maintain policies and procedures for PHI protection"
+        }
+      ],
+      "documentImpact": ["business_associate_policies", "phi_protection_procedures"]
+    },
+    {
+      "id": "hipaa-breach-1",
+      "category": "breach_notification",
+      "title": "Breach assessment and determination",
+      "description": "Entities must assess security incidents to determine if they constitute breaches",
+      "severity": "high",
+      "details": "Following the discovery of a potential breach of protected health information, a covered entity or business associate must conduct a risk assessment to determine whether the incident constitutes a breach requiring notification.",
+      "articleReference": "45 CFR § 164.402",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Implement procedures for breach assessment and risk evaluation"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Document breach assessment methodology and decisions"
+        }
+      ],
+      "documentImpact": ["breach_assessment_procedures", "incident_response_plan"]
+    },
+    {
+      "id": "hipaa-breach-2",
+      "category": "breach_notification",
+      "title": "Individual notification requirements",
+      "description": "Individuals must be notified of breaches affecting their PHI",
+      "severity": "high",
+      "details": "A covered entity shall notify each individual whose protected health information has been, or is reasonably believed by the covered entity to have been, accessed, acquired, used, or disclosed as a result of a breach.",
+      "articleReference": "45 CFR § 164.404",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Provide individual breach notification within 60 days of discovery"
+        },
+        {
+          "type": "documentation_requirement",
+          "description": "Maintain records of breach notifications sent"
+        }
+      ],
+      "documentImpact": ["breach_notification_procedures", "notification_templates"]
+    },
+    {
+      "id": "hipaa-breach-3",
+      "category": "breach_notification",
+      "title": "HHS notification requirements",
+      "description": "HHS must be notified of breaches meeting specified criteria",
+      "severity": "high",
+      "details": "A covered entity shall notify the Secretary of HHS of breaches of protected health information in the manner and timeframe prescribed by the Privacy Rule.",
+      "articleReference": "45 CFR § 164.408",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Report breaches to HHS within required timeframes (60 days for >500 individuals, annually for <500)"
+        }
+      ],
+      "documentImpact": ["hhs_reporting_procedures", "breach_notification_procedures"]
+    },
+    {
+      "id": "hipaa-breach-4",
+      "category": "breach_notification",
+      "title": "Media notification requirements",
+      "description": "Media notification required for large breaches in same geographic area",
+      "severity": "medium",
+      "details": "A covered entity shall notify prominent media outlets serving a state or jurisdiction if a breach affects 500 or more residents of that state or jurisdiction.",
+      "articleReference": "45 CFR § 164.406",
+      "applicableWhen": {
+        "and": [
+          {"field": "entity_type", "not_contains": "None of the above"},
+          {"field": "phi_volume", "contains_any": ["5,000 - 49,999", "50,000 or more"]}
+        ]
+      },
+      "complianceChecks": [
+        {
+          "type": "operational_requirement",
+          "description": "Provide media notification within 60 days for breaches affecting 500+ individuals in same area"
+        }
+      ],
+      "documentImpact": ["media_notification_procedures", "breach_notification_procedures"]
+    }
+  ],
+  "documentRequirements": [
+    {
+      "documentType": "notice_of_privacy_practices",
+      "required": true,
+      "description": "Notice of Privacy Practices explaining PHI uses, disclosures, and individual rights",
+      "applicableWhen": {
+        "field": "entity_type",
+        "contains_any": ["Healthcare provider", "Health plan"]
+      },
+      "requiredElements": [
+        "Header stating this notice describes how medical information may be used and disclosed",
+        "Description of uses and disclosures for treatment, payment, and healthcare operations",
+        "Description of other permitted uses and disclosures",
+        "Description of uses and disclosures requiring authorization",
+        "Individual rights including access, amendment, accounting, restrictions, confidential communications, and complaints",
+        "Covered entity's duties including minimum necessary and safeguarding PHI",
+        "Procedures for exercising rights and filing complaints",
+        "Contact information for privacy officer or contact person",
+        "Effective date and revision information"
+      ]
+    },
+    {
+      "documentType": "business_associate_agreements",
+      "required": true,
+      "description": "Agreements with business associates who handle PHI on behalf of covered entity",
+      "applicableWhen": {
+        "field": "business_associate_agreements",
+        "not_contains": "We don't"
+      },
+      "requiredElements": [
+        "Permitted uses and disclosures of PHI by business associate",
+        "Prohibition on further use or disclosure except as permitted",
+        "Requirement to implement appropriate safeguards",
+        "Requirement to report breaches and security incidents",
+        "Requirement to ensure subcontractors comply with same restrictions",
+        "Individual rights assistance obligations",
+        "Return or destruction of PHI upon contract termination",
+        "Covered entity's right to terminate for cause"
+      ]
+    },
+    {
+      "documentType": "privacy_policies_procedures",
+      "required": true,
+      "description": "Comprehensive privacy policies and procedures for HIPAA compliance",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "requiredElements": [
+        "Policies for uses and disclosures of PHI",
+        "Minimum necessary policies and procedures",
+        "Individual rights procedures (access, amendment, accounting, restrictions, confidential communications)",
+        "Authorization policies and procedures",
+        "Workforce training procedures",
+        "Complaint procedures",
+        "Administrative, physical, and technical safeguards policies",
+        "Breach notification procedures"
+      ]
+    },
+    {
+      "documentType": "authorization_forms",
+      "required": true,
+      "description": "Authorization forms for uses and disclosures requiring individual authorization",
+      "applicableWhen": {
+        "or": [
+          {"field": "phi_uses_disclosures", "contains": "Marketing and promotional activities"},
+          {"field": "phi_uses_disclosures", "contains": "Research activities"}
+        ]
+      },
+      "requiredElements": [
+        "Description of PHI to be used or disclosed",
+        "Person or class of persons authorized to make use or disclosure",
+        "Person or class of persons to whom disclosure may be made",
+        "Purpose of use or disclosure",
+        "Expiration date or event",
+        "Individual's right to revoke authorization",
+        "Consequences of refusing to sign authorization",
+        "Potential for re-disclosure by recipient"
+      ]
+    },
+    {
+      "documentType": "breach_response_procedures",
+      "required": true,
+      "description": "Procedures for breach assessment, notification, and response",
+      "applicableWhen": {
+        "field": "entity_type",
+        "not_contains": "None of the above"
+      },
+      "requiredElements": [
+        "Breach identification and assessment procedures",
+        "Risk assessment methodology for determining breach status",
+        "Individual notification procedures and timeframes",
+        "HHS reporting procedures and timeframes",
+        "Media notification procedures (if applicable)",
+        "Business associate notification requirements",
+        "Documentation and record-keeping requirements",
+        "Breach response team roles and responsibilities"
+      ]
+    }
+  ],
+  "documentTemplates": {
+    "notice_of_privacy_practices": {
+      "sections": [
+        "header_statement",
+        "entity_information",
+        "uses_disclosures_treatment_payment_operations",
+        "other_permitted_uses_disclosures",
+        "uses_disclosures_requiring_authorization",
+        "individual_rights_description",
+        "entity_duties_and_safeguards",
+        "procedures_for_exercising_rights",
+        "complaint_procedures",
+        "contact_information",
+        "effective_date_and_revisions"
+      ]
+    },
+    "business_associate_agreement": {
+      "required_elements": [
+        "definitions_and_scope",
+        "permitted_uses_disclosures",
+        "prohibition_on_further_disclosure",
+        "safeguards_requirements",
+        "breach_incident_reporting",
+        "subcontractor_requirements",
+        "individual_rights_assistance",
+        "return_destruction_of_phi",
+        "compliance_monitoring_audit_rights",
+        "termination_provisions"
+      ]
+    },
+    "authorization_form": {
+      "required_elements": [
+        "phi_description",
+        "authorized_persons_entities",
+        "recipients_of_disclosure",
+        "purpose_of_use_disclosure",
+        "expiration_date_event",
+        "revocation_rights_procedures",
+        "consequences_of_refusal",
+        "redisclosure_warning",
+        "signature_date_requirements"
+      ]
+    }
+  },
+  "gapAnalysisRules": [
+    {
+      "category": "policy_gaps",
+      "checks": [
+        {
+          "requirement": "Notice of Privacy Practices exists and is current",
+          "severity": "high",
+          "remediation": "Create or update Notice of Privacy Practices with all required HIPAA elements including individual rights, uses and disclosures, and contact information",
+          "applicableWhen": {
+            "field": "entity_type",
+            "contains_any": ["Healthcare provider", "Health plan"]
+          }
+        },
+        {
+          "requirement": "Comprehensive privacy policies and procedures documented",
+          "severity": "high",
+          "remediation": "Develop comprehensive HIPAA privacy policies covering uses and disclosures, minimum necessary, individual rights, and administrative safeguards"
+        },
+        {
+          "requirement": "Authorization forms meet HIPAA requirements",
+          "severity": "high",
+          "remediation": "Create or update authorization forms to include all required HIPAA elements",
+          "applicableWhen": {
+            "or": [
+              {"field": "phi_uses_disclosures", "contains": "Marketing and promotional activities"},
+              {"field": "phi_uses_disclosures", "contains": "Research activities"}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "category": "operational_gaps",
+      "checks": [
+        {
+          "requirement": "Privacy Officer designated and functioning",
+          "severity": "high",
+          "remediation": "Designate qualified Privacy Officer with appropriate authority and responsibilities for HIPAA compliance oversight"
+        },
+        {
+          "requirement": "Individual rights request procedures implemented",
+          "severity": "high",
+          "remediation": "Implement procedures for handling access (30 days), amendment (60 days), accounting (60 days), and restriction requests"
+        },
+        {
+          "requirement": "Workforce HIPAA training provided",
+          "severity": "high",
+          "remediation": "Provide initial and ongoing HIPAA training to all workforce members with documentation and tracking"
+        },
+        {
+          "requirement": "Minimum necessary standard implemented",
+          "severity": "high",
+          "remediation": "Develop and implement minimum necessary policies with role-based access controls and case-by-case review procedures"
+        },
+        {
+          "requirement": "Breach assessment and notification procedures operational",
+          "severity": "high",
+          "remediation": "Implement breach identification, assessment, and notification procedures meeting all HIPAA timeframes"
+        }
+      ]
+    },
+    {
+      "category": "contractual_gaps",
+      "checks": [
+        {
+          "requirement": "Business associate agreements in place with all vendors handling PHI",
+          "severity": "high",
+          "remediation": "Execute compliant business associate agreements with all entities that create, receive, maintain, or transmit PHI on behalf of covered entity",
+          "applicableWhen": {
+            "field": "business_associate_agreements",
+            "not_contains": "We don't use outside vendors"
+          }
+        },
+        {
+          "requirement": "Business associate agreements include all required provisions",
+          "severity": "high",
+          "remediation": "Update business associate agreements to include all required HIPAA provisions including safeguards, breach notification, and return/destruction requirements",
+          "applicableWhen": {
+            "field": "business_associate_agreements",
+            "not_contains": "We don't"
+          }
+        }
+      ]
+    },
+    {
+      "category": "technical_gaps",
+      "checks": [
+        {
+          "requirement": "Administrative safeguards implemented",
+          "severity": "high",
+          "remediation": "Implement required administrative safeguards including information access management, workforce security, and assigned security responsibilities"
+        },
+        {
+          "requirement": "Physical safeguards implemented",
+          "severity": "high",
+          "remediation": "Implement physical access controls, workstation use restrictions, and device/media controls"
+        },
+        {
+          "requirement": "Technical safeguards implemented",
+          "severity": "high",
+          "remediation": "Implement access controls, audit controls, integrity protections, person/entity authentication, and transmission security"
+        },
+        {
+          "requirement": "PHI tracking and accounting systems operational",
+          "severity": "medium",
+          "remediation": "Implement systems to track PHI disclosures and provide accounting to individuals upon request"
+        }
+      ]
+    }
+  ],
+  "penalties": {
+    "civil_monetary_penalties": {
+      "tier_1": {
+        "amount_range": "100_to_50000_per_violation",
+        "annual_maximum": "1500000",
+        "description": "Individual did not know and by exercising reasonable diligence would not have known of violation"
+      },
+      "tier_2": {
+        "amount_range": "1000_to_50000_per_violation", 
+        "annual_maximum": "1500000",
+        "description": "Violation due to reasonable cause and not willful neglect"
+      },
+      "tier_3": {
+        "amount_range": "10000_to_50000_per_violation",
+        "annual_maximum": "1500000", 
+        "description": "Violation due to willful neglect but corrected within required time period"
+      },
+      "tier_4": {
+        "amount_range": "50000_to_1700000_per_violation",
+        "annual_maximum": "1700000",
+        "description": "Violation due to willful neglect and not corrected"
+      }
+    },
+    "criminal_penalties": {
+      "knowingly_obtaining_phi": {
+        "fine": "up_to_50000",
+        "imprisonment": "up_to_1_year"
+      },
+      "offense_under_false_pretenses": {
+        "fine": "up_to_100000", 
+        "imprisonment": "up_to_5_years"
+      },
+      "offense_with_intent_to_sell": {
+        "fine": "up_to_250000",
+        "imprisonment": "up_to_10_years"
+      }
+    },
+    "enforcement_authority": {
+      "agency": "HHS Office for Civil Rights (OCR)",
+      "state_attorneys_general": "Limited enforcement authority for HITECH provisions"
+    }
+  },
+  "exemptions": {
+    "employment_records": {
+      "description": "Employment records held by covered entity in role as employer",
+      "scope": "Records related to employment, not healthcare"
+    },
+    "education_records": {
+      "description": "Records covered by Family Educational Rights and Privacy Act (FERPA)",
+      "scope": "Student health records maintained by educational institutions"
+    },
+    "de_identified_information": {
+      "description": "Information that does not identify an individual and for which there is no reasonable basis to believe can be used to identify an individual",
+      "scope": "Information meeting safe harbor or expert determination standards"
+    },
+    "limited_data_set": {
+      "description": "PHI with specified direct identifiers removed",
+      "scope": "May be used for research, public health, or healthcare operations with data use agreement"
+    }
+  },
+  "enforcement": {
+    "complaint_process": {
+      "filing_deadline": "180 days from when complainant knew or should have known of violation",
+      "investigation_process": "OCR investigates and may attempt informal resolution",
+      "resolution_agreement": "Voluntary compliance through corrective action plan"
+    },
+    "compliance_reviews": {
+      "description": "OCR may initiate compliance reviews to assess HIPAA compliance",
+      "scope": "Proactive reviews of covered entities and business associates"
+    },
+    "corrective_action": {
+      "voluntary_compliance": "Opportunity to demonstrate compliance or implement corrective action",
+      "resolution_agreements": "Formal agreements with ongoing monitoring",
+      "civil_monetary_penalties": "When voluntary compliance cannot be achieved"
+    }
+  },
+  "effectiveDates": {
+    "privacy_rule_effective_date": "2003-04-14",
+    "security_rule_effective_date": "2005-04-21", 
+    "breach_notification_rule_effective_date": "2009-09-23",
+    "omnibus_rule_effective_date": "2013-09-23",
+    "compliance_timeline": {
+      "immediate": "Breach assessment and notification procedures",
+      "within_90_days": "Notice of Privacy Practices updates, individual rights procedures",
+      "ongoing": "Regular compliance monitoring and training updates"
+    }
+  }
+}
