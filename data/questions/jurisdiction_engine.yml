@@ -1,296 +1,591 @@
 ---
-# Jurisdiction Engine - Pure JSON-Driven with Memory Efficiency
+# Document Engine - Selective Document Generation Based on Requirements
 ---
 question: |
-  Step 7: Privacy Law Analysis
+  Step 9: Document Generation
 subquestion: |
-  Analyzing your business profile against privacy law requirements...
+  Based on your applicable privacy laws, we'll generate the required documentation.
   
-  This may take a moment as we evaluate applicable regulations.
-
-continue button field: show_jurisdiction_analysis
-continue button label: "Perform Analysis"
----
-question: |
-  Step 8: Applicable Privacy Laws
-subquestion: |
-  Based on your business profile, the following privacy laws apply to your organization:
+  ## Required Documents
   
-  % if applicable_jurisdictions and len(applicable_jurisdictions) > 0:
+  The following documents are **required** based on applicable laws:
+  
+  % if applicable_jurisdictions:
   % for jurisdiction_id in applicable_jurisdictions:
-  ## ${ get_jurisdiction_name(jurisdiction_id) }
-  
-  **Why this applies:** ${ get_applicability_reason(jurisdiction_id) }
-  
+  * **${ get_jurisdiction_name(jurisdiction_id) }**: ${ get_required_documents(jurisdiction_id) }
   % endfor
-  
-  ## Analysis Summary
-  
-  % if "tdpsa" in applicable_jurisdictions:
-  **TDPSA Note**: Your business does not qualify for the small business exemption under SBA size standards for NAICS ${ company.naics_code }.
   % endif
   
-  % if "ccpa" in applicable_jurisdictions:
-  **CCPA Note**: Your business meets the revenue, data volume, or sale thresholds for California privacy law coverage.
-  % endif
+  ## Optional Documents
   
-  % if "gdpr" in applicable_jurisdictions:
-  **GDPR Note**: Your business operations or data subjects trigger EU privacy law requirements.
-  % endif
-  
-  % if has_sectoral_requirements(company.naics_code):
-  **Sector-Specific Note**: Your industry classification indicates additional sector-specific privacy requirements may apply.
-  % endif
-  
-  % else:
-  **No comprehensive privacy laws were found to be applicable** based on the information provided.
-  
-  This may be because:
-  * Your organization falls under small business exemptions
-  * You do not process personal data in jurisdictions with comprehensive privacy laws
-  * Your data processing volumes are below regulatory thresholds
-  
-  % endif
-  
-  These determinations will guide the privacy documentation we generate for your organization.
+  You may also choose to generate these additional documents:
 
-continue button field: jurisdiction_analysis_complete
-continue button label: "Continue to Document Generation"
+fields:
+  - "Generate website privacy statement": generate_website_privacy
+    datatype: yesno
+    default: ${ business_has_website }
+    show if: business_has_website
+    help: Recommended if you have a public website
+  - "Generate physical location privacy notice": generate_physical_notice
+    datatype: yesno
+    default: ${ business_has_physical_location }
+    show if: business_has_physical_location
+    help: Required for locations where customers visit in person
+  - "Generate comprehensive gap analysis report": generate_gap_analysis
+    datatype: yesno
+    default: True
+    help: Detailed analysis of compliance gaps and remediation steps
+  - "Generate remediation action plan": generate_remediation_plan
+    datatype: yesno
+    default: True
+    help: Prioritized action plan for achieving compliance
+
+continue button field: document_selections_made
+continue button label: "Generate Documents"
+---
+question: |
+  Document Generation Complete
+subquestion: |
+  Your privacy compliance documentation has been generated successfully.
+  
+  ## Generated Documents
+  
+  % if generated_documents:
+  % for doc_type, doc_file in generated_documents.items():
+  * **${ format_document_name(doc_type) }** - [Download](${ doc_file.url_for() })
+  % endfor
+  % else:
+  No documents were generated.
+  % endif
+  
+  ## Next Steps
+  
+  1. **Review Documents**: Carefully review all generated documents
+  2. **Legal Consultation**: Have qualified legal counsel review before implementation
+  3. **Implementation**: Deploy privacy notices and update business processes
+  4. **Ongoing Compliance**: Schedule regular privacy compliance assessments
+  
+  ## Important Disclaimers
+  
+  * These documents provide general guidance based on your business profile
+  * Legal requirements may vary based on specific circumstances
+  * Consult with qualified legal counsel for implementation advice
+  * Privacy laws change frequently - regular updates may be required
+
+continue button field: document_generation_complete
+continue button label: "Complete Assessment"
 ---
 code: |
-  def determine_applicable_jurisdictions():
-    """
-    Determine applicable jurisdictions using fresh JSON loading.
-    Memory-efficient: load, process, discard.
-    """
-    applicable = []
+  def generate_required_documents():
+    """Generate all required and selected documents"""
+    global generated_documents
+    generated_documents = {}
     
-    # Get list of available jurisdiction files
-    jurisdiction_files = [
-      'ccpa_requirements.json',
-      'gdpr_requirements.json', 
-      'tdpsa_requirements.json'
+    try:
+      # Always generate privacy policy - core requirement
+      generated_documents['privacy_policy'] = generate_privacy_policy()
+      
+      # Generate sector-specific documents
+      if 'hipaa' in get_applicable_jurisdictions_with_sectoral():
+        generated_documents['hipaa_notice'] = generate_hipaa_notice()
+      
+      if 'glba' in get_applicable_jurisdictions_with_sectoral():
+        generated_documents['glba_notice'] = generate_glba_notice()
+      
+      # Generate optional documents based on selections
+      if generate_website_privacy and business_has_website:
+        generated_documents['website_privacy'] = generate_website_privacy_statement()
+      
+      if generate_physical_notice and business_has_physical_location:
+        generated_documents['physical_notice'] = generate_physical_location_notice()
+      
+      if generate_gap_analysis:
+        generated_documents['gap_analysis'] = generate_gap_analysis_report()
+      
+      if generate_remediation_plan:
+        generated_documents['remediation_plan'] = generate_remediation_action_plan()
+      
+      log(f"Generated {len(generated_documents)} documents")
+      
+    except Exception as e:
+      log(f"Document generation error: {e}")
+      generated_documents = {}
+    
+    return generated_documents
+  
+  def get_applicable_jurisdictions_with_sectoral():
+    """Get applicable jurisdictions including sectoral requirements"""
+    all_applicable = list(applicable_jurisdictions) if applicable_jurisdictions else []
+    
+    # Add sectoral requirements
+    sectoral = check_sectoral_requirements()
+    for jurisdiction in sectoral:
+      if jurisdiction not in all_applicable:
+        all_applicable.append(jurisdiction)
+    
+    return all_applicable
+  
+  def get_required_documents(jurisdiction_id):
+    """Get list of required documents for jurisdiction"""
+    requirements = {
+      'ccpa': 'Privacy policy with CCPA disclosures, consumer rights notice',
+      'gdpr': 'Privacy notice with GDPR Article 13/14 information, data processing records',
+      'tdpsa': 'Privacy notice with TDPSA disclosures, consumer rights procedures',
+      'hipaa': 'Notice of Privacy Practices (NPP)',
+      'glba': 'Privacy notice for financial services'
+    }
+    return requirements.get(jurisdiction_id, 'Privacy documentation')
+  
+  def generate_privacy_policy():
+    """Generate comprehensive privacy policy"""
+    content_parts = [
+      f"# Privacy Policy for {company.name}",
+      "",
+      f"**Effective Date**: {today().strftime('%B %d, %Y')}",
+      "",
+      "## 1. Introduction",
+      "",
+      f"This Privacy Policy describes how {company.name} (\"we,\" \"our,\" or \"us\") collects, uses, and protects personal information in connection with our business operations.",
+      "",
+      generate_applicable_laws_section(),
+      "",
+      generate_information_collection_section(),
+      "",
+      generate_information_use_section(),
+      "",
+      generate_information_sharing_section(),
+      "",
+      generate_individual_rights_section(),
+      "",
+      generate_security_measures_section(),
+      "",
+      generate_contact_information_section()
     ]
     
-    for jurisdiction_file in jurisdiction_files:
-      try:
-        # Fresh load JSON config
-        config = load_jurisdiction_config(jurisdiction_file)
-        if not config:
-          continue
-        
-        jurisdiction_id = config.get('jurisdictionId')
-        if not jurisdiction_id:
-          continue
-        
-        # Evaluate applicability using business data
-        if evaluate_jurisdiction_applicability(config, get_business_data()):
-          applicable.append(jurisdiction_id)
-          log(f"Jurisdiction {jurisdiction_id} is applicable")
-        else:
-          log(f"Jurisdiction {jurisdiction_id} is not applicable")
-        
-        # Config is automatically garbage collected here - no session storage
-        
-      except Exception as e:
-        log(f"Error evaluating jurisdiction {jurisdiction_file}: {e}")
-        continue
+    content = "\n".join(content_parts)
     
-    return applicable
+    # Create document file
+    policy_file = DAFile()
+    policy_file.initialize(filename=f"{company.name.replace(' ', '_')}_Privacy_Policy.md")
+    policy_file.write(content)
+    
+    return policy_file
   
-  def load_jurisdiction_config(filename):
-    """Load jurisdiction config fresh from JSON file"""
-    try:
-      json_file = path_and_mimetype(f'data/sources/{filename}')[0]
-      with open(json_file, 'r', encoding='utf-8') as f:
-        return json.load(f)
-    except Exception as e:
-      log(f"Error loading {filename}: {e}")
-      return None
+  def generate_website_privacy_statement():
+    """Generate website-specific privacy statement"""
+    content_parts = [
+      f"# Website Privacy Statement for {company.name}",
+      "",
+      f"**Effective Date**: {today().strftime('%B %d, %Y')}",
+      "",
+      "## Information We Collect Online",
+      "",
+      "When you visit our website, we may collect:",
+      "* Information you provide directly (contact forms, account registration)",
+      "* Automatically collected information (IP address, browser type, pages visited)",
+      "* Cookies and similar tracking technologies",
+      "",
+      generate_website_specific_rights(),
+      "",
+      generate_cookie_notice(),
+      "",
+      f"For our complete privacy practices, please see our full Privacy Policy.",
+      "",
+      f"**Contact Information**: [Privacy Contact Information]"
+    ]
+    
+    content = "\n".join(content_parts)
+    
+    statement_file = DAFile()
+    statement_file.initialize(filename=f"{company.name.replace(' ', '_')}_Website_Privacy_Statement.md")
+    statement_file.write(content)
+    
+    return statement_file
   
-  def get_business_data():
-    """Collect current business data for jurisdiction evaluation"""
-    return {
-      'company_name': company.name if defined('company.name') else '',
-      'naics_code': company.naics_code if defined('company.naics_code') else '',
-      'employee_count': company.employee_count if defined('company.employee_count') else 0,
-      'annual_revenue': company.annual_revenue if defined('company.annual_revenue') else 0,
-      'industry': get_industry_category(company.naics_code) if defined('company.naics_code') else '',
-      'business_has_website': business_has_website if defined('business_has_website') else False,
-      'business_has_physical_location': business_has_physical_location if defined('business_has_physical_location') else False,
-      'states_with_operations': list(states_with_operations.true_values()) if defined('states_with_operations') else [],
-      'serves_eu': serves_eu if defined('serves_eu') else False,
-      'has_eu_establishment': has_eu_establishment if defined('has_eu_establishment') else False,
-      'california_records': california_records if defined('california_records') else 0,
-      'texas_records': texas_records if defined('texas_records') else 0,
-      'eu_data_subjects': eu_data_subjects if defined('eu_data_subjects') else 0,
-      'sells_personal_info': sells_personal_info if defined('sells_personal_info') else False
+  def generate_physical_location_notice():
+    """Generate physical location privacy notice"""
+    content_parts = [
+      f"# Privacy Notice - {company.name} Location",
+      "",
+      f"**Effective Date**: {today().strftime('%B %d, %Y')}",
+      "",
+      "## Information We Collect",
+      "* Contact information (name, phone, email)",
+      "* Transaction information",
+      "* Security camera footage (for security purposes)",
+      "",
+      "## How We Use Information",
+      "* Provide requested services",
+      "* Process transactions",
+      "* Maintain facility security",
+      "* Communicate about services",
+      "",
+      generate_physical_location_rights(),
+      "",
+      f"**Questions?** Contact us at [Contact Information]",
+      "",
+      f"**Full Privacy Policy**: Available at {company.name.replace(' ', '').lower()}.com/privacy or by request"
+    ]
+    
+    content = "\n".join(content_parts)
+    
+    notice_file = DAFile()
+    notice_file.initialize(filename=f"{company.name.replace(' ', '_')}_Physical_Location_Notice.md")
+    notice_file.write(content)
+    
+    return notice_file
+  
+  def generate_hipaa_notice():
+    """Generate HIPAA Notice of Privacy Practices"""
+    content_parts = [
+      f"# Notice of Privacy Practices",
+      f"## {company.name}",
+      "",
+      f"**Effective Date**: {today().strftime('%B %d, %Y')}",
+      "",
+      "## THIS NOTICE DESCRIBES HOW MEDICAL INFORMATION ABOUT YOU MAY BE USED AND DISCLOSED AND HOW YOU CAN GET ACCESS TO THIS INFORMATION. PLEASE REVIEW IT CAREFULLY.",
+      "",
+      "## Uses and Disclosures of Protected Health Information",
+      "",
+      "We may use and disclose your protected health information (PHI) for:",
+      "",
+      "### Treatment",
+      "We may use your PHI to provide, coordinate, or manage your health care and related services.",
+      "",
+      "### Payment", 
+      "We may use and disclose your PHI to obtain payment for treatment and services.",
+      "",
+      "### Health Care Operations",
+      "We may use and disclose your PHI for health care operations purposes.",
+      "",
+      "## Your Rights Regarding Your Protected Health Information",
+      "",
+      "* **Right to Request Restrictions**",
+      "* **Right to Request Confidential Communications**", 
+      "* **Right to Inspect and Copy**",
+      "* **Right to Amend**",
+      "* **Right to an Accounting of Disclosures**",
+      "* **Right to a Paper Copy of This Notice**",
+      "",
+      f"## Contact Information",
+      f"Privacy Officer: [Name]",
+      f"Phone: [Phone Number]",
+      f"Email: [Email Address]",
+      "",
+      f"To file a complaint: [Complaint Process]"
+    ]
+    
+    content = "\n".join(content_parts)
+    
+    hipaa_file = DAFile()
+    hipaa_file.initialize(filename=f"{company.name.replace(' ', '_')}_HIPAA_Notice_Privacy_Practices.md")
+    hipaa_file.write(content)
+    
+    return hipaa_file
+  
+  def generate_glba_notice():
+    """Generate GLBA privacy notice for financial services"""
+    content_parts = [
+      f"# Privacy Notice - Financial Services",
+      f"## {company.name}",
+      "",
+      f"**Effective Date**: {today().strftime('%B %d, %Y')}",
+      "",
+      "## Facts - What Does {company.name} Do With Your Personal Information?",
+      "",
+      "### Why?",
+      "Financial companies choose how they share your personal information. Federal law gives consumers the right to limit some but not all sharing. Federal law also requires us to tell you how we collect, share, and protect your personal information.",
+      "",
+      "### What?",
+      "The types of personal information we collect and share depend on the product or service you have with us. This information can include:",
+      "* Social Security number and income",
+      "* Account balances and payment history", 
+      "* Credit history and credit scores",
+      "",
+      "### How?",
+      "All financial companies need to share customers' personal information to run their everyday business. In the section below, we list the reasons financial companies can share their customers' personal information; the reasons {company.name} chooses to share; and whether you can limit this sharing.",
+      "",
+      "## What We Do",
+      "",
+      "### To protect your personal information from unauthorized access and use, we use security measures that comply with federal law.",
+      "",
+      "### We collect your personal information when you:",
+      "* Open an account or apply for a loan",
+      "* Provide account information or give us your contact information", 
+      "* Use your credit or debit card or pay your bills",
+      "",
+      f"## Questions?",
+      f"Call [Phone Number] or email [Email Address]"
+    ]
+    
+    content = "\n".join(content_parts)
+    
+    glba_file = DAFile()
+    glba_file.initialize(filename=f"{company.name.replace(' ', '_')}_GLBA_Privacy_Notice.md")
+    glba_file.write(content)
+    
+    return glba_file
+  
+  def generate_gap_analysis_report():
+    """Generate comprehensive gap analysis report"""
+    content_parts = [
+      f"# Privacy Compliance Gap Analysis Report",
+      f"## {company.name}",
+      "",
+      f"**Assessment Date**: {today().strftime('%B %d, %Y')}",
+      "",
+      "## Executive Summary",
+      "",
+      f"This report presents findings from a privacy compliance assessment conducted for {company.name}. The assessment evaluated current practices against applicable privacy law requirements.",
+      "",
+      "### Applicable Laws",
+      generate_applicable_laws_summary(),
+      "",
+      "### Key Findings",
+      generate_gap_analysis_findings(),
+      "",
+      "## Detailed Analysis",
+      generate_detailed_gap_analysis(),
+      "",
+      "## Recommendations",
+      generate_compliance_recommendations(),
+      "",
+      "---",
+      "",
+      f"*This assessment represents a point-in-time evaluation based on information provided as of {today().strftime('%B %d, %Y')}. Privacy laws and business practices change over time, requiring regular reassessment.*"
+    ]
+    
+    content = "\n".join(content_parts)
+    
+    gap_file = DAFile()
+    gap_file.initialize(filename=f"{company.name.replace(' ', '_')}_Gap_Analysis_Report.md")
+    gap_file.write(content)
+    
+    return gap_file
+  
+  def generate_remediation_action_plan():
+    """Generate prioritized remediation action plan"""
+    content_parts = [
+      f"# Privacy Compliance Remediation Action Plan",
+      f"## {company.name}",
+      "",
+      f"**Created**: {today().strftime('%B %d, %Y')}",
+      "",
+      "## Overview",
+      "",
+      f"This action plan provides prioritized steps for {company.name} to achieve privacy compliance based on the gap analysis findings.",
+      "",
+      "## Immediate Actions (0-30 days)",
+      generate_immediate_actions(),
+      "",
+      "## Short-term Actions (30-90 days)", 
+      generate_short_term_actions(),
+      "",
+      "## Ongoing Actions (90+ days)",
+      generate_ongoing_actions(),
+      "",
+      "## Implementation Notes",
+      "",
+      "* Assign ownership for each action item",
+      "* Set specific deadlines and milestones",
+      "* Regular progress reviews recommended",
+      "* Consult legal counsel for implementation guidance",
+      "",
+      "## Success Metrics",
+      "",
+      "* All required privacy notices published",
+      "* Consumer rights request procedures operational",
+      "* Staff training completion rates",
+      "* Regular compliance assessment schedule established"
+    ]
+    
+    content = "\n".join(content_parts)
+    
+    plan_file = DAFile()
+    plan_file.initialize(filename=f"{company.name.replace(' ', '_')}_Remediation_Action_Plan.md")
+    plan_file.write(content)
+    
+    return plan_file
+  
+  # Helper functions for content generation
+  def generate_applicable_laws_section():
+    """Generate applicable laws section"""
+    if not applicable_jurisdictions:
+      return "## 2. Applicable Privacy Laws\n\nThis policy addresses general privacy best practices."
+    
+    laws_text = "## 2. Applicable Privacy Laws\n\nThis policy addresses requirements from the following privacy laws:\n\n"
+    
+    for jurisdiction_id in applicable_jurisdictions:
+      laws_text += f"* {get_jurisdiction_name(jurisdiction_id)}\n"
+    
+    return laws_text
+  
+  def generate_information_collection_section():
+    """Generate information collection section"""
+    return "## 3. Information We Collect\n\nWe may collect the following types of personal information:\n\n* Contact information (name, address, email, phone)\n* Business information (company name, industry)\n* Transaction information (purchases, payments)\n* Technical information (IP address, device information)\n* Other information you provide to us directly"
+  
+  def generate_information_use_section():
+    """Generate information use section"""
+    return "## 4. How We Use Information\n\nWe use personal information for:\n\n* Providing requested products or services\n* Processing transactions and payments\n* Communicating with you about our services\n* Improving our products and services\n* Legal compliance and business operations"
+  
+  def generate_information_sharing_section():
+    """Generate information sharing section"""
+    return "## 5. Information Sharing\n\nWe may share personal information with:\n\n* Service providers who assist with business operations\n* Professional advisors (legal, accounting, consulting)\n* Government authorities when required by law\n* Business successors in case of merger or acquisition\n\nWe do not sell personal information to third parties for marketing purposes."
+  
+  def generate_individual_rights_section():
+    """Generate individual rights section based on applicable laws"""
+    if not applicable_jurisdictions:
+      return "## 6. Your Privacy Rights\n\nYou may contact us to:\n\n* Access your personal information\n* Correct inaccurate information\n* Request deletion of your information\n* Opt out of marketing communications"
+    
+    rights_text = "## 6. Your Privacy Rights\n\nDepending on applicable laws, you may have the following rights:\n\n"
+    
+    if 'ccpa' in applicable_jurisdictions:
+      rights_text += "### California Rights (CCPA/CPRA)\n* Right to know what personal information is collected\n* Right to delete personal information\n* Right to correct inaccurate information\n* Right to opt out of sale/sharing\n* Right to limit use of sensitive personal information\n* Right to non-discrimination\n\n"
+    
+    if 'gdpr' in applicable_jurisdictions:
+      rights_text += "### European Rights (GDPR)\n* Right of access to personal data\n* Right to rectification of inaccurate data\n* Right to erasure (right to be forgotten)\n* Right to restrict processing\n* Right to data portability\n* Right to object to processing\n\n"
+    
+    if 'tdpsa' in applicable_jurisdictions:
+      rights_text += "### Texas Rights (TDPSA)\n* Right to access personal data\n* Right to correct inaccurate data\n* Right to delete personal data\n* Right to data portability\n* Right to opt out of targeted advertising\n* Right to opt out of sale of personal data\n\n"
+    
+    rights_text += "### Exercising Your Rights\n\nTo exercise these rights, contact us using the information provided below. We will respond within the timeframes required by applicable law."
+    
+    return rights_text
+  
+  def generate_security_measures_section():
+    """Generate security measures section"""
+    return "## 7. Data Security\n\nWe implement appropriate technical and organizational measures to protect personal information against unauthorized access, alteration, disclosure, or destruction. These measures include:\n\n* Access controls and authentication\n* Encryption of sensitive data\n* Regular security assessments\n* Employee training on data protection\n* Incident response procedures"
+  
+  def generate_contact_information_section():
+    """Generate contact information section"""
+    return f"## 8. Contact Information\n\nFor questions about this privacy policy or to exercise your privacy rights, contact us:\n\n**{company.name}**\n[Street Address]\n[City, State ZIP Code]\nEmail: [Privacy Email]\nPhone: [Privacy Phone]\n\n**Privacy Officer**: [Name and Title]"
+  
+  def generate_website_specific_rights():
+    """Generate website-specific privacy rights"""
+    rights_text = "## Your Online Privacy Rights\n\n"
+    
+    if 'ccpa' in applicable_jurisdictions:
+      rights_text += "### California Residents\nYou have the right to opt out of the sale of personal information. We do not sell personal information collected through our website.\n\n"
+    
+    if 'gdpr' in applicable_jurisdictions:
+      rights_text += "### EU Residents\nYou have rights under GDPR including access, rectification, erasure, and objection to processing.\n\n"
+    
+    rights_text += "### All Users\n* You can opt out of marketing emails using unsubscribe links\n* You can disable cookies through browser settings\n* You can contact us to access or delete your information"
+    
+    return rights_text
+  
+  def generate_cookie_notice():
+    """Generate cookie notice for website"""
+    return "## Cookies and Tracking\n\nOur website uses cookies and similar technologies to:\n* Ensure website functionality\n* Analyze website usage\n* Personalize content and ads\n* Remember your preferences\n\nYou can control cookies through your browser settings. Disabling cookies may affect website functionality."
+  
+  def generate_physical_location_rights():
+    """Generate physical location specific rights"""
+    rights_text = "## Your Rights\n\n"
+    
+    if applicable_jurisdictions:
+      rights_text += "Depending on your location, you may have rights to:\n* Access your personal information\n* Correct inaccurate information\n* Request deletion of your information\n* Opt out of certain uses of your information\n\n"
+    else:
+      rights_text += "You may:\n* Request access to your personal information\n* Ask us to correct inaccurate information\n* Request deletion of your information\n\n"
+    
+    rights_text += "To exercise these rights, speak with a staff member or contact us using the information below."
+    
+    return rights_text
+  
+  def generate_applicable_laws_summary():
+    """Generate summary of applicable laws for gap analysis"""
+    if not applicable_jurisdictions:
+      return "No comprehensive privacy laws determined to be applicable based on current business profile."
+    
+    summary = ""
+    for jurisdiction_id in applicable_jurisdictions:
+      summary += f"* **{get_jurisdiction_name(jurisdiction_id)}**: {get_applicability_reason(jurisdiction_id)}\n"
+    
+    return summary
+  
+  def generate_gap_analysis_findings():
+    """Generate gap analysis findings"""
+    findings = [
+      "* **Privacy Documentation**: Assessment of current privacy notices and policies",
+      "* **Consumer Rights Procedures**: Evaluation of processes for handling individual rights requests", 
+      "* **Data Security Measures**: Review of technical and organizational security controls",
+      "* **Staff Training**: Analysis of privacy training programs and awareness",
+      "* **Vendor Management**: Assessment of third-party data sharing arrangements"
+    ]
+    return "\n".join(findings)
+  
+  def generate_detailed_gap_analysis():
+    """Generate detailed gap analysis by category"""
+    analysis_parts = [
+      "### Policy Gaps",
+      "* Update privacy notices to include all required disclosures",
+      "* Implement consumer rights request procedures",
+      "* Develop data retention and deletion policies",
+      "",
+      "### Operational Gaps", 
+      "* Establish privacy officer role and responsibilities",
+      "* Implement data subject request tracking system",
+      "* Develop vendor data protection agreement templates",
+      "",
+      "### Technical Gaps",
+      "* Enhance data security measures where needed",
+      "* Implement privacy-by-design in new systems",
+      "* Establish data breach detection and response capabilities"
+    ]
+    return "\n".join(analysis_parts)
+  
+  def generate_compliance_recommendations():
+    """Generate compliance recommendations"""
+    recommendations = [
+      "1. **Immediate Priority**: Update privacy notices and publish required disclosures",
+      "2. **Short-term Priority**: Implement consumer rights request procedures",
+      "3. **Medium-term Priority**: Enhance data security measures and staff training",
+      "4. **Ongoing Priority**: Establish regular compliance monitoring and assessment"
+    ]
+    return "\n".join(recommendations)
+  
+  def generate_immediate_actions():
+    """Generate immediate action items"""
+    actions = [
+      "1. **Publish Required Privacy Notices** - Deploy updated privacy notices on website and physical locations",
+      "2. **Establish Consumer Contact Method** - Set up email/phone for privacy requests",
+      "3. **Document Current Practices** - Create inventory of current data processing activities"
+    ]
+    return "\n".join(actions)
+  
+  def generate_short_term_actions():
+    """Generate short-term action items"""
+    actions = [
+      "1. **Implement Rights Request Procedures** - Create processes for handling access, deletion, and correction requests",
+      "2. **Staff Training Program** - Develop and deliver privacy training for relevant employees", 
+      "3. **Vendor Agreement Updates** - Update contracts with data processing vendors"
+    ]
+    return "\n".join(actions)
+  
+  def generate_ongoing_actions():
+    """Generate ongoing action items"""
+    actions = [
+      "1. **Regular Compliance Assessments** - Schedule quarterly compliance reviews",
+      "2. **Privacy Impact Assessments** - Implement PIA process for new projects",
+      "3. **Monitoring and Updates** - Track regulatory changes and update practices accordingly"
+    ]
+    return "\n".join(actions)
+  
+  def format_document_name(doc_type):
+    """Format document type for display"""
+    names = {
+      'privacy_policy': 'Privacy Policy',
+      'website_privacy': 'Website Privacy Statement', 
+      'physical_notice': 'Physical Location Privacy Notice',
+      'hipaa_notice': 'HIPAA Notice of Privacy Practices',
+      'glba_notice': 'GLBA Privacy Notice',
+      'gap_analysis': 'Gap Analysis Report',
+      'remediation_plan': 'Remediation Action Plan'
     }
-  
-  def evaluate_jurisdiction_applicability(config, business_data):
-    """Evaluate if jurisdiction applies based on config rules"""
-    applicability_checks = config.get('applicabilityChecks', [])
-    
-    if not applicability_checks:
-      # Fallback to hardcoded logic for backward compatibility
-      jurisdiction_id = config.get('jurisdictionId')
-      if jurisdiction_id == 'ccpa':
-        return evaluate_ccpa_applicability(business_data)
-      elif jurisdiction_id == 'gdpr':
-        return evaluate_gdpr_applicability(business_data)
-      elif jurisdiction_id == 'tdpsa':
-        return evaluate_tdpsa_applicability(business_data)
-      else:
-        return False
-    
-    # Evaluate JSON applicability rules
-    for check in applicability_checks:
-      if evaluate_applicability_check(check, business_data):
-        return True
-    
-    return False
-  
-  def evaluate_applicability_check(check, business_data):
-    """Evaluate individual applicability check"""
-    check_type = check.get('type', 'simple')
-    
-    if check_type == 'compound':
-      operator = check.get('operator', 'and')
-      conditions = check.get('conditions', [])
-      
-      if operator == 'and':
-        return all(evaluate_applicability_check(condition, business_data) for condition in conditions)
-      elif operator == 'or':
-        return any(evaluate_applicability_check(condition, business_data) for condition in conditions)
-      else:
-        log(f"Unknown compound operator: {operator}")
-        return False
-    
-    elif check_type == 'custom_function':
-      function_name = check.get('function')
-      if function_name == 'not_small_business_tdpsa':
-        return not is_small_business_under_tdpsa(
-          business_data.get('naics_code'),
-          business_data.get('employee_count', 0),
-          business_data.get('annual_revenue', 0)
-        )
-      else:
-        log(f"Unknown custom function: {function_name}")
-        return False
-    
-    else:
-      # Simple field check
-      field = check.get('field')
-      operator = check.get('operator', 'equals')
-      value = check.get('value')
-      
-      if not field:
-        return False
-      
-      field_value = business_data.get(field)
-      return evaluate_operator(field_value, operator, value)
-  
-  def evaluate_operator(field_value, operator, value):
-    """Evaluate operator between field value and expected value"""
-    if operator == 'equals':
-      return field_value == value
-    elif operator == 'not_equals':
-      return field_value != value
-    elif operator == 'greater_than':
-      try:
-        return float(field_value) > float(value)
-      except (ValueError, TypeError):
-        return False
-    elif operator == 'greater_than_or_equal':
-      try:
-        return float(field_value) >= float(value)
-      except (ValueError, TypeError):
-        return False
-    elif operator == 'less_than':
-      try:
-        return float(field_value) < float(value)
-      except (ValueError, TypeError):
-        return False
-    elif operator == 'contains':
-      if isinstance(field_value, list):
-        return value in field_value
-      elif isinstance(field_value, str):
-        return value in field_value
-      else:
-        return False
-    else:
-      log(f"Unknown operator: {operator}")
-      return False
-  
-  # Hardcoded applicability functions for reliability
-  def evaluate_ccpa_applicability(business_data):
-    """Evaluate CCPA applicability"""
-    # Must have California connection
-    has_ca_connection = (
-      'California' in business_data.get('states_with_operations', []) or
-      business_data.get('california_records', 0) > 0
-    )
-    
-    if not has_ca_connection:
-      return False
-    
-    # Must meet at least one threshold
-    revenue_threshold = business_data.get('annual_revenue', 0) >= 25000000
-    volume_threshold = business_data.get('california_records', 0) >= 100000
-    sale_threshold = (
-      business_data.get('california_records', 0) >= 50000 and
-      business_data.get('sells_personal_info', False)
-    )
-    
-    return revenue_threshold or volume_threshold or sale_threshold
-  
-  def evaluate_gdpr_applicability(business_data):
-    """Evaluate GDPR applicability"""
-    return (
-      business_data.get('serves_eu', False) or
-      business_data.get('has_eu_establishment', False) or
-      business_data.get('eu_data_subjects', 0) > 0
-    )
-  
-  def evaluate_tdpsa_applicability(business_data):
-    """Evaluate TDPSA applicability"""
-    # Must have Texas connection
-    has_tx_connection = (
-      'Texas' in business_data.get('states_with_operations', []) or
-      business_data.get('texas_records', 0) > 0
-    )
-    
-    if not has_tx_connection:
-      return False
-    
-    # Must meet data thresholds
-    volume_threshold = business_data.get('texas_records', 0) >= 100000
-    sale_threshold = (
-      business_data.get('texas_records', 0) >= 25000 and
-      business_data.get('sells_personal_info', False)
-    )
-    
-    if not (volume_threshold or sale_threshold):
-      return False
-    
-    # Must not be small business
-    return not is_small_business_under_tdpsa(
-      business_data.get('naics_code'),
-      business_data.get('employee_count', 0),
-      business_data.get('annual_revenue', 0)
-    )
-  
-  def is_small_business_under_tdpsa(naics_code, employee_count, annual_revenue):
-    """Determine TDPSA small business exemption using fresh NAICS data"""
-    if not naics_code:
-      # Use general TDPSA small business definition
-      return employee_count < 100 and annual_revenue < 10000000
-    
-    try:
-      # Load fresh NAICS data
-      naics_file = path_and_mimetype('data/sources/naics.json')[0]
-      with open(naics_file, 'r', encoding='utf-8') as f:
-        naics_data = json.load(f)
-      
-      # Find specific NAICS entry
-      naics_info = next((item for item in naics_data if str(item
+    return names.get(doc_type, doc_type.replace('_', ' ').title())
+---
+# Trigger document generation after selections
+code: |
+  # Generate documents after user makes selections
+  document_selections_made
+  generated_documents = generate_required_documents()
+  document_generation_complete = True
