@@ -1,5 +1,10 @@
 ---
 # Business Assessment Module - Memory-Efficient with Validation Loops
+objects:
+  - company: Individual
+---
+objects from file:
+  - naics_data: data/sources/naics.json
 ---
 question: |
   Privacy Compliance Assessment
@@ -19,9 +24,9 @@ subquestion: |
 continue button field: show_intro
 continue button label: "Begin Assessment"
 ---
-# Step 1: Basic Business Information
+# Step 1a: Basic Business Information
 question: |
-  Step 1: Business Information
+  Step 1a: Basic Business Information
 fields:
   - Company Name: company.name
     required: True
@@ -36,12 +41,12 @@ fields:
     required: True
     min: 0
     help: Gross annual revenue for most recent complete fiscal year
-continue button field: basic_info_entered
+continue button field: basic_business_info_complete
 continue button label: "Continue"
 ---
-# Step 2: Industry Classification
+# Step 1b: Industry Classification
 question: |
-  Step 2: Industry Classification
+  Step 1b: Industry Classification
 subquestion: |
   Select your primary business activity. This determines industry-specific privacy requirements.
 fields:
@@ -52,12 +57,12 @@ fields:
       code: get_naics_choices()
     help: |
       Search by typing keywords (e.g., "legal services", "software", "retail")
-continue button field: naics_selected
+continue button field: naics_selection_complete
 continue button label: "Continue"
 ---
-# Step 3: Verification and Correction
+# Step 1c: Business Information Verification with Correction Loop
 question: |
-  Step 3: Verify Business Profile
+  Step 1c: Verify Business Information
 subquestion: |
   Please verify this information is correct:
   
@@ -75,47 +80,65 @@ fields:
   - "Is this information correct?": business_info_verified
     datatype: yesnoradio
     required: True
+  - "What needs correction?": correction_needed
+    datatype: checkboxes
+    choices:
+      - "Company name"
+      - "NAICS code" 
+      - "Employee count"
+      - "Annual revenue"
+    show if:
+      variable: business_info_verified
+      is: False
+    required: True
 under: |
   If any information is incorrect, select "No" to make corrections.
 continue button field: verification_complete
 continue button label: "Continue"
 ---
-# Correction loop for basic info
-question: |
-  Correct Basic Business Information
-subquestion: |
-  Please update any incorrect information:
-fields:
-  - Company Name: company.name
-    required: True
-  - Number of Employees: company.employee_count
-    datatype: integer
-    required: True
-    min: 0
-  - Annual Revenue (USD): company.annual_revenue
-    datatype: currency
-    required: True
-    min: 0
-continue button field: basic_info_corrected
-continue button label: "Update Information"
+# Memory-efficient correction handling
+code: |
+  # Process verification without infinite loops
+  verification_complete
+  
+  if not business_info_verified:
+    # Clear cached data to prevent memory issues
+    cache_vars_to_clear = ['naics_choices_cache', 'cached_industry', 'sba_size_standards']
+    for var_name in cache_vars_to_clear:
+      if defined(var_name):
+        undefine(var_name)
+    
+    # Selectively clear only what needs correction
+    if "Company name" in correction_needed.true_values():
+      undefine('company.name')
+      undefine('basic_business_info_complete')
+    if "NAICS code" in correction_needed.true_values(): 
+      undefine('company.naics_code')
+      undefine('naics_selection_complete')
+    if "Employee count" in correction_needed.true_values():
+      undefine('company.employee_count')
+      undefine('basic_business_info_complete')
+    if "Annual revenue" in correction_needed.true_values():
+      undefine('company.annual_revenue')
+      undefine('basic_business_info_complete')
+    
+    # Prevent infinite loop with attempt tracking
+    if not defined('correction_attempts'):
+      correction_attempts = 1
+    else:
+      correction_attempts += 1
+    
+    # Emergency exit after 3 attempts
+    if correction_attempts > 3:
+      business_info_verified = True
+      log("Emergency exit from correction loop after 3 attempts")
+  
+  # Continue workflow
+  business_profile_complete = True
 ---
-# Correction loop for NAICS
+# Step 2: Geographic and Operational Scope
 question: |
-  Correct Industry Classification
-subquestion: |
-  Please select the correct primary business activity:
-fields:
-  - Primary Business Activity (NAICS Code): company.naics_code
-    required: True
-    datatype: combobox
-    choices:
-      code: get_naics_choices()
-continue button field: naics_corrected
-continue button label: "Update Industry"
----
-# Step 4: Geographic and Operational Scope
-question: |
-  Step 4: Geographic and Operational Scope
+  Step 2: Geographic and Operational Scope
 fields:
   - "Does your business have a website?": business_has_website
     datatype: yesnowide
@@ -136,12 +159,12 @@ fields:
     datatype: yesnowide
   - "Do you have an establishment (office, subsidiary, etc.) in the EU?": has_eu_establishment
     datatype: yesnowide
-continue button field: geographic_scope_entered
+continue button field: geographic_scope_complete
 continue button label: "Continue"
 ---
-# Step 5: Data Processing Volume
+# Step 3: Data Processing Volume
 question: |
-  Step 5: Data Processing Volume
+  Step 3: Data Processing Volume
 subquestion: |
   Provide approximate annual numbers for personal data processing:
 fields:
@@ -160,187 +183,68 @@ fields:
   - "Do you sell personal information to third parties?": sells_personal_info
     datatype: yesnowide
     help: This includes sharing for advertising, marketing lists, or other commercial purposes
-continue button field: data_volume_entered
-continue button label: "Continue"
----
-# Final verification with edit options
-question: |
-  Step 6: Final Verification
-subquestion: |
-  Please review your complete business profile:
-  
-  ## Business Information
-  * **Company**: ${ company.name }
-  * **Industry**: ${ get_industry_category(company.naics_code) }
-  * **NAICS Code**: ${ format_naics_display(company.naics_code) }
-  * **Employees**: ${ "{:,}".format(int(company.employee_count)) }
-  * **Annual Revenue**: ${ "${:,.0f}".format(float(company.annual_revenue)) }
-  
-  ## Operations
-  * **Website**: ${ "Yes" if business_has_website else "No" }
-  * **Physical Locations**: ${ "Yes" if business_has_physical_location else "No" }
-  * **Geographic Operations**: ${ format_geographic_scope() }
-  * **EU Operations**: ${ "Yes" if (serves_eu or has_eu_establishment) else "No" }
-  
-  ## Data Processing
-  * **California Records**: ${ "{:,}".format(int(california_records)) }
-  * **Texas Records**: ${ "{:,}".format(int(texas_records)) }
-  * **EU Data Subjects**: ${ "{:,}".format(int(eu_data_subjects)) }
-  * **Sells Personal Info**: ${ "Yes" if sells_personal_info else "No" }
-
-fields:
-  - "Is all information correct?": final_verification
-    datatype: yesnoradio
-    required: True
-  - "What would you like to edit?": edit_section
-    datatype: radio
-    choices:
-      - "Basic business information"
-      - "Industry classification"
-      - "Geographic scope"
-      - "Data processing volume"
-    show if:
-      variable: final_verification
-      is: False
-    required: True
-continue button field: business_assessment_reviewed
+continue button field: data_volume_complete
 continue button label: "Continue to Analysis"
----
-# Workflow control with validation loops
-code: |
-  # Business assessment workflow with correction loops
-  show_intro
-  
-  # Initial data collection
-  basic_info_entered
-  naics_selected
-  
-  # Verification loop
-  verification_complete
-  
-  while not business_info_verified:
-    # Determine what needs correction
-    if company.naics_code not in [choice[0] for choice in get_naics_choices()]:
-      naics_corrected
-    else:
-      basic_info_corrected
-    
-    # Re-verify
-    verification_complete
-  
-  # Continue with geographic and data scope
-  geographic_scope_entered
-  data_volume_entered
-  
-  # Final verification with edit options
-  business_assessment_reviewed
-  
-  while not final_verification:
-    if edit_section == "Basic business information":
-      basic_info_corrected
-    elif edit_section == "Industry classification":
-      naics_corrected
-    elif edit_section == "Geographic scope":
-      geographic_scope_entered
-    elif edit_section == "Data processing volume":
-      data_volume_entered
-    
-    # Re-verify after edits
-    business_assessment_reviewed
-  
-  business_assessment_complete = True
 ---
 # Memory-efficient NAICS functions
 code: |
   def get_naics_choices():
-    """Load NAICS choices efficiently - cache locally if possible"""
+    """Load NAICS choices efficiently - limit to prevent timeout"""
     try:
-      # Try to load from local cache first
-      naics_file = path_and_mimetype('data/sources/naics.json')[0]
-      with open(naics_file, 'r', encoding='utf-8') as f:
-        naics_data = json.load(f)
+      # Load from imported naics_data object
+      if defined('naics_data') and naics_data:
+        choices = []
+        count = 0
+        for item in naics_data:
+          if count >= 100:  # Limit choices to prevent timeout
+            break
+          if isinstance(item, dict) and 'id' in item and 'description' in item:
+            naics_code = str(item['id'])
+            description = str(item['description'])
+            
+            # Truncate long descriptions
+            if len(description) > 60:
+              description = description[:57] + "..."
+            
+            choices.append((naics_code, description))
+            count += 1
+        
+        # Sort by description and return immediately
+        return sorted(choices, key=lambda x: x[1])
       
-      # Convert to choices format - limit to reasonable size
-      choices = []
-      for item in naics_data[:1000]:  # Limit to prevent memory issues
-        if isinstance(item, dict) and 'id' in item and 'description' in item:
-          naics_code = str(item['id'])
-          description = str(item['description'])
-          
-          # Truncate long descriptions
-          if len(description) > 60:
-            description = description[:57] + "..."
-          
-          choices.append((naics_code, description))
-      
-      return sorted(choices, key=lambda x: x[1])  # Sort by description
-      
+      else:
+        # Fallback choices if data loading fails
+        return get_fallback_naics_choices()
+        
     except Exception as e:
       log(f"NAICS loading error: {e}")
-      # Fallback to essential choices
-      return [
-        ('541110', 'Offices of Lawyers'),
-        ('541613', 'Marketing Consulting Services'),
-        ('541511', 'Custom Computer Programming Services'),
-        ('541512', 'Computer Systems Design Services'),
-        ('621111', 'Offices of Physicians'),
-        ('621210', 'Offices of Dentists'),
-        ('522110', 'Commercial Banking'),
-        ('523110', 'Investment Banking and Securities'),
-        ('524113', 'Direct Life Insurance Carriers'),
-        ('541211', 'Offices of Certified Public Accountants'),
-        ('722511', 'Full-Service Restaurants'),
-        ('999999', 'Other - Please specify in additional information')
-      ]
+      return get_fallback_naics_choices()
+  
+  def get_fallback_naics_choices():
+    """Essential fallback NAICS choices"""
+    return [
+      ('541110', 'Offices of Lawyers'),
+      ('541613', 'Marketing Consulting Services'),
+      ('541511', 'Custom Computer Programming Services'),
+      ('541512', 'Computer Systems Design Services'),
+      ('621111', 'Offices of Physicians'),
+      ('621210', 'Offices of Dentists'),
+      ('522110', 'Commercial Banking'),
+      ('523110', 'Investment Banking and Securities'),
+      ('524113', 'Direct Life Insurance Carriers'),
+      ('541211', 'Offices of Certified Public Accountants'),
+      ('722511', 'Full-Service Restaurants'),
+      ('999999', 'Other - Please specify in additional information')
+    ]
   
   def get_industry_category(naics_code):
     """Get broad industry category from NAICS code"""
     if not naics_code:
       return "Other"
     
-    # Load fresh NAICS data to get industry category
-    try:
-      naics_file = path_and_mimetype('data/sources/naics.json')[0]
-      with open(naics_file, 'r', encoding='utf-8') as f:
-        naics_data = json.load(f)
-      
-      # Find specific NAICS entry
-      naics_info = next((item for item in naics_data if str(item.get('id')) == str(naics_code)), None)
-      if naics_info:
-        sector_desc = naics_info.get('sectorDescription', '')
-        
-        # Map to simplified categories
-        sector_mapping = {
-          'Agriculture, Forestry, Fishing and Hunting': 'Agriculture',
-          'Mining, Quarrying, and Oil and Gas Extraction': 'Mining',
-          'Utilities': 'Utilities',
-          'Construction': 'Construction',
-          'Manufacturing': 'Manufacturing',
-          'Wholesale Trade': 'Wholesale Trade',
-          'Retail Trade': 'Retail',
-          'Transportation and Warehousing': 'Transportation',
-          'Information': 'Technology',
-          'Finance and Insurance': 'Financial Services',
-          'Real Estate and Rental and Leasing': 'Real Estate',
-          'Professional, Scientific, and Technical Services': 'Professional Services',
-          'Management of Companies and Enterprises': 'Management',
-          'Administrative and Support and Waste Management and Remediation Services': 'Administrative Services',
-          'Educational Services': 'Education',
-          'Health Care and Social Assistance': 'Healthcare',
-          'Arts, Entertainment, and Recreation': 'Arts & Entertainment',
-          'Accommodation and Food Services': 'Food Service',
-          'Other Services (except Public Administration)': 'Other Services',
-          'Public Administration': 'Public Administration'
-        }
-        
-        return sector_mapping.get(sector_desc, 'Other')
-    
-    except Exception as e:
-      log(f"Industry category error: {e}")
-    
-    # Fallback based on NAICS prefix
+    # Map based on NAICS 2-digit sectors
     sector = str(naics_code)[:2] if len(str(naics_code)) >= 2 else ""
-    fallback_mapping = {
+    sector_mapping = {
       '11': 'Agriculture', '21': 'Mining', '22': 'Utilities', '23': 'Construction',
       '31': 'Manufacturing', '32': 'Manufacturing', '33': 'Manufacturing',
       '42': 'Wholesale Trade', '44': 'Retail', '45': 'Retail',
@@ -351,7 +255,7 @@ code: |
       '81': 'Other Services', '92': 'Public Administration'
     }
     
-    return fallback_mapping.get(sector, 'Other')
+    return sector_mapping.get(sector, 'Other')
   
   def has_sectoral_requirements(naics_code):
     """Check if NAICS code indicates sector-specific requirements"""
@@ -374,19 +278,68 @@ code: |
       return "Not specified"
     return str(naics_code)
   
-  def format_geographic_scope():
-    """Format geographic scope for display"""
-    if not defined('states_with_operations'):
-      return "Not specified"
+  def check_sectoral_requirements():
+    """Check for sector-specific requirements and add to applicable jurisdictions"""
+    sectoral_jurisdictions = []
     
-    selected_states = [state for state in states_with_operations.true_values()]
-    if not selected_states:
-      return "None specified"
+    if not defined('company.naics_code') or not company.naics_code:
+      return sectoral_jurisdictions
     
-    if len(selected_states) == 1:
-      return selected_states[0]
-    elif len(selected_states) <= 3:
-      return ", ".join(selected_states)
-    else:
-      return f"{len(selected_states)} states/regions"
----
+    naics_code = str(company.naics_code)
+    
+    # HIPAA check - Healthcare sector
+    if naics_code.startswith('62'):
+      sectoral_jurisdictions.append('hipaa')
+    
+    # GLBA check - Financial Services sector  
+    if naics_code.startswith('52'):
+      sectoral_jurisdictions.append('glba')
+    
+    return sectoral_jurisdictions
+  
+  def is_small_business_under_tdpsa(naics_code, employee_count, annual_revenue):
+    """Determine TDPSA small business exemption using NAICS data"""
+    if not naics_code:
+      # Use general TDPSA small business definition
+      return employee_count < 100 and annual_revenue < 10000000
+    
+    try:
+      # Find NAICS entry in loaded data
+      if defined('naics_data') and naics_data:
+        naics_info = None
+        for item in naics_data:
+          if str(item.get('id')) == str(naics_code):
+            naics_info = item
+            break
+      
+        if not naics_info:
+          # Fallback to general TDPSA definition
+          return employee_count < 100 and annual_revenue < 10000000
+        
+        # Get SBA size standards
+        employee_limit = naics_info.get('employeeCountLimit')
+        revenue_limit = naics_info.get('revenueLimit')
+        
+        # Convert revenue limit from millions to dollars
+        if revenue_limit and revenue_limit < 1000:
+          revenue_limit = revenue_limit * 1000000
+        
+        # Check SBA standards
+        sba_qualifies_as_small = True
+        
+        if employee_limit:
+          sba_qualifies_as_small = sba_qualifies_as_small and (employee_count <= employee_limit)
+        
+        if revenue_limit:
+          sba_qualifies_as_small = sba_qualifies_as_small and (annual_revenue <= revenue_limit)
+        
+        # Check TDPSA general definition
+        tdpsa_qualifies_as_small = employee_count < 100 and annual_revenue < 10000000
+        
+        # Small if meets either standard
+        return sba_qualifies_as_small or tdpsa_qualifies_as_small
+        
+    except Exception as e:
+      log(f"SBA size determination error: {e}")
+      # Conservative fallback
+      return employee_count < 100 and annual_revenue < 10000000
