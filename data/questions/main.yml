@@ -1,169 +1,95 @@
-# Privacy Compliance Framework - Main Interview (JSON-Driven with Lazy Loading)
----
-include:
-  - business_assessment.yml
-  - jurisdiction_registry.yml
-  - current_practices.yml
-  - dynamic_questions.yml
-  - gap_analysis.yml
-  - document_builder.yml
 ---
 metadata:
   title: Privacy Compliance Framework
   short title: Privacy Assessment
-  documentation: https://github.com/MickLC/docassemble-privacycomplianceframework
+  documentation: https://github.com/yourusername/docassemble-privacyframework
   authors:
     - name: Mickey Chandler
-      organization: Whizardries Inc.
-  revision_date: 2025-05-30
+      organization: Lex Protego PLLC
+  revision_date: 2025-06-10
 ---
 features:
   css: privacy_framework.css
-  debug: True
+  debug: False
   hide standard menu: False
 ---
+include:
+  - business_assessment.yml
+  - jurisdiction_engine.yml
+  - document_engine.yml
+---
 objects:
-  - company: DAObject
+  - company: Individual
 ---
 mandatory: True
 code: |
-  # Main interview flow - Step by step with lazy loading
-  show_intro_screen
+  # Main interview flow - Memory-efficient with fresh JSON loading
   
-  # Step 1: Business Assessment - Ensure proper sequential completion
-  show_business_information_intro
+  # Step 1: Business Assessment with validation
+  business_assessment_complete
   
-  # Step 1a: Basic business information must complete first
-  basic_business_info_complete
-  
-  # Step 1b: NAICS selection must complete after Step 1a
-  naics_selection_complete
-  
-  # Step 1c: Business profile confirmation must complete after Step 1b
-  business_profile_complete
-  
-  # Step 1d: Geographic scope must complete after Step 1c
-  geographic_scope_complete
-  debug_values
-
-  # Step 2: Jurisdictional Analysis using fresh-loaded JSON data
+  # Step 2: Jurisdiction Determination (fresh JSON loading)
   applicable_jurisdictions = determine_applicable_jurisdictions()
-  applicable_law_continue
+  jurisdiction_analysis_complete
   
-  # Step 3: Current Practices - minimal generic questions + JSON-driven jurisdiction-specific questions
-  show_current_practices_intro
-  basic_policies_complete
-  security_practices_complete
-  jurisdiction_questions_complete
-  current_practices_complete
+  # Step 3: Document Selection and Generation
+  document_generation_complete
   
-  # Step 4: Gap Analysis using fresh-loaded JSON requirements
-  show_gap_analysis_intro
-  continue_gap_summary
-  
-  # Step 5: Document Generation using fresh-loaded JSON-driven templates
-  show_document_generation_intro
-  if generate_internal_policy:
-    internal_policy_file = generate_internal_policy_document()  # Returns DAFile
-  if generate_public_documents:
-    public_documents_files = generate_public_facing_documents()  # Returns DAFile objects
-  if generate_gap_report:
-    gap_report_file = generate_gap_report_download()  # Returns DAFile
-  if generate_remediation_plan:
-    remediation_plan_file = create_remediation_plan()  # Returns DAFile
-  
+  # Final Results
   final_screen
 ---
 question: |
-  Privacy Compliance Framework
+  Privacy Compliance Assessment Complete
 subquestion: |
-  Welcome to the Privacy Compliance Framework assessment tool.
-  
-  This comprehensive interview will:
-  
-  * Assess your business profile and data processing activities
-  * Determine which privacy laws apply to your organization
-  * Document your current privacy practices
-  * Identify compliance gaps through automated analysis
-  * Generate tailored privacy documentation
-  * Create a prioritized remediation plan
-  
-  The assessment typically takes 10-15 minutes to complete.
-  
-  **Note**: This tool provides informational guidance only and does not constitute legal advice. Consult with qualified legal counsel for specific compliance requirements.
-
-continue button field: show_intro_screen
-continue button label: "Begin Assessment"
----
-question: |
-  Assessment Complete
-subquestion: |
-  Congratulations! You have completed the Privacy Compliance Assessment.
-  
-  ## Your Results
+  ## Assessment Results
   
   **Company**: ${ company.name }  
-  **Industry**: ${ company.industry }  
-  **NAICS Code**: ${ company_naics_display if defined('company_naics_display') else 'Not specified' }
+  **Industry**: ${ get_industry_category(company.naics_code) }  
+  **NAICS Code**: ${ format_naics_display(company.naics_code) }  
+  **Employees**: ${ "{:,}".format(int(company.employee_count)) }  
+  **Revenue**: ${ "${:,.0f}".format(float(company.annual_revenue)) }
   
-  **Applicable Laws**: 
-  % if applicable_jurisdictions:
+  ## Applicable Privacy Laws
+  
+  % if applicable_jurisdictions and len(applicable_jurisdictions) > 0:
   % for jurisdiction_id in applicable_jurisdictions:
-  * ${ next((j["name"] for j in jurisdiction_registry["jurisdictions"] if j["id"] == jurisdiction_id), jurisdiction_id) }
+  * **${ get_jurisdiction_name(jurisdiction_id) }**
   % endfor
   % else:
   * No comprehensive privacy laws determined to be applicable
   % endif
   
-  **Total Compliance Gaps**: ${ gap_report["summary"]["total_gaps"] if defined('gap_report') else 'Analysis pending' }
-  
   ## Generated Documents
   
-  % if generate_internal_policy and defined('internal_policy_file'):
-  [Download Internal Privacy Policy](${ internal_policy_file.url_for() })
-  % endif
-  % if generate_public_documents and defined('public_documents_files'):
-  % for doc_name, doc_file in public_documents_files.items():
-  [Download ${ doc_name.replace('_', ' ').title() }](${ doc_file.url_for() })
+  % if defined('generated_documents') and generated_documents:
+  % for doc_type, doc_file in generated_documents.items():
+  * [Download ${ format_document_name(doc_type) }](${ doc_file.url_for() })
   % endfor
-  % endif
-  % if generate_gap_report and defined('gap_report_file'):
-  [Download Gap Analysis Report](${ gap_report_file.url_for() })
-  % endif
-  % if generate_remediation_plan and defined('remediation_plan_file'):
-  [Download Remediation Plan](${ remediation_plan_file.url_for() })
+  % else:
+  * No documents were generated
   % endif
   
-  ## Key Insights
+  ## Recommendations
   
-  % if "tdpsa" in applicable_jurisdictions:
-  * **TDPSA Compliance**: Your business does not qualify for the small business exemption under SBA size standards for NAICS code ${ company_naics_display if defined('company_naics_display') else 'Not specified' }.
+  % if len(applicable_jurisdictions) > 0:
+  Based on your business profile, we recommend:
+  
+  1. **Immediate Action**: Review generated privacy documentation
+  2. **Legal Review**: Have qualified counsel review all documents before implementation
+  3. **Implementation**: Deploy privacy notices and update business processes
+  4. **Ongoing Compliance**: Schedule regular privacy assessments
+  % else:
+  While no comprehensive privacy laws currently apply to your business, consider:
+  
+  1. **Growth Planning**: Monitor business growth against privacy law thresholds
+  2. **Best Practices**: Implement privacy-by-design principles
+  3. **Future Readiness**: Prepare for potential expansion into regulated jurisdictions
   % endif
-  
-  % if "hipaa" in applicable_jurisdictions:
-  * **HIPAA Compliance**: Your healthcare industry classification indicates HIPAA requirements may apply.
-  % endif
-  
-  % if "glba" in applicable_jurisdictions:
-  * **GLBA Compliance**: Your financial services classification indicates GLBA requirements may apply.
-  % endif
-  
-  ## Next Steps
-  
-  1. Review all generated documents carefully
-  2. Consult with legal counsel regarding implementation
-  3. Begin implementing high-priority remediation items
-  4. Schedule regular compliance assessments
-  
-  Thank you for using the Privacy Compliance Framework!
 
 field: final_screen
 buttons:
   - "Start New Assessment":
       code: |
-        reset_interview = True
         command('restart')
-  - "Exit":
-      code: |
-        command('exit')
+  - "Exit": exit
 ---

@@ -24,11 +24,11 @@
               "value": 0
             },
             {
-                "field": "states_with_locations",
-                "operator": "contains",
-                "value": "California"
+              "field": "states_with_operations",
+              "operator": "contains",
+              "value": "California"
             }
-         ]
+          ]
         },
         {
           "type": "compound",
@@ -36,34 +36,34 @@
           "description": "Must meet at least one threshold",
           "conditions": [
             {
-                "field": "company.annual_revenue",
-                "operator": "greater_than_or_equal",
-                "value": 25000000
+              "field": "annual_revenue",
+              "operator": "greater_than_or_equal",
+              "value": 25000000
             },
             {
-                "field": "california_records",
-                "operator": "greater_than_or_equal",
-                "value": 100000
+              "field": "california_records",
+              "operator": "greater_than_or_equal",
+              "value": 100000
             },
             {
               "type": "compound",
               "operator": "and",
               "conditions": [
                 {
-                    "field": "california_records",
-                    "operator": "greater_than_or_equal",
-                    "value": 50000
+                  "field": "california_records",
+                  "operator": "greater_than_or_equal",
+                  "value": 50000
                 },
                 {
-                    "field": "sells_personal_info",
-                    "operator": "equals",
-                    "value": true
+                  "field": "sells_personal_info",
+                  "operator": "equals",
+                  "value": true
                 }
               ]
             }
           ]
         }
-      ] 
+      ]
     }
   ],
   "lawfulBasisValidation": {
@@ -114,30 +114,6 @@
         "severity": "high",
         "message": "Cross-context behavioral advertising requires opt-out mechanism",
         "remediation": "Implement 'Do Not Share My Personal Information' link and opt-out process"
-      },
-      {
-        "id": "household_data_processing",
-        "condition": {
-          "data_categories_processed": "contains",
-          "value": "Household information"
-        },
-        "required_notice": "household_context",
-        "severity": "medium",
-        "message": "Household data processing requires specific notice provisions",
-        "remediation": "Provide clear notice about household data collection and use"
-      },
-      {
-        "id": "employee_data_exemption",
-        "condition": {
-          "and": [
-            {"data_subjects": "contains", "value": "Employees"},
-            {"processing_purpose": "Employee management and HR"}
-          ]
-        },
-        "exemption": "employment_context",
-        "severity": "low",
-        "message": "Employee data may be subject to different requirements under employment context",
-        "remediation": "Ensure employment-specific privacy notices and rights are provided"
       }
     ]
   },
@@ -146,7 +122,7 @@
       "description": "System analyzes consumer rights compliance against CCPA/CPRA requirements",
       "validationProcess": [
         "Check opt-out mechanisms for sale and sharing",
-        "Validate consumer request response procedures",
+        "Validate consumer request response procedures", 
         "Verify non-discrimination protections",
         "Assess correction and deletion capabilities",
         "Check data portability implementation",
@@ -496,7 +472,8 @@
           "type": "operational_requirement",
           "description": "Provide notice at point of data collection across all channels"
         }
-      ]
+      ],
+      "documentImpact": ["privacy_policy", "website_privacy", "notice_at_collection"]
     },
     {
       "id": "ccpa-notice-2",
@@ -518,7 +495,8 @@
           "type": "operational_requirement",
           "description": "Ensure privacy policy is easily accessible from homepage"
         }
-      ]
+      ],
+      "documentImpact": ["privacy_policy", "website_privacy"]
     },
     {
       "id": "ccpa-notice-3",
@@ -540,7 +518,8 @@
           "type": "technical_requirement",
           "description": "Implement just-in-time notices in mobile applications"
         }
-      ]
+      ],
+      "documentImpact": ["mobile_privacy_notice"]
     },
     {
       "id": "ccpa-rights-1",
@@ -562,7 +541,8 @@
           "type": "technical_requirement",
           "description": "Maintain systems capable of providing comprehensive data disclosures"
         }
-      ]
+      ],
+      "documentImpact": ["privacy_policy", "consumer_request_procedures"]
     },
     {
       "id": "ccpa-rights-2",
@@ -584,7 +564,8 @@
           "type": "technical_requirement",
           "description": "Ensure technical capability to delete data across all systems"
         }
-      ]
+      ],
+      "documentImpact": ["privacy_policy", "consumer_request_procedures"]
     },
     {
       "id": "ccpa-rights-3",
@@ -607,7 +588,8 @@
           "type": "operational_requirement",
           "description": "Process opt-out requests and maintain opt-out status"
         }
-      ]
+      ],
+      "documentImpact": ["privacy_policy", "website_privacy", "opt_out_mechanisms"]
     },
     {
       "id": "ccpa-rights-4",
@@ -629,7 +611,8 @@
           "type": "operational_requirement",
           "description": "Monitor for discriminatory practices in service delivery"
         }
-      ]
+      ],
+      "documentImpact": ["privacy_policy", "non_discrimination_policy"]
     },
     {
       "id": "ccpa-rights-5",
@@ -647,7 +630,8 @@
           "type": "operational_requirement",
           "description": "Implement correction process for inaccurate data"
         }
-      ]
+      ],
+      "documentImpact": ["privacy_policy", "consumer_request_procedures"]
     },
     {
       "id": "ccpa-rights-6",
@@ -669,7 +653,8 @@
           "type": "technical_requirement",
           "description": "Implement 'Limit Use of My Sensitive Personal Information' mechanism"
         }
-      ]
+      ],
+      "documentImpact": ["privacy_policy", "website_privacy", "sensitive_data_controls"]
     },
     {
       "id": "ccpa-opt-out-1",
@@ -692,7 +677,8 @@
           "type": "technical_requirement",
           "description": "Create functional opt-out web page"
         }
-      ]
+      ],
+      "documentImpact": ["website_privacy", "opt_out_mechanisms"]
     },
     {
       "id": "ccpa-opt-out-2",
@@ -711,7 +697,8 @@
           "type": "technical_requirement",
           "description": "Implement multiple opt-out request methods (web form, email, phone)"
         }
-      ]
+      ],
+      "documentImpact": ["opt_out_mechanisms", "consumer_request_procedures"]
     },
     {
       "id": "ccpa-opt-out-3",
@@ -735,7 +722,8 @@
           "type": "technical_requirement",
           "description": "Add 'Do Not Share My Personal Information' link to homepage"
         }
-      ]
+      ],
+      "documentImpact": ["website_privacy", "opt_out_mechanisms"]
     },
     {
       "id": "ccpa-security-1",
@@ -757,7 +745,8 @@
           "type": "documentation_requirement",
           "description": "Document security procedures and conduct regular assessments"
         }
-      ]
+      ],
+      "documentImpact": ["security_policies", "risk_assessment"]
     },
     {
       "id": "ccpa-security-2",
@@ -778,7 +767,8 @@
           "type": "documentation_requirement",
           "description": "Conduct and document cybersecurity audits and risk assessments"
         }
-      ]
+      ],
+      "documentImpact": ["risk_assessment", "cybersecurity_audit"]
     },
     {
       "id": "ccpa-service-providers-1",
@@ -801,7 +791,8 @@
           "type": "operational_requirement",
           "description": "Monitor service provider compliance with contractual obligations"
         }
-      ]
+      ],
+      "documentImpact": ["service_provider_agreements"]
     },
     {
       "id": "ccpa-service-providers-2",
@@ -820,7 +811,8 @@
           "type": "documentation_requirement",
           "description": "Execute third-party agreements with CCPA compliance provisions"
         }
-      ]
+      ],
+      "documentImpact": ["third_party_agreements"]
     },
     {
       "id": "ccpa-children-1",
@@ -846,7 +838,8 @@
           "type": "technical_requirement",
           "description": "System controls to prevent sale/sharing of children's data without consent"
         }
-      ]
+      ],
+      "documentImpact": ["children_privacy_policy", "age_verification_procedures"]
     },
     {
       "id": "ccpa-children-2",
@@ -868,7 +861,8 @@
           "type": "operational_requirement",
           "description": "Implement reasonable age verification procedures"
         }
-      ]
+      ],
+      "documentImpact": ["age_verification_procedures"]
     },
     {
       "id": "ccpa-verification-1",
@@ -890,7 +884,8 @@
           "type": "technical_requirement",
           "description": "System to match verification information with collected data"
         }
-      ]
+      ],
+      "documentImpact": ["consumer_request_procedures", "verification_procedures"]
     },
     {
       "id": "ccpa-response-time-1",
@@ -908,7 +903,8 @@
           "type": "operational_requirement",
           "description": "Implement request tracking and response procedures within 45 days"
         }
-      ]
+      ],
+      "documentImpact": ["consumer_request_procedures"]
     },
     {
       "id": "ccpa-gpc-1",
@@ -929,7 +925,8 @@
           "type": "technical_requirement",
           "description": "Implement Global Privacy Control signal detection and processing"
         }
-      ]
+      ],
+      "documentImpact": ["website_privacy", "gpc_implementation"]
     },
     {
       "id": "ccpa-training-1",
@@ -951,6 +948,100 @@
           "type": "documentation_requirement",
           "description": "Document training programs and completion records"
         }
+      ],
+      "documentImpact": ["training_procedures", "training_records"]
+    }
+  ],
+  "documentRequirements": [
+    {
+      "documentType": "privacy_policy",
+      "required": true,
+      "description": "Privacy policy with comprehensive CCPA/CPRA disclosures",
+      "applicableWhen": "always",
+      "requiredElements": [
+        "Categories of personal information collected",
+        "Categories of sources of personal information",
+        "Business purposes for collection and use",
+        "Categories of third parties with whom information is shared",
+        "Categories of personal information sold or shared",
+        "Consumer rights under CCPA/CPRA",
+        "How to submit consumer requests",
+        "Non-discrimination policy",
+        "Contact information for privacy requests",
+        "Sensitive personal information practices",
+        "Retention practices",
+        "Children's data handling (if applicable)"
+      ]
+    },
+    {
+      "documentType": "website_privacy",
+      "required": true,
+      "description": "Website privacy statement with CCPA disclosures and opt-out mechanisms",
+      "applicableWhen": {
+        "field": "business_has_website",
+        "operator": "equals",
+        "value": true
+      },
+      "requiredElements": [
+        "Notice at collection requirements",
+        "Consumer rights information with contact details",
+        "Do Not Sell My Personal Information link (if applicable)",
+        "Do Not Share My Personal Information link (if applicable)",
+        "Limit Use of Sensitive Personal Information option (if applicable)",
+        "Global Privacy Control recognition",
+        "Cookie and tracking technology disclosures"
+      ]
+    },
+    {
+      "documentType": "opt_out_mechanisms",
+      "required": true,
+      "description": "Functional opt-out mechanisms for sale and sharing",
+      "applicableWhen": {
+        "or": [
+          {"field": "sells_personal_info", "operator": "equals", "value": true},
+          {"field": "data_sale_activities", "operator": "not_contains", "value": "None of the above"}
+        ]
+      },
+      "requiredElements": [
+        "Clear and conspicuous opt-out links on homepage",
+        "Multiple opt-out request methods (web form, email, phone)",
+        "GPC signal recognition and processing",
+        "Opt-out request verification procedures",
+        "Opt-out status maintenance systems"
+      ]
+    },
+    {
+      "documentType": "consumer_request_procedures",
+      "required": true,
+      "description": "Procedures for handling all consumer rights requests",
+      "applicableWhen": "always",
+      "requiredElements": [
+        "Request intake and tracking procedures",
+        "Identity verification methods",
+        "45-day response timeframe procedures",
+        "Data location and retrieval processes",
+        "Deletion procedures with exception handling",
+        "Correction procedures for inaccurate data",
+        "Data portability export procedures",
+        "Request logging and record keeping"
+      ]
+    },
+    {
+      "documentType": "service_provider_agreements",
+      "required": true,
+      "description": "CCPA-compliant service provider contracts",
+      "applicableWhen": {
+        "field": "third_party_data_sharing",
+        "operator": "not_contains",
+        "value": "We don't share personal information with third parties"
+      },
+      "requiredElements": [
+        "Prohibition on selling personal information",
+        "Purpose limitation for data use",
+        "Contractual audit rights",
+        "Breach notification obligations to business",
+        "Data return or destruction upon termination",
+        "Compliance certification requirements"
       ]
     }
   ],
@@ -1014,6 +1105,120 @@
       ]
     }
   },
+  "gapAnalysisRules": [
+    {
+      "category": "policy_gaps",
+      "checks": [
+        {
+          "requirement": "Privacy policy exists with comprehensive CCPA/CPRA disclosures",
+          "severity": "high",
+          "remediation": "Create or update privacy policy with all required CCPA/CPRA disclosures including categories of information, sources, purposes, third parties, consumer rights, and contact information"
+        },
+        {
+          "requirement": "Website privacy statement includes consumer rights and opt-out mechanisms",
+          "severity": "high",
+          "remediation": "Update website privacy statement with consumer rights information and implement required opt-out mechanisms",
+          "applicableWhen": {
+            "field": "business_has_website",
+            "operator": "equals",
+            "value": true
+          }
+        },
+        {
+          "requirement": "Notice at collection provided at point of data collection",
+          "severity": "high",
+          "remediation": "Implement notice at collection across all data collection points including website forms, mobile apps, and offline collection"
+        }
+      ]
+    },
+    {
+      "category": "operational_gaps",
+      "checks": [
+        {
+          "requirement": "Consumer rights request procedures implemented within 45-day timeframe",
+          "severity": "high",
+          "remediation": "Implement comprehensive procedures for handling access, deletion, correction, and opt-out requests within required timeframes"
+        },
+        {
+          "requirement": "Identity verification procedures for consumer requests",
+          "severity": "high",
+          "remediation": "Implement reasonable verification methods that balance security with accessibility for consumer requests"
+        },
+        {
+          "requirement": "Opt-out mechanisms for sale and sharing of personal information",
+          "severity": "high",
+          "remediation": "Implement 'Do Not Sell' and 'Do Not Share' mechanisms with multiple submission methods",
+          "applicableWhen": {
+            "or": [
+              {"field": "sells_personal_info", "operator": "equals", "value": true},
+              {"field": "data_sale_activities", "operator": "not_contains", "value": "None of the above"}
+            ]
+          }
+        },
+        {
+          "requirement": "Global Privacy Control (GPC) signal recognition",
+          "severity": "high",
+          "remediation": "Implement technical capability to detect and honor GPC signals automatically",
+          "applicableWhen": {
+            "or": [
+              {"field": "sells_personal_info", "operator": "equals", "value": true},
+              {"field": "data_sale_activities", "operator": "not_contains", "value": "None of the above"}
+            ]
+          }
+        },
+        {
+          "requirement": "Employee training on CCPA consumer rights and procedures",
+          "severity": "medium",
+          "remediation": "Provide comprehensive CCPA training to all customer-facing employees and maintain training records"
+        }
+      ]
+    },
+    {
+      "category": "contractual_gaps",
+      "checks": [
+        {
+          "requirement": "Service provider agreements include CCPA compliance provisions",
+          "severity": "high",
+          "remediation": "Update all service provider contracts to include required CCPA provisions including sale prohibition, purpose limitation, and audit rights",
+          "applicableWhen": {
+            "field": "third_party_data_sharing",
+            "operator": "not_contains",
+            "value": "We don't share personal information with third parties"
+          }
+        },
+        {
+          "requirement": "Third-party agreements ensure CCPA compliance and equivalent protection",
+          "severity": "high",
+          "remediation": "Execute agreements with third parties that include CCPA compliance requirements and equivalent privacy protection standards",
+          "applicableWhen": {
+            "field": "sells_personal_info",
+            "operator": "equals",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "category": "technical_gaps",
+      "checks": [
+        {
+          "requirement": "Technical systems support consumer rights fulfillment",
+          "severity": "high",
+          "remediation": "Implement or enhance technical systems to locate, access, correct, delete, and export consumer data across all business systems"
+        },
+        {
+          "requirement": "Reasonable security measures appropriate to data types",
+          "severity": "high",
+          "remediation": "Implement comprehensive security controls appropriate to the sensitivity and volume of personal information processed"
+        },
+        {
+          "requirement": "Data retention controls align with disclosed purposes",
+          "severity": "medium",
+          "remediation": "Implement automated data retention and deletion controls that align with disclosed business purposes and legal requirements"
+        }
+      ]
+    }
+  ],
   "penalties": {
     "civil_penalties": {
       "intentional_violations": {

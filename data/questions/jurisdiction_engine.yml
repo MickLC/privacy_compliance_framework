@@ -1,0 +1,296 @@
+---
+# Jurisdiction Engine - Pure JSON-Driven with Memory Efficiency
+---
+question: |
+  Step 7: Privacy Law Analysis
+subquestion: |
+  Analyzing your business profile against privacy law requirements...
+  
+  This may take a moment as we evaluate applicable regulations.
+
+continue button field: show_jurisdiction_analysis
+continue button label: "Perform Analysis"
+---
+question: |
+  Step 8: Applicable Privacy Laws
+subquestion: |
+  Based on your business profile, the following privacy laws apply to your organization:
+  
+  % if applicable_jurisdictions and len(applicable_jurisdictions) > 0:
+  % for jurisdiction_id in applicable_jurisdictions:
+  ## ${ get_jurisdiction_name(jurisdiction_id) }
+  
+  **Why this applies:** ${ get_applicability_reason(jurisdiction_id) }
+  
+  % endfor
+  
+  ## Analysis Summary
+  
+  % if "tdpsa" in applicable_jurisdictions:
+  **TDPSA Note**: Your business does not qualify for the small business exemption under SBA size standards for NAICS ${ company.naics_code }.
+  % endif
+  
+  % if "ccpa" in applicable_jurisdictions:
+  **CCPA Note**: Your business meets the revenue, data volume, or sale thresholds for California privacy law coverage.
+  % endif
+  
+  % if "gdpr" in applicable_jurisdictions:
+  **GDPR Note**: Your business operations or data subjects trigger EU privacy law requirements.
+  % endif
+  
+  % if has_sectoral_requirements(company.naics_code):
+  **Sector-Specific Note**: Your industry classification indicates additional sector-specific privacy requirements may apply.
+  % endif
+  
+  % else:
+  **No comprehensive privacy laws were found to be applicable** based on the information provided.
+  
+  This may be because:
+  * Your organization falls under small business exemptions
+  * You do not process personal data in jurisdictions with comprehensive privacy laws
+  * Your data processing volumes are below regulatory thresholds
+  
+  % endif
+  
+  These determinations will guide the privacy documentation we generate for your organization.
+
+continue button field: jurisdiction_analysis_complete
+continue button label: "Continue to Document Generation"
+---
+code: |
+  def determine_applicable_jurisdictions():
+    """
+    Determine applicable jurisdictions using fresh JSON loading.
+    Memory-efficient: load, process, discard.
+    """
+    applicable = []
+    
+    # Get list of available jurisdiction files
+    jurisdiction_files = [
+      'ccpa_requirements.json',
+      'gdpr_requirements.json', 
+      'tdpsa_requirements.json'
+    ]
+    
+    for jurisdiction_file in jurisdiction_files:
+      try:
+        # Fresh load JSON config
+        config = load_jurisdiction_config(jurisdiction_file)
+        if not config:
+          continue
+        
+        jurisdiction_id = config.get('jurisdictionId')
+        if not jurisdiction_id:
+          continue
+        
+        # Evaluate applicability using business data
+        if evaluate_jurisdiction_applicability(config, get_business_data()):
+          applicable.append(jurisdiction_id)
+          log(f"Jurisdiction {jurisdiction_id} is applicable")
+        else:
+          log(f"Jurisdiction {jurisdiction_id} is not applicable")
+        
+        # Config is automatically garbage collected here - no session storage
+        
+      except Exception as e:
+        log(f"Error evaluating jurisdiction {jurisdiction_file}: {e}")
+        continue
+    
+    return applicable
+  
+  def load_jurisdiction_config(filename):
+    """Load jurisdiction config fresh from JSON file"""
+    try:
+      json_file = path_and_mimetype(f'data/sources/{filename}')[0]
+      with open(json_file, 'r', encoding='utf-8') as f:
+        return json.load(f)
+    except Exception as e:
+      log(f"Error loading {filename}: {e}")
+      return None
+  
+  def get_business_data():
+    """Collect current business data for jurisdiction evaluation"""
+    return {
+      'company_name': company.name if defined('company.name') else '',
+      'naics_code': company.naics_code if defined('company.naics_code') else '',
+      'employee_count': company.employee_count if defined('company.employee_count') else 0,
+      'annual_revenue': company.annual_revenue if defined('company.annual_revenue') else 0,
+      'industry': get_industry_category(company.naics_code) if defined('company.naics_code') else '',
+      'business_has_website': business_has_website if defined('business_has_website') else False,
+      'business_has_physical_location': business_has_physical_location if defined('business_has_physical_location') else False,
+      'states_with_operations': list(states_with_operations.true_values()) if defined('states_with_operations') else [],
+      'serves_eu': serves_eu if defined('serves_eu') else False,
+      'has_eu_establishment': has_eu_establishment if defined('has_eu_establishment') else False,
+      'california_records': california_records if defined('california_records') else 0,
+      'texas_records': texas_records if defined('texas_records') else 0,
+      'eu_data_subjects': eu_data_subjects if defined('eu_data_subjects') else 0,
+      'sells_personal_info': sells_personal_info if defined('sells_personal_info') else False
+    }
+  
+  def evaluate_jurisdiction_applicability(config, business_data):
+    """Evaluate if jurisdiction applies based on config rules"""
+    applicability_checks = config.get('applicabilityChecks', [])
+    
+    if not applicability_checks:
+      # Fallback to hardcoded logic for backward compatibility
+      jurisdiction_id = config.get('jurisdictionId')
+      if jurisdiction_id == 'ccpa':
+        return evaluate_ccpa_applicability(business_data)
+      elif jurisdiction_id == 'gdpr':
+        return evaluate_gdpr_applicability(business_data)
+      elif jurisdiction_id == 'tdpsa':
+        return evaluate_tdpsa_applicability(business_data)
+      else:
+        return False
+    
+    # Evaluate JSON applicability rules
+    for check in applicability_checks:
+      if evaluate_applicability_check(check, business_data):
+        return True
+    
+    return False
+  
+  def evaluate_applicability_check(check, business_data):
+    """Evaluate individual applicability check"""
+    check_type = check.get('type', 'simple')
+    
+    if check_type == 'compound':
+      operator = check.get('operator', 'and')
+      conditions = check.get('conditions', [])
+      
+      if operator == 'and':
+        return all(evaluate_applicability_check(condition, business_data) for condition in conditions)
+      elif operator == 'or':
+        return any(evaluate_applicability_check(condition, business_data) for condition in conditions)
+      else:
+        log(f"Unknown compound operator: {operator}")
+        return False
+    
+    elif check_type == 'custom_function':
+      function_name = check.get('function')
+      if function_name == 'not_small_business_tdpsa':
+        return not is_small_business_under_tdpsa(
+          business_data.get('naics_code'),
+          business_data.get('employee_count', 0),
+          business_data.get('annual_revenue', 0)
+        )
+      else:
+        log(f"Unknown custom function: {function_name}")
+        return False
+    
+    else:
+      # Simple field check
+      field = check.get('field')
+      operator = check.get('operator', 'equals')
+      value = check.get('value')
+      
+      if not field:
+        return False
+      
+      field_value = business_data.get(field)
+      return evaluate_operator(field_value, operator, value)
+  
+  def evaluate_operator(field_value, operator, value):
+    """Evaluate operator between field value and expected value"""
+    if operator == 'equals':
+      return field_value == value
+    elif operator == 'not_equals':
+      return field_value != value
+    elif operator == 'greater_than':
+      try:
+        return float(field_value) > float(value)
+      except (ValueError, TypeError):
+        return False
+    elif operator == 'greater_than_or_equal':
+      try:
+        return float(field_value) >= float(value)
+      except (ValueError, TypeError):
+        return False
+    elif operator == 'less_than':
+      try:
+        return float(field_value) < float(value)
+      except (ValueError, TypeError):
+        return False
+    elif operator == 'contains':
+      if isinstance(field_value, list):
+        return value in field_value
+      elif isinstance(field_value, str):
+        return value in field_value
+      else:
+        return False
+    else:
+      log(f"Unknown operator: {operator}")
+      return False
+  
+  # Hardcoded applicability functions for reliability
+  def evaluate_ccpa_applicability(business_data):
+    """Evaluate CCPA applicability"""
+    # Must have California connection
+    has_ca_connection = (
+      'California' in business_data.get('states_with_operations', []) or
+      business_data.get('california_records', 0) > 0
+    )
+    
+    if not has_ca_connection:
+      return False
+    
+    # Must meet at least one threshold
+    revenue_threshold = business_data.get('annual_revenue', 0) >= 25000000
+    volume_threshold = business_data.get('california_records', 0) >= 100000
+    sale_threshold = (
+      business_data.get('california_records', 0) >= 50000 and
+      business_data.get('sells_personal_info', False)
+    )
+    
+    return revenue_threshold or volume_threshold or sale_threshold
+  
+  def evaluate_gdpr_applicability(business_data):
+    """Evaluate GDPR applicability"""
+    return (
+      business_data.get('serves_eu', False) or
+      business_data.get('has_eu_establishment', False) or
+      business_data.get('eu_data_subjects', 0) > 0
+    )
+  
+  def evaluate_tdpsa_applicability(business_data):
+    """Evaluate TDPSA applicability"""
+    # Must have Texas connection
+    has_tx_connection = (
+      'Texas' in business_data.get('states_with_operations', []) or
+      business_data.get('texas_records', 0) > 0
+    )
+    
+    if not has_tx_connection:
+      return False
+    
+    # Must meet data thresholds
+    volume_threshold = business_data.get('texas_records', 0) >= 100000
+    sale_threshold = (
+      business_data.get('texas_records', 0) >= 25000 and
+      business_data.get('sells_personal_info', False)
+    )
+    
+    if not (volume_threshold or sale_threshold):
+      return False
+    
+    # Must not be small business
+    return not is_small_business_under_tdpsa(
+      business_data.get('naics_code'),
+      business_data.get('employee_count', 0),
+      business_data.get('annual_revenue', 0)
+    )
+  
+  def is_small_business_under_tdpsa(naics_code, employee_count, annual_revenue):
+    """Determine TDPSA small business exemption using fresh NAICS data"""
+    if not naics_code:
+      # Use general TDPSA small business definition
+      return employee_count < 100 and annual_revenue < 10000000
+    
+    try:
+      # Load fresh NAICS data
+      naics_file = path_and_mimetype('data/sources/naics.json')[0]
+      with open(naics_file, 'r', encoding='utf-8') as f:
+        naics_data = json.load(f)
+      
+      # Find specific NAICS entry
+      naics_info = next((item for item in naics_data if str(item
