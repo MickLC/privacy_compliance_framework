@@ -1,5 +1,5 @@
 ---
-# Business Assessment Module - Memory-Efficient with Validation Loops
+# Business Assessment Module - Clean Version with Edit Workflow
 objects:
   - company: Individual
 ---
@@ -60,7 +60,7 @@ fields:
 continue button field: naics_selection_complete
 continue button label: "Continue"
 ---
-# Step 1c: Business Information Verification with Correction Loop
+# Step 1c: Business Information Verification
 question: |
   Step 1c: Verify Business Information
 subquestion: |
@@ -76,65 +76,11 @@ subquestion: |
   **Note**: Your industry classification indicates potential sector-specific privacy requirements.
   % endif
 
-fields:
-  - "Is this information correct?": business_info_verified
-    datatype: yesnoradio
-    required: True
-  - "What needs correction?": correction_needed
-    datatype: checkboxes
-    choices:
-      - "Company name"
-      - "NAICS code" 
-      - "Employee count"
-      - "Annual revenue"
-    show if:
-      variable: business_info_verified
-      is: False
-    required: True
-under: |
-  If any information is incorrect, select "No" to make corrections.
+yesno: business_info_verified
 continue button field: verification_complete
 continue button label: "Continue"
----
-# Memory-efficient correction handling
-code: |
-  # Process verification without infinite loops
-  verification_complete
-  
-  if not business_info_verified:
-    # Clear cached data to prevent memory issues
-    cache_vars_to_clear = ['naics_choices_cache', 'cached_industry', 'sba_size_standards']
-    for var_name in cache_vars_to_clear:
-      if defined(var_name):
-        undefine(var_name)
-    
-    # Selectively clear only what needs correction
-    if "Company name" in correction_needed.true_values():
-      undefine('company.name')
-      undefine('basic_business_info_complete')
-    if "NAICS code" in correction_needed.true_values(): 
-      undefine('company.naics_code')
-      undefine('naics_selection_complete')
-    if "Employee count" in correction_needed.true_values():
-      undefine('company.employee_count')
-      undefine('basic_business_info_complete')
-    if "Annual revenue" in correction_needed.true_values():
-      undefine('company.annual_revenue')
-      undefine('basic_business_info_complete')
-    
-    # Prevent infinite loop with attempt tracking
-    if not defined('correction_attempts'):
-      correction_attempts = 1
-    else:
-      correction_attempts += 1
-    
-    # Emergency exit after 3 attempts
-    if correction_attempts > 3:
-      business_info_verified = True
-      log("Emergency exit from correction loop after 3 attempts")
-  
-  # Continue workflow
-  business_profile_complete = True
+under: |
+  If any information is incorrect, select "No" and you'll be able to edit it in the final review step.
 ---
 # Step 2: Geographic and Operational Scope
 question: |
@@ -184,7 +130,56 @@ fields:
     datatype: yesnowide
     help: This includes sharing for advertising, marketing lists, or other commercial purposes
 continue button field: data_volume_complete
-continue button label: "Continue to Analysis"
+continue button label: "Continue"
+---
+# Step 4: Final Review and Verification
+question: |
+  Step 4: Final Review and Verification
+subquestion: |
+  Please review all the information you've provided. If anything needs to be changed, you can edit specific sections below.
+  
+  ## Business Information
+  * **Company Name**: ${ company.name }
+  * **Industry**: ${ get_industry_category(company.naics_code) }
+  * **NAICS Code**: ${ format_naics_display(company.naics_code) }
+  * **Number of Employees**: ${ "{:,}".format(int(company.employee_count)) }
+  * **Annual Revenue**: ${ "${:,.0f}".format(float(company.annual_revenue)) }
+  
+  ## Geographic and Operational Scope
+  * **Has Website**: ${ "Yes" if business_has_website else "No" }
+  * **Has Physical Locations**: ${ "Yes" if business_has_physical_location else "No" }
+  % if states_with_operations.any_true():
+  * **States with Operations**: ${ ", ".join(states_with_operations.true_values()) }
+  % endif
+  * **Serves EU Customers**: ${ "Yes" if serves_eu else "No" }
+  * **Has EU Establishment**: ${ "Yes" if has_eu_establishment else "No" }
+  
+  ## Data Processing Volume
+  % for item in get_jurisdiction_data_summary():
+  * ${ item }
+  % endfor
+  * **Sells Personal Information**: ${ "Yes" if sells_personal_info else "No" }
+  
+  % if has_sectoral_requirements(company.naics_code):
+  **Industry Note**: Your NAICS code indicates potential sector-specific privacy requirements (such as HIPAA for healthcare or GLBA for financial services).
+  % endif
+
+fields:
+  - "Is all information correct?": final_verification
+    datatype: yesnoradio
+    required: True
+  - "Which section would you like to edit?": edit_section
+    datatype: radio
+    choices:
+      - "Basic business information"
+      - "Geographic and operational scope"
+      - "Data processing volume"
+    show if:
+      variable: final_verification
+      is: False
+    required: True
+continue button field: verification_review_complete
+continue button label: "Continue to Privacy Law Analysis"
 ---
 # Memory-efficient NAICS functions
 code: |
@@ -278,76 +273,68 @@ code: |
       return "Not specified"
     return str(naics_code)
   
-  def check_sectoral_requirements():
-    """Check for sector-specific requirements and add to applicable jurisdictions"""
-    sectoral_jurisdictions = []
+  def get_jurisdiction_data_summary():
+    """Get jurisdiction data summary from current variables"""
+    # Define jurisdiction mappings - easily extensible
+    jurisdiction_map = {
+      'california_records': 'California Residents',
+      'texas_records': 'Texas Residents', 
+      'eu_data_subjects': 'EU Data Subjects'
+    }
     
-    if not defined('company.naics_code') or not company.naics_code:
-      return sectoral_jurisdictions
+    summary_items = []
     
-    naics_code = str(company.naics_code)
+    for var_name, display_name in jurisdiction_map.items():
+      if defined(var_name):
+        var_value = value(var_name)
+        if var_value > 0:
+          summary_items.append(f"**{display_name}**: {var_value:,} records annually")
     
-    # HIPAA check - Healthcare sector
-    if naics_code.startswith('62'):
-      sectoral_jurisdictions.append('hipaa')
+    if not summary_items:
+      summary_items.append("**No specific jurisdictional data processing reported**")
     
-    # GLBA check - Financial Services sector  
-    if naics_code.startswith('52'):
-      sectoral_jurisdictions.append('glba')
-    
-    return sectoral_jurisdictions
-  
-  def is_small_business_under_tdpsa(naics_code, employee_count, annual_revenue):
-    """Determine TDPSA small business exemption using NAICS data"""
-    if not naics_code:
-      # Use general TDPSA small business definition
-      return employee_count < 100 and annual_revenue < 10000000
-    
-    try:
-      # Find NAICS entry in loaded data
-      if defined('naics_data') and naics_data:
-        naics_info = None
-        for item in naics_data:
-          if str(item.get('id')) == str(naics_code):
-            naics_info = item
-            break
-      
-        if not naics_info:
-          # Fallback to general TDPSA definition
-          return employee_count < 100 and annual_revenue < 10000000
-        
-        # Get SBA size standards
-        employee_limit = naics_info.get('employeeCountLimit')
-        revenue_limit = naics_info.get('revenueLimit')
-        
-        # Convert revenue limit from millions to dollars
-        if revenue_limit and revenue_limit < 1000:
-          revenue_limit = revenue_limit * 1000000
-        
-        # Check SBA standards
-        sba_qualifies_as_small = True
-        
-        if employee_limit:
-          sba_qualifies_as_small = sba_qualifies_as_small and (employee_count <= employee_limit)
-        
-        if revenue_limit:
-          sba_qualifies_as_small = sba_qualifies_as_small and (annual_revenue <= revenue_limit)
-        
-        # Check TDPSA general definition
-        tdpsa_qualifies_as_small = employee_count < 100 and annual_revenue < 10000000
-        
-        # Small if meets either standard
-        return sba_qualifies_as_small or tdpsa_qualifies_as_small
-        
-    except Exception as e:
-      log(f"SBA size determination error: {e}")
-      # Conservative fallback
-      return employee_count < 100 and annual_revenue < 10000000
+    return summary_items
 ---
-# Business assessment completion trigger
+# Business assessment completion with edit workflow
 code: |
-  if final_verification:
-    business_assessment_complete = True
-  else:
-    business_assessment_complete = False
+  # Ensure all initial steps are complete
+  show_intro
+  basic_business_info_complete
+  naics_selection_complete
+  verification_complete
+  geographic_scope_complete
+  data_volume_complete
+  
+  # Review and verification loop
+  verification_review_complete
+  
+  # Handle edits if user wants to make changes
+  while not final_verification:
+    if edit_section == "Basic business information":
+      # Clear the basic info completion flags to force re-entry
+      undefine('basic_business_info_complete')
+      undefine('naics_selection_complete') 
+      undefine('verification_complete')
+      
+      # Force re-entry of basic info
+      basic_business_info_complete
+      naics_selection_complete
+      verification_complete
+      
+    elif edit_section == "Geographic and operational scope":
+      # Clear geographic scope completion to force re-entry
+      undefine('geographic_scope_complete')
+      geographic_scope_complete
+      
+    elif edit_section == "Data processing volume":
+      # Clear data volume completion to force re-entry
+      undefine('data_volume_complete')
+      data_volume_complete
+    
+    # Re-run verification after edits
+    undefine('verification_review_complete')
+    verification_review_complete
+  
+  # Mark business assessment as complete when verification passes
+  business_assessment_complete = True
 ---
