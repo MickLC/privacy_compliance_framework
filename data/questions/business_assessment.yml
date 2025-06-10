@@ -343,3 +343,11 @@ code: |
       log(f"SBA size determination error: {e}")
       # Conservative fallback
       return employee_count < 100 and annual_revenue < 10000000
+---
+# Business assessment completion trigger
+code: |
+  if final_verification:
+    business_assessment_complete = True
+  else:
+    business_assessment_complete = False
+---
