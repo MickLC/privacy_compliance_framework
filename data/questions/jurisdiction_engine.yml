@@ -1,5 +1,5 @@
 ---
-# Jurisdiction Engine - Pure JSON-Driven with Memory Efficiency
+# Jurisdiction Engine - Pure JSON-Driven Applicability
 ---
 question: |
   Step 7: Privacy Law Analysis
@@ -38,8 +38,12 @@ subquestion: |
   **GDPR Note**: Your business operations or data subjects trigger EU privacy law requirements.
   % endif
   
-  % if has_sectoral_requirements(company.naics_code):
-  **Sector-Specific Note**: Your industry classification indicates additional sector-specific privacy requirements may apply.
+  % if "hipaa" in applicable_jurisdictions:
+  **HIPAA Note**: Your healthcare industry classification (NAICS ${ company.naics_code }) requires HIPAA compliance.
+  % endif
+  
+  % if "glba" in applicable_jurisdictions:
+  **GLBA Note**: Your financial services industry classification (NAICS ${ company.naics_code }) requires GLBA compliance.
   % endif
   
   % else:
@@ -50,6 +54,7 @@ subquestion: |
   * You do not process personal data in jurisdictions with comprehensive privacy laws
   * Your data processing volumes are below regulatory thresholds
   
+  However, we will still generate basic privacy documentation as best practice.
   % endif
   
   These determinations will guide the privacy documentation we generate for your organization.
@@ -60,7 +65,7 @@ continue button label: "Continue to Document Generation"
 code: |
   def determine_applicable_jurisdictions():
     """
-    Determine applicable jurisdictions using fresh JSON loading.
+    Determine applicable jurisdictions using pure JSON logic.
     Memory-efficient: load, process, discard.
     """
     applicable = []
@@ -83,18 +88,25 @@ code: |
         if not jurisdiction_id:
           continue
         
-        # Evaluate applicability using business data
-        if evaluate_jurisdiction_applicability(config, get_business_data()):
+        # Evaluate applicability using JSON rules ONLY
+        if evaluate_json_applicability(config, get_business_data()):
           applicable.append(jurisdiction_id)
-          log(f"Jurisdiction {jurisdiction_id} is applicable")
+          log(f"Jurisdiction {jurisdiction_id} is applicable via JSON rules")
         else:
-          log(f"Jurisdiction {jurisdiction_id} is not applicable")
+          log(f"Jurisdiction {jurisdiction_id} is not applicable via JSON rules")
         
         # Config is automatically garbage collected here - no session storage
         
       except Exception as e:
         log(f"Error evaluating jurisdiction {jurisdiction_file}: {e}")
         continue
+    
+    # Add sectoral requirements (still needs some hardcoded logic for NAICS detection)
+    sectoral = check_sectoral_requirements()
+    for jurisdiction in sectoral:
+      if jurisdiction not in applicable:
+        applicable.append(jurisdiction)
+        log(f"Sectoral jurisdiction {jurisdiction} is applicable")
     
     return applicable
   
@@ -127,21 +139,13 @@ code: |
       'sells_personal_info': sells_personal_info if defined('sells_personal_info') else False
     }
   
-  def evaluate_jurisdiction_applicability(config, business_data):
-    """Evaluate if jurisdiction applies based on config rules"""
+  def evaluate_json_applicability(config, business_data):
+    """Evaluate if jurisdiction applies based on JSON applicabilityChecks ONLY"""
     applicability_checks = config.get('applicabilityChecks', [])
     
     if not applicability_checks:
-      # Fallback to hardcoded logic for backward compatibility
-      jurisdiction_id = config.get('jurisdictionId')
-      if jurisdiction_id == 'ccpa':
-        return evaluate_ccpa_applicability(business_data)
-      elif jurisdiction_id == 'gdpr':
-        return evaluate_gdpr_applicability(business_data)
-      elif jurisdiction_id == 'tdpsa':
-        return evaluate_tdpsa_applicability(business_data)
-      else:
-        return False
+      log(f"No applicabilityChecks found in {config.get('jurisdictionId', 'unknown')} - jurisdiction not applicable")
+      return False
     
     # Evaluate JSON applicability rules
     for check in applicability_checks:
@@ -151,7 +155,7 @@ code: |
     return False
   
   def evaluate_applicability_check(check, business_data):
-    """Evaluate individual applicability check"""
+    """Evaluate individual applicability check from JSON"""
     check_type = check.get('type', 'simple')
     
     if check_type == 'compound':
@@ -159,9 +163,13 @@ code: |
       conditions = check.get('conditions', [])
       
       if operator == 'and':
-        return all(evaluate_applicability_check(condition, business_data) for condition in conditions)
+        result = all(evaluate_applicability_check(condition, business_data) for condition in conditions)
+        log(f"Compound AND check: {result}")
+        return result
       elif operator == 'or':
-        return any(evaluate_applicability_check(condition, business_data) for condition in conditions)
+        result = any(evaluate_applicability_check(condition, business_data) for condition in conditions)
+        log(f"Compound OR check: {result}")
+        return result
       else:
         log(f"Unknown compound operator: {operator}")
         return False
@@ -169,11 +177,35 @@ code: |
     elif check_type == 'custom_function':
       function_name = check.get('function')
       if function_name == 'not_small_business_tdpsa':
-        return not is_small_business_under_tdpsa(
+        result = not is_small_business_under_tdpsa(
           business_data.get('naics_code'),
           business_data.get('employee_count', 0),
           business_data.get('annual_revenue', 0)
         )
+        log(f"Custom function {function_name}: {result}")
+        return result
+      elif function_name == 'is_healthcare_provider':
+        result = str(business_data.get('naics_code', '')).startswith('62')
+        log(f"Custom function {function_name}: {result}")
+        return result
+      elif function_name == 'is_health_plan':
+        # Health plans are typically in insurance (524xxx) or HMO codes
+        naics = str(business_data.get('naics_code', ''))
+        result = naics.startswith('524') or 'health' in business_data.get('industry', '').lower()
+        log(f"Custom function {function_name}: {result}")
+        return result
+      elif function_name == 'is_healthcare_clearinghouse':
+        # Healthcare clearinghouses typically in data processing services
+        result = str(business_data.get('naics_code', '')).startswith('518')
+        log(f"Custom function {function_name}: {result}")
+        return result
+      elif function_name == 'is_business_associate':
+        # Business associates are service providers to healthcare entities
+        naics = str(business_data.get('naics_code', ''))
+        result = (naics.startswith('541') or naics.startswith('518') or 
+                 naics.startswith('561') or naics.startswith('624'))
+        log(f"Custom function {function_name}: {result}")
+        return result
       else:
         log(f"Unknown custom function: {function_name}")
         return False
@@ -185,10 +217,13 @@ code: |
       value = check.get('value')
       
       if not field:
+        log("Missing field in applicability check")
         return False
       
       field_value = business_data.get(field)
-      return evaluate_operator(field_value, operator, value)
+      result = evaluate_operator(field_value, operator, value)
+      log(f"Simple check {field} {operator} {value}: {field_value} -> {result}")
+      return result
   
   def evaluate_operator(field_value, operator, value):
     """Evaluate operator between field value and expected value"""
@@ -218,67 +253,16 @@ code: |
         return value in field_value
       else:
         return False
+    elif operator == 'not_contains':
+      if isinstance(field_value, list):
+        return value not in field_value
+      elif isinstance(field_value, str):
+        return value not in field_value
+      else:
+        return True
     else:
       log(f"Unknown operator: {operator}")
       return False
-  
-  # Hardcoded applicability functions for reliability
-  def evaluate_ccpa_applicability(business_data):
-    """Evaluate CCPA applicability"""
-    # Must have California connection
-    has_ca_connection = (
-      'California' in business_data.get('states_with_operations', []) or
-      business_data.get('california_records', 0) > 0
-    )
-    
-    if not has_ca_connection:
-      return False
-    
-    # Must meet at least one threshold
-    revenue_threshold = business_data.get('annual_revenue', 0) >= 25000000
-    volume_threshold = business_data.get('california_records', 0) >= 100000
-    sale_threshold = (
-      business_data.get('california_records', 0) >= 50000 and
-      business_data.get('sells_personal_info', False)
-    )
-    
-    return revenue_threshold or volume_threshold or sale_threshold
-  
-  def evaluate_gdpr_applicability(business_data):
-    """Evaluate GDPR applicability"""
-    return (
-      business_data.get('serves_eu', False) or
-      business_data.get('has_eu_establishment', False) or
-      business_data.get('eu_data_subjects', 0) > 0
-    )
-  
-  def evaluate_tdpsa_applicability(business_data):
-    """Evaluate TDPSA applicability"""
-    # Must have Texas connection
-    has_tx_connection = (
-      'Texas' in business_data.get('states_with_operations', []) or
-      business_data.get('texas_records', 0) > 0
-    )
-    
-    if not has_tx_connection:
-      return False
-    
-    # Must meet data thresholds
-    volume_threshold = business_data.get('texas_records', 0) >= 100000
-    sale_threshold = (
-      business_data.get('texas_records', 0) >= 25000 and
-      business_data.get('sells_personal_info', False)
-    )
-    
-    if not (volume_threshold or sale_threshold):
-      return False
-    
-    # Must not be small business
-    return not is_small_business_under_tdpsa(
-      business_data.get('naics_code'),
-      business_data.get('employee_count', 0),
-      business_data.get('annual_revenue', 0)
-    )
   
   def is_small_business_under_tdpsa(naics_code, employee_count, annual_revenue):
     """Determine TDPSA small business exemption using fresh NAICS data"""
@@ -327,6 +311,25 @@ code: |
       # Conservative fallback
       return employee_count < 100 and annual_revenue < 10000000
   
+  def check_sectoral_requirements():
+    """Check for sector-specific requirements and add to applicable jurisdictions"""
+    business_data = get_business_data()
+    naics_code = business_data.get('naics_code', '')
+    
+    sectoral_jurisdictions = []
+    
+    # HIPAA check - Healthcare sector
+    if str(naics_code).startswith('62'):  # Healthcare and Social Assistance
+      sectoral_jurisdictions.append('hipaa')
+      log(f"HIPAA applies due to healthcare NAICS code {naics_code}")
+    
+    # GLBA check - Financial Services sector  
+    if str(naics_code).startswith('52'):  # Finance and Insurance
+      sectoral_jurisdictions.append('glba')
+      log(f"GLBA applies due to financial services NAICS code {naics_code}")
+    
+    return sectoral_jurisdictions
+  
   def get_jurisdiction_name(jurisdiction_id):
     """Get display name for jurisdiction"""
     names = {
@@ -339,7 +342,7 @@ code: |
     return names.get(jurisdiction_id, jurisdiction_id.upper())
   
   def get_applicability_reason(jurisdiction_id):
-    """Get reason why jurisdiction applies"""
+    """Get reason why jurisdiction applies - enhanced for JSON-driven approach"""
     business_data = get_business_data()
     
     if jurisdiction_id == 'ccpa':
@@ -348,13 +351,16 @@ code: |
         reasons.append("operates in California")
       if business_data.get('california_records', 0) > 0:
         reasons.append(f"processes {business_data.get('california_records', 0):,} California residents' data")
+      
+      # Add qualifying thresholds that were met
       if business_data.get('annual_revenue', 0) >= 25000000:
         reasons.append("meets $25M revenue threshold")
       if business_data.get('california_records', 0) >= 100000:
         reasons.append("processes 100K+ California records")
       if business_data.get('california_records', 0) >= 50000 and business_data.get('sells_personal_info'):
         reasons.append("processes 50K+ California records and sells personal information")
-      return "Your business " + " and ".join(reasons)
+      
+      return "Your business " + " and ".join(reasons) if reasons else "meets CCPA requirements via JSON rules"
     
     elif jurisdiction_id == 'gdpr':
       reasons = []
@@ -364,7 +370,7 @@ code: |
         reasons.append("has EU establishment")
       if business_data.get('eu_data_subjects', 0) > 0:
         reasons.append(f"processes {business_data.get('eu_data_subjects', 0):,} EU data subjects")
-      return "Your business " + " and ".join(reasons)
+      return "Your business " + " and ".join(reasons) if reasons else "meets GDPR requirements via JSON rules"
     
     elif jurisdiction_id == 'tdpsa':
       reasons = []
@@ -378,24 +384,15 @@ code: |
         reasons.append("meets 25K+ Texas records threshold with sale of personal information")
       if not is_small_business_under_tdpsa(business_data.get('naics_code'), business_data.get('employee_count', 0), business_data.get('annual_revenue', 0)):
         reasons.append("does not qualify for small business exemption")
-      return "Your business " + " and ".join(reasons)
+      return "Your business " + " and ".join(reasons) if reasons else "meets TDPSA requirements via JSON rules"
+    
+    elif jurisdiction_id == 'hipaa':
+      naics_code = business_data.get('naics_code', '')
+      return f"operates in healthcare sector (NAICS {naics_code})"
+    
+    elif jurisdiction_id == 'glba':
+      naics_code = business_data.get('naics_code', '')
+      return f"operates in financial services sector (NAICS {naics_code})"
     
     else:
-      return "meets applicable criteria"
-  
-  def check_sectoral_requirements():
-    """Check for sector-specific requirements and add to applicable jurisdictions"""
-    business_data = get_business_data()
-    naics_code = business_data.get('naics_code', '')
-    
-    sectoral_jurisdictions = []
-    
-    # HIPAA check - Healthcare sector
-    if str(naics_code).startswith('62'):  # Healthcare and Social Assistance
-      sectoral_jurisdictions.append('hipaa')
-    
-    # GLBA check - Financial Services sector  
-    if str(naics_code).startswith('52'):  # Finance and Insurance
-      sectoral_jurisdictions.append('glba')
-    
-    return sectoral_jurisdictions
+      return "meets applicable criteria via JSON rules"
