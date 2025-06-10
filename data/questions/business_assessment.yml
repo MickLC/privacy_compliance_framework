@@ -76,9 +76,10 @@ subquestion: |
   **Note**: Your industry classification indicates potential sector-specific privacy requirements.
   % endif
 
-yesno: business_info_verified
-continue button field: verification_complete
-continue button label: "Continue"
+field: verification_complete
+buttons:
+  - "Yes, this is correct": True
+  - "No, I'll edit this later": False
 under: |
   If any information is incorrect, select "No" and you'll be able to edit it in the final review step.
 ---
