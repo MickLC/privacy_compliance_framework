@@ -3,9 +3,6 @@
 objects:
   - company: Individual
 ---
-objects from file:
-  - naics_data: data/sources/naics.json
----
 question: |
   Privacy Compliance Assessment
 subquestion: |
@@ -187,15 +184,27 @@ code: |
   def get_naics_choices():
     """Load NAICS choices efficiently from JSON file"""
     try:
-      # Use direct file loading since objects from file isn't working
-      naics_file = path_and_mimetype('data/sources/naics.json')[0]
+      # More reliable file path resolution
+      import os
+      from docassemble.base.util import package_data_filename
+      
+      # Try package-specific path first
+      try:
+        naics_file = package_data_filename('docassemble.privacyframework', 'sources/naics.json')
+      except:
+        # Fallback to relative path
+        naics_file = path_and_mimetype('data/sources/naics.json')[0]
+      
+      log(f"Attempting to load NAICS from: {naics_file}")
+      
       with open(naics_file, 'r', encoding='utf-8') as f:
         naics_data = json.load(f)
+      
+      log(f"Successfully loaded NAICS data with {len(naics_data)} entries")
       
       if naics_data and isinstance(naics_data, list):
         choices = []
         
-        # Process all items, but group by sector for better organization
         for item in naics_data:
           if isinstance(item, dict) and 'id' in item and 'description' in item:
             naics_code = str(item['id'])
@@ -213,15 +222,16 @@ code: |
             choices.append((naics_code, choice_text))
         
         if choices:
-          # Sort by NAICS code for logical ordering
+          log(f"Processed {len(choices)} NAICS choices successfully")
           return sorted(choices, key=lambda x: x[0])
       
-      # Fallback if something goes wrong
-      log("No NAICS data processed, using fallback")
+      log("No valid NAICS data found, using fallback")
       return get_fallback_naics_choices()
         
     except Exception as e:
-      log(f"NAICS loading error: {e}")
+      log(f"NAICS loading error: {str(e)}")
+      import traceback
+      log(f"Full traceback: {traceback.format_exc()}")
       return get_fallback_naics_choices()
   
   def get_fallback_naics_choices():
