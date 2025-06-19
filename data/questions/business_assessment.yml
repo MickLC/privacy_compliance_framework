@@ -185,35 +185,55 @@ continue button label: "Continue to Privacy Law Analysis"
 # Memory-efficient NAICS functions
 code: |
   def get_naics_choices():
-    """Load NAICS choices efficiently - limit to prevent timeout"""
+    """Load NAICS choices with comprehensive debugging"""
+    log("=== NAICS LOADING DEBUG START ===")
+    
     try:
-      # Load from imported naics_data object
-      if defined('naics_data') and naics_data:
+      # Method 1: Try the objects from file approach
+      log(f"Checking naics_data object: defined={defined('naics_data')}")
+      if defined('naics_data'):
+        log(f"naics_data type: {type(naics_data)}")
+        log(f"naics_data length: {len(naics_data) if naics_data else 'None/Empty'}")
+        if naics_data and len(naics_data) > 0:
+          log(f"First item: {naics_data[0]}")
+          log(f"First item type: {type(naics_data[0])}")
+          log(f"First item keys: {naics_data[0].keys() if isinstance(naics_data[0], dict) else 'Not a dict'}")
+      
+      # Method 2: Try direct file loading
+      log("Attempting direct file load...")
+      naics_file = path_and_mimetype('data/sources/naics.json')[0]
+      log(f"NAICS file path: {naics_file}")
+      
+      with open(naics_file, 'r', encoding='utf-8') as f:
+        direct_naics_data = json.load(f)
+      
+      log(f"Direct load type: {type(direct_naics_data)}")
+      log(f"Direct load length: {len(direct_naics_data) if direct_naics_data else 'None/Empty'}")
+      
+      if direct_naics_data and len(direct_naics_data) > 0:
+        log(f"Direct first item: {direct_naics_data[0]}")
+        
+        # Process the data
         choices = []
-        count = 0
-        for item in naics_data:
-          if count >= 100:  # Limit choices to prevent timeout
-            break
+        for i, item in enumerate(direct_naics_data[:10]):  # Just first 10 for testing
+          log(f"Processing item {i}: {item}")
           if isinstance(item, dict) and 'id' in item and 'description' in item:
             naics_code = str(item['id'])
             description = str(item['description'])
-            
-            # Truncate long descriptions
-            if len(description) > 60:
-              description = description[:57] + "..."
-            
-            choices.append((naics_code, description))
-            count += 1
+            choices.append((naics_code, f"{naics_code} - {description[:60]}"))
+            log(f"Added choice: {naics_code}")
         
-        # Sort by description and return immediately
-        return sorted(choices, key=lambda x: x[1])
+        log(f"Generated {len(choices)} choices")
+        if choices:
+          return sorted(choices, key=lambda x: x[1])
       
-      else:
-        # Fallback choices if data loading fails
-        return get_fallback_naics_choices()
+      log("No valid data found, using fallback")
+      return get_fallback_naics_choices()
         
     except Exception as e:
       log(f"NAICS loading error: {e}")
+      import traceback
+      log(f"Full traceback: {traceback.format_exc()}")
       return get_fallback_naics_choices()
   
   def get_fallback_naics_choices():
