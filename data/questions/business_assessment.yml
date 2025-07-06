@@ -1,7 +1,7 @@
 ---
 # Business Assessment Module - Clean Version with Edit Workflow
 objects:
-  - company: Individual
+  - company: DAObject
 ---
 question: |
   Privacy Compliance Assessment
