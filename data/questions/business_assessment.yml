@@ -178,6 +178,175 @@ fields:
       is: False
     required: True
 continue button field: verification_review_complete
+continue button label: "Continue to Current Practices"
+---
+# Current Practices Assessment - Add this section to business_assessment.yml
+
+# Step 5: Current Privacy Practices
+question: |
+  Step 5: Current Privacy Practices
+subquestion: |
+  Help us understand your current privacy practices to generate more accurate documentation.
+
+fields:
+  - "Do you currently have a designated Privacy Officer or contact person?": has_privacy_officer
+    datatype: yesnowide
+  - "Privacy Officer Name": privacy_officer.name
+    show if: has_privacy_officer
+    required: False
+  - "Privacy Officer Title": privacy_officer.title
+    show if: has_privacy_officer
+    required: False
+  - "Privacy Officer Email": privacy_officer.email
+    datatype: email
+    show if: has_privacy_officer
+    required: False
+  - "Privacy Officer Phone": privacy_officer.phone
+    show if: has_privacy_officer
+    required: False
+  - "General Contact Email for Privacy Inquiries": company.privacy_email
+    datatype: email
+    required: False
+    default: "privacy@${ company.name.lower().replace(' ', '').replace(',', '').replace('.', '') }.com"
+  - "General Contact Phone for Privacy Inquiries": company.privacy_phone
+    required: False
+  - "Company Website URL": company.website
+    required: False
+    default: "https://${ company.name.lower().replace(' ', '').replace(',', '').replace('.', '') }.com"
+  - "Physical Address - Street": company.address.address
+    required: False
+  - "Physical Address - City": company.address.city
+    required: False
+  - "Physical Address - State": company.address.state
+    required: False
+  - "Physical Address - ZIP Code": company.address.zip
+    required: False
+  - "Do you currently have written privacy policies?": has_current_policies
+    datatype: yesnowide
+  - "Do you currently have procedures for handling privacy complaints?": has_complaint_procedures
+    datatype: yesnowide
+  - "Current complaint process description": current_complaint_process
+    datatype: area
+    show if: has_complaint_procedures
+    required: False
+    help: "Briefly describe how individuals can file privacy complaints with your organization"
+continue button field: current_practices_complete
+continue button label: "Continue"
+
+---
+# Add these objects to the top of business_assessment.yml
+objects:
+  - company: Individual
+  - privacy_officer: Individual
+  - company.address: Address
+
+---
+# Update the business assessment completion code to include the new step
+code: |
+  # Ensure all initial steps are complete
+  show_intro
+  basic_business_info_complete
+  naics_selection_complete
+  verification_complete
+  geographic_scope_complete
+  data_volume_complete
+  current_practices_complete  # Add this line
+  
+  # Review and verification loop
+  verification_review_complete
+  
+  # Handle edits if user wants to make changes
+  while not final_verification:
+    if edit_section == "Basic business information":
+      # Clear the basic info completion flags to force re-entry
+      undefine('basic_business_info_complete')
+      undefine('naics_selection_complete') 
+      undefine('verification_complete')
+      
+      # Force re-entry of basic info
+      basic_business_info_complete
+      naics_selection_complete
+      verification_complete
+      
+    elif edit_section == "Geographic and operational scope":
+      # Clear geographic scope completion to force re-entry
+      undefine('geographic_scope_complete')
+      geographic_scope_complete
+      
+    elif edit_section == "Data processing volume":
+      # Clear data volume completion to force re-entry
+      undefine('data_volume_complete')
+      data_volume_complete
+      
+    elif edit_section == "Current practices":  # Add this section
+      undefine('current_practices_complete')
+      current_practices_complete
+    
+    # Re-run verification after edits
+    undefine('verification_review_complete')
+    verification_review_complete
+  
+  # Mark business assessment as complete when verification passes
+  business_assessment_complete = True
+
+---
+# Update the final review to include current practices
+question: |
+  Step 6: Final Review and Verification
+subquestion: |
+  Please review all the information you've provided. If anything needs to be changed, you can edit specific sections below.
+  
+  ## Business Information
+  * **Company Name**: ${ company.name }
+  * **Industry**: ${ get_industry_category(company.naics_code) }
+  * **NAICS Code**: ${ format_naics_display(company.naics_code) }
+  * **Number of Employees**: ${ "{:,}".format(int(company.employee_count)) }
+  * **Annual Revenue**: ${ "${:,.0f}".format(float(company.annual_revenue)) }
+  
+  ## Geographic and Operational Scope
+  * **Has Website**: ${ "Yes" if business_has_website else "No" }
+  * **Has Physical Locations**: ${ "Yes" if business_has_physical_location else "No" }
+  % if states_with_operations.any_true():
+  * **States with Operations**: ${ ", ".join(states_with_operations.true_values()) }
+  % endif
+  * **Serves EU Customers**: ${ "Yes" if serves_eu else "No" }
+  * **Has EU Establishment**: ${ "Yes" if has_eu_establishment else "No" }
+  
+  ## Data Processing Volume
+  % for item in get_jurisdiction_data_summary():
+  * ${ item }
+  % endfor
+  * **Sells Personal Information**: ${ "Yes" if sells_personal_info else "No" }
+  
+  ## Current Privacy Practices
+  * **Has Privacy Officer**: ${ "Yes" if has_privacy_officer else "No" }
+  % if has_privacy_officer and defined('privacy_officer.name'):
+  * **Privacy Officer**: ${ privacy_officer.name } (${ privacy_officer.title if defined('privacy_officer.title') else 'Title not specified' })
+  % endif
+  * **Privacy Contact Email**: ${ company.privacy_email if defined('company.privacy_email') else 'Not specified' }
+  * **Has Current Policies**: ${ "Yes" if has_current_policies else "No" }
+  * **Has Complaint Procedures**: ${ "Yes" if has_complaint_procedures else "No" }
+  
+  % if has_sectoral_requirements(company.naics_code):
+  **Industry Note**: Your NAICS code indicates potential sector-specific privacy requirements (such as HIPAA for healthcare or GLBA for financial services).
+  % endif
+
+fields:
+  - "Is all information correct?": final_verification
+    datatype: yesnoradio
+    required: True
+  - "Which section would you like to edit?": edit_section
+    datatype: radio
+    choices:
+      - "Basic business information"
+      - "Geographic and operational scope"
+      - "Data processing volume"
+      - "Current practices"  # Add this option
+    show if:
+      variable: final_verification
+      is: False
+    required: True
+continue button field: verification_review_complete
 continue button label: "Continue to Privacy Law Analysis"
 ---
 # Memory-efficient NAICS functions

@@ -136,8 +136,101 @@ code: |
     }
     return requirements.get(jurisdiction_id, 'Privacy documentation')
   
+  def check_sectoral_requirements():
+    """Check for sector-specific requirements and add to applicable jurisdictions"""
+    business_data = get_current_business_data()
+    naics_code = business_data.get('naics_code', '')
+    
+    sectoral_jurisdictions = []
+    
+    # HIPAA check - Healthcare sector
+    if str(naics_code).startswith('62'):  # Healthcare and Social Assistance
+      sectoral_jurisdictions.append('hipaa')
+      log(f"HIPAA applies due to healthcare NAICS code {naics_code}")
+    
+    # GLBA check - Financial Services sector  
+    if str(naics_code).startswith('52'):  # Finance and Insurance
+      sectoral_jurisdictions.append('glba')
+      log(f"GLBA applies due to financial services NAICS code {naics_code}")
+    
+    return sectoral_jurisdictions
+  
+  def get_current_business_data():
+    """Get current business data including current practices"""
+    business_data = {
+      # Basic business info
+      'company_name': company.name if defined('company.name') else '',
+      'naics_code': company.naics_code if defined('company.naics_code') else '',
+      'employee_count': company.employee_count if defined('company.employee_count') else 0,
+      'annual_revenue': company.annual_revenue if defined('company.annual_revenue') else 0,
+      'industry': get_industry_category(company.naics_code) if defined('company.naics_code') else '',
+      
+      # Geographic and operational
+      'business_has_website': business_has_website if defined('business_has_website') else False,
+      'business_has_physical_location': business_has_physical_location if defined('business_has_physical_location') else False,
+      'states_with_operations': list(states_with_operations.true_values()) if defined('states_with_operations') else [],
+      'serves_eu': serves_eu if defined('serves_eu') else False,
+      'has_eu_establishment': has_eu_establishment if defined('has_eu_establishment') else False,
+      
+      # Data processing
+      'california_records': california_records if defined('california_records') else 0,
+      'texas_records': texas_records if defined('texas_records') else 0,
+      'eu_data_subjects': eu_data_subjects if defined('eu_data_subjects') else 0,
+      'sells_personal_info': sells_personal_info if defined('sells_personal_info') else False,
+      
+      # Current practices (new data for gap analysis)
+      'has_privacy_officer': has_privacy_officer if defined('has_privacy_officer') else False,
+      'has_current_policies': has_current_policies if defined('has_current_policies') else False,
+      'has_complaint_procedures': has_complaint_procedures if defined('has_complaint_procedures') else False,
+      'privacy_officer_designated': (defined('privacy_officer.name') and privacy_officer.name),
+      'privacy_contact_available': (
+        (defined('privacy_officer.email') and privacy_officer.email) or 
+        (defined('company.privacy_email') and company.privacy_email)
+      ),
+      'company_address_available': (
+        defined('company.address.address') and company.address.address
+      ),
+      
+      # Additional assessments that could be added
+      'third_party_data_sharing': 'not_assessed',  # Would need additional questions
+      'business_associate_agreements': 'not_assessed'  # Would need additional questions
+    }
+    
+    return business_data
+  
   def generate_privacy_policy():
-    """Generate comprehensive privacy policy"""
+    """Generate comprehensive privacy policy with real data"""
+    
+    # Get contact information
+    privacy_contact_email = company.privacy_email if (defined('company.privacy_email') and company.privacy_email) else "[Privacy Email]"
+    privacy_contact_phone = company.privacy_phone if (defined('company.privacy_phone') and company.privacy_phone) else "[Privacy Phone]"
+    company_website = company.website if (defined('company.website') and company.website) else f"https://{company.name.lower().replace(' ', '')}.com"
+    
+    # Get privacy officer information
+    privacy_officer_info = ""
+    if defined('privacy_officer.name') and privacy_officer.name:
+      privacy_officer_info = f"**Privacy Officer**: {privacy_officer.name}"
+      if defined('privacy_officer.title') and privacy_officer.title:
+        privacy_officer_info += f", {privacy_officer.title}"
+    else:
+      privacy_officer_info = "**Privacy Officer**: [Name and Title]"
+    
+    # Get company address
+    company_address_block = ""
+    if defined('company.address') and company.address:
+      address_parts = []
+      if defined('company.address.address') and company.address.address:
+        address_parts.append(company.address.address)
+      if defined('company.address.city') and company.address.city:
+        city_line = company.address.city
+        if defined('company.address.state') and company.address.state:
+          city_line += f", {company.address.state}"
+        if defined('company.address.zip') and company.address.zip:
+          city_line += f" {company.address.zip}"
+        address_parts.append(city_line)
+      if address_parts:
+        company_address_block = "\n".join(address_parts)
+    
     content_parts = [
       f"# Privacy Policy for {company.name}",
       "",
@@ -159,8 +252,22 @@ code: |
       "",
       generate_security_measures_section(),
       "",
-      generate_contact_information_section()
+      f"## 8. Contact Information",
+      "",
+      f"For questions about this privacy policy or to exercise your privacy rights, contact us:",
+      "",
+      f"**{company.name}**"
     ]
+    
+    if company_address_block:
+      content_parts.append(company_address_block)
+    
+    content_parts.extend([
+      f"**Email**: {privacy_contact_email}",
+      f"**Phone**: {privacy_contact_phone}",
+      "",
+      privacy_officer_info
+    ])
     
     content = "\n".join(content_parts)
     
@@ -172,7 +279,12 @@ code: |
     return policy_file
   
   def generate_website_privacy_statement():
-    """Generate website-specific privacy statement"""
+    """Generate website-specific privacy statement with real data"""
+    
+    # Get contact information
+    privacy_contact_email = company.privacy_email if (defined('company.privacy_email') and company.privacy_email) else "[Privacy Email]"
+    company_website = company.website if (defined('company.website') and company.website) else f"https://{company.name.lower().replace(' ', '')}.com"
+    
     content_parts = [
       f"# Website Privacy Statement for {company.name}",
       "",
@@ -191,7 +303,8 @@ code: |
       "",
       f"For our complete privacy practices, please see our full Privacy Policy.",
       "",
-      f"**Contact Information**: [Privacy Contact Information]"
+      f"**Contact Information**: {privacy_contact_email}",
+      f"**Website**: {company_website}"
     ]
     
     content = "\n".join(content_parts)
@@ -203,7 +316,31 @@ code: |
     return statement_file
   
   def generate_physical_location_notice():
-    """Generate physical location privacy notice"""
+    """Generate physical location privacy notice with real data"""
+    
+    # Get contact information and address
+    privacy_contact_info = company.privacy_email if (defined('company.privacy_email') and company.privacy_email) else "[Contact Information]"
+    if defined('company.privacy_phone') and company.privacy_phone:
+      privacy_contact_info += f" or {company.privacy_phone}"
+    
+    company_website = company.website if (defined('company.website') and company.website) else f"{company.name.replace(' ', '').lower()}.com"
+    
+    # Format company address
+    address_line = "[Address]"
+    if defined('company.address'):
+      address_parts = []
+      if defined('company.address.address') and company.address.address:
+        address_parts.append(company.address.address)
+      if defined('company.address.city') and company.address.city:
+        city_part = company.address.city
+        if defined('company.address.state') and company.address.state:
+          city_part += f", {company.address.state}"
+        if defined('company.address.zip') and company.address.zip:
+          city_part += f" {company.address.zip}"
+        address_parts.append(city_part)
+      if address_parts:
+        address_line = ", ".join(address_parts)
+    
     content_parts = [
       f"# Privacy Notice - {company.name} Location",
       "",
@@ -222,9 +359,14 @@ code: |
       "",
       generate_physical_location_rights(),
       "",
-      f"**Questions?** Contact us at [Contact Information]",
+      f"**Questions?** Contact us at {privacy_contact_info}",
       "",
-      f"**Full Privacy Policy**: Available at {company.name.replace(' ', '').lower()}.com/privacy or by request"
+      f"**Full Privacy Policy**: Available at {company_website}/privacy or by request",
+      "",
+      "---",
+      "",
+      f"{company.name}",
+      f"{address_line}"
     ]
     
     content = "\n".join(content_parts)
@@ -236,7 +378,34 @@ code: |
     return notice_file
   
   def generate_hipaa_notice():
-    """Generate HIPAA Notice of Privacy Practices"""
+    """Generate HIPAA Notice of Privacy Practices with real data"""
+    
+    # Get privacy officer information
+    privacy_officer_name = privacy_officer.name if (defined('privacy_officer.name') and privacy_officer.name) else "Privacy Officer"
+    privacy_officer_title = privacy_officer.title if (defined('privacy_officer.title') and privacy_officer.title) else "Privacy Officer"
+    
+    # Get contact information
+    privacy_phone = privacy_officer.phone if (defined('privacy_officer.phone') and privacy_officer.phone) else company.privacy_phone if (defined('company.privacy_phone') and company.privacy_phone) else "[Phone Number]"
+    privacy_email = privacy_officer.email if (defined('privacy_officer.email') and privacy_officer.email) else company.privacy_email if (defined('company.privacy_email') and company.privacy_email) else "[Email Address]"
+    
+    # Get complaint process
+    complaint_process = current_complaint_process if (defined('current_complaint_process') and current_complaint_process) else "Contact our Privacy Officer using the information below"
+    
+    # Get company address
+    company_address = ""
+    if defined('company.address') and company.address:
+      address_parts = []
+      if defined('company.address.address') and company.address.address:
+        address_parts.append(company.address.address)
+      if defined('company.address.city') and company.address.city:
+        city_state_zip = company.address.city
+        if defined('company.address.state') and company.address.state:
+          city_state_zip += f", {company.address.state}"
+        if defined('company.address.zip') and company.address.zip:
+          city_state_zip += f" {company.address.zip}"
+        address_parts.append(city_state_zip)
+      company_address = "\n".join(address_parts) if address_parts else ""
+    
     content_parts = [
       f"# Notice of Privacy Practices",
       f"## {company.name}",
@@ -260,20 +429,33 @@ code: |
       "",
       "## Your Rights Regarding Your Protected Health Information",
       "",
-      "* **Right to Request Restrictions**",
-      "* **Right to Request Confidential Communications**", 
-      "* **Right to Inspect and Copy**",
-      "* **Right to Amend**",
-      "* **Right to an Accounting of Disclosures**",
-      "* **Right to a Paper Copy of This Notice**",
+      "* **Right to Request Restrictions** - You may request restrictions on certain uses and disclosures of your PHI",
+      "* **Right to Request Confidential Communications** - You may request that we communicate with you about medical matters in a certain way or at a certain location", 
+      "* **Right to Inspect and Copy** - You have the right to inspect and copy your PHI",
+      "* **Right to Amend** - You may request that we amend your PHI if you believe it is incorrect or incomplete",
+      "* **Right to an Accounting of Disclosures** - You have the right to request an accounting of certain disclosures of your PHI",
+      "* **Right to a Paper Copy of This Notice** - You have the right to obtain a paper copy of this notice",
       "",
       f"## Contact Information",
-      f"Privacy Officer: [Name]",
-      f"Phone: [Phone Number]",
-      f"Email: [Email Address]",
+      f"**Privacy Officer**: {privacy_officer_name}",
+      f"**Title**: {privacy_officer_title}",
       "",
-      f"To file a complaint: [Complaint Process]"
+      f"**Phone**: {privacy_phone}",
+      f"**Email**: {privacy_email}",
+      "",
+      f"**{company.name}**"
     ]
+    
+    if company_address:
+      content_parts.append(company_address)
+    
+    content_parts.extend([
+      "",
+      f"## How to File a Complaint",
+      f"{complaint_process}",
+      "",
+      "You may also file a complaint with the Secretary of Health and Human Services if you believe your privacy rights have been violated."
+    ])
     
     content = "\n".join(content_parts)
     
@@ -291,7 +473,7 @@ code: |
       "",
       f"**Effective Date**: {today().strftime('%B %d, %Y')}",
       "",
-      "## Facts - What Does {company.name} Do With Your Personal Information?",
+      f"## Facts - What Does {company.name} Do With Your Personal Information?",
       "",
       "### Why?",
       "Financial companies choose how they share your personal information. Federal law gives consumers the right to limit some but not all sharing. Federal law also requires us to tell you how we collect, share, and protect your personal information.",
@@ -303,7 +485,7 @@ code: |
       "* Credit history and credit scores",
       "",
       "### How?",
-      "All financial companies need to share customers' personal information to run their everyday business. In the section below, we list the reasons financial companies can share their customers' personal information; the reasons {company.name} chooses to share; and whether you can limit this sharing.",
+      f"All financial companies need to share customers' personal information to run their everyday business. In the section below, we list the reasons financial companies can share their customers' personal information; the reasons {company.name} chooses to share; and whether you can limit this sharing.",
       "",
       "## What We Do",
       "",
@@ -315,7 +497,7 @@ code: |
       "* Use your credit or debit card or pay your bills",
       "",
       f"## Questions?",
-      f"Call [Phone Number] or email [Email Address]"
+      f"Call {company.privacy_phone if (defined('company.privacy_phone') and company.privacy_phone) else '[Phone Number]'} or email {company.privacy_email if (defined('company.privacy_email') and company.privacy_email) else '[Email Address]'}"
     ]
     
     content = "\n".join(content_parts)
@@ -326,8 +508,348 @@ code: |
     
     return glba_file
   
+  def perform_comprehensive_gap_analysis():
+    """Perform gap analysis using JSON rules from applicable jurisdiction files only"""
+    gap_findings = {
+      'high_priority': [],
+      'medium_priority': [],
+      'low_priority': [],
+      'compliant': [],
+      'categories': {
+        'policy_gaps': [],
+        'operational_gaps': [],
+        'technical_gaps': [],
+        'documentation_gaps': [],
+        'contractual_gaps': []
+      },
+      'summary': {
+        'total_gaps': 0,
+        'high_severity': 0,
+        'medium_severity': 0,
+        'low_severity': 0
+      }
+    }
+    
+    # Only analyze jurisdictions that are actually applicable
+    if not applicable_jurisdictions:
+      log("No applicable jurisdictions found for gap analysis")
+      return gap_findings
+    
+    log(f"Performing gap analysis for {len(applicable_jurisdictions)} applicable jurisdictions: {applicable_jurisdictions}")
+    
+    # Analyze each applicable jurisdiction using its JSON rules
+    for jurisdiction_id in applicable_jurisdictions:
+      try:
+        log(f"Analyzing gaps for jurisdiction: {jurisdiction_id}")
+        jurisdiction_gaps = analyze_jurisdiction_gaps_from_json(jurisdiction_id)
+        
+        # Merge findings by priority
+        for priority in ['high_priority', 'medium_priority', 'low_priority', 'compliant']:
+          gap_findings[priority].extend(jurisdiction_gaps.get(priority, []))
+        
+        # Merge by category
+        for category in gap_findings['categories']:
+          gap_findings['categories'][category].extend(jurisdiction_gaps.get('categories', {}).get(category, []))
+          
+        log(f"Completed gap analysis for {jurisdiction_id}")
+        
+      except Exception as e:
+        log(f"Error analyzing gaps for {jurisdiction_id}: {e}")
+        continue
+    
+    # Calculate summary statistics
+    gap_findings['summary']['high_severity'] = len(gap_findings['high_priority'])
+    gap_findings['summary']['medium_severity'] = len(gap_findings['medium_priority'])
+    gap_findings['summary']['low_severity'] = len(gap_findings['low_priority'])
+    gap_findings['summary']['total_gaps'] = (gap_findings['summary']['high_severity'] + 
+                                            gap_findings['summary']['medium_severity'] + 
+                                            gap_findings['summary']['low_severity'])
+    
+    log(f"Gap analysis complete. Total gaps: {gap_findings['summary']['total_gaps']}")
+    return gap_findings
+  
+  def load_jurisdiction_config_for_gaps(jurisdiction_id):
+    """Load jurisdiction config for gap analysis - only for applicable jurisdictions"""
+    
+    # Define mapping only for jurisdictions we actually support
+    jurisdiction_files = {
+      'ccpa': 'ccpa_requirements.json',
+      'gdpr': 'gdpr_requirements.json',
+      'tdpsa': 'tdpsa_requirements.json',
+      'hipaa': 'hipaa_requirements.json',
+      'glba': 'glba_requirements.json'
+    }
+    
+    # Check if this jurisdiction is one we support
+    if jurisdiction_id not in jurisdiction_files:
+      log(f"Unsupported jurisdiction for gap analysis: {jurisdiction_id}")
+      return None
+    
+    # Only proceed if this jurisdiction is actually applicable
+    if jurisdiction_id not in applicable_jurisdictions:
+      log(f"Jurisdiction {jurisdiction_id} not in applicable list, skipping JSON load")
+      return None
+    
+    filename = jurisdiction_files[jurisdiction_id]
+    
+    try:
+      log(f"Loading JSON config for applicable jurisdiction: {jurisdiction_id} ({filename})")
+      json_file = path_and_mimetype(f'data/sources/{filename}')[0]
+      with open(json_file, 'r', encoding='utf-8') as f:
+        config = json.load(f)
+      log(f"Successfully loaded {filename} for gap analysis")
+      return config
+    except Exception as e:
+      log(f"Error loading {filename} for gap analysis: {e}")
+      return None
+  
+  def analyze_jurisdiction_gaps_from_json(jurisdiction_id):
+    """Analyze gaps for specific jurisdiction using its JSON gap analysis rules"""
+    findings = {
+      'high_priority': [],
+      'medium_priority': [],
+      'low_priority': [],
+      'compliant': [],
+      'categories': {
+        'policy_gaps': [],
+        'operational_gaps': [],
+        'technical_gaps': [],
+        'documentation_gaps': [],
+        'contractual_gaps': []
+      }
+    }
+    
+    # Early exit if jurisdiction not applicable (double-check)
+    if jurisdiction_id not in applicable_jurisdictions:
+      log(f"Skipping gap analysis for non-applicable jurisdiction: {jurisdiction_id}")
+      return findings
+    
+    try:
+      # Load jurisdiction config only for applicable jurisdictions
+      config = load_jurisdiction_config_for_gaps(jurisdiction_id)
+      if not config:
+        log(f"No config loaded for {jurisdiction_id}, skipping gap analysis")
+        return findings
+      
+      gap_analysis_rules = config.get('gapAnalysisRules', [])
+      if not gap_analysis_rules:
+        log(f"No gap analysis rules found in {jurisdiction_id} config")
+        return findings
+      
+      business_data = get_current_business_data()
+      log(f"Processing {len(gap_analysis_rules)} gap analysis rule categories for {jurisdiction_id}")
+      
+      # Process each category of gap analysis rules
+      for category_rules in gap_analysis_rules:
+        category = category_rules.get('category', 'unknown')
+        checks = category_rules.get('checks', [])
+        
+        log(f"Processing {len(checks)} checks in category: {category}")
+        
+        for check in checks:
+          gap_result = evaluate_gap_check(check, business_data, jurisdiction_id)
+          if gap_result:
+            # Determine priority based on severity
+            severity = gap_result.get('severity', 'medium')
+            priority_key = f"{severity}_priority"
+            
+            if priority_key in findings:
+              findings[priority_key].append(gap_result)
+              log(f"Added {severity} priority gap: {gap_result['requirement']}")
+            
+            # Add to category
+            if category in findings['categories']:
+              findings['categories'][category].append(gap_result['requirement'])
+          else:
+            # This requirement is compliant
+            findings['compliant'].append(check.get('requirement', 'Unknown requirement'))
+    
+    except Exception as e:
+      log(f"Error processing gap analysis rules for {jurisdiction_id}: {e}")
+      import traceback
+      log(f"Full traceback: {traceback.format_exc()}")
+    
+    # Log summary for this jurisdiction
+    total_gaps = len(findings['high_priority']) + len(findings['medium_priority']) + len(findings['low_priority'])
+    log(f"Gap analysis for {jurisdiction_id} complete: {total_gaps} gaps, {len(findings['compliant'])} compliant")
+    
+    return findings
+  
+  def evaluate_gap_check(check, business_data, jurisdiction_id):
+    """Evaluate individual gap check from JSON rules"""
+    requirement = check.get('requirement', 'Unknown requirement')
+    severity = check.get('severity', 'medium')
+    remediation = check.get('remediation', 'No remediation specified')
+    applicable_when = check.get('applicableWhen')
+    
+    # Check if this gap check applies to current business
+    if applicable_when and not evaluate_applicability_condition(applicable_when, business_data):
+      return None
+    
+    # Determine current status based on business data
+    current_status = determine_current_status(check, business_data)
+    
+    # Determine if this is a gap or compliant
+    is_gap = determine_if_gap(check, business_data)
+    
+    if is_gap:
+      return {
+        'jurisdiction': jurisdiction_id,
+        'requirement': requirement,
+        'current_status': current_status,
+        'gap': f"Current practices do not meet {get_jurisdiction_name(jurisdiction_id)} requirements",
+        'remediation': remediation,
+        'severity': severity,
+        'regulation': get_jurisdiction_name(jurisdiction_id)
+      }
+    else:
+      # This requirement is compliant
+      return None
+  
+  def determine_current_status(check, business_data):
+    """Determine current status based on the gap check and business data"""
+    requirement = check.get('requirement', '').lower()
+    
+    # Privacy Officer checks
+    if 'privacy officer' in requirement:
+      if business_data.get('has_privacy_officer'):
+        if business_data.get('privacy_officer_designated'):
+          return 'Privacy Officer designated with contact information'
+        else:
+          return 'Privacy Officer designated but limited contact information'
+      else:
+        return 'No designated Privacy Officer'
+    
+    # Privacy Policy checks
+    elif 'privacy policy' in requirement or 'privacy notice' in requirement:
+      if business_data.get('has_current_policies'):
+        return 'Has existing privacy policies (compliance review needed)'
+      else:
+        return 'No documented privacy policies'
+    
+    # Complaint procedures
+    elif 'complaint' in requirement:
+      if business_data.get('has_complaint_procedures'):
+        return 'Has complaint procedures established'
+      else:
+        return 'No documented complaint procedures'
+    
+    # Contact information
+    elif 'contact' in requirement:
+      if business_data.get('privacy_contact_available'):
+        return 'Privacy contact information available'
+      else:
+        return 'No dedicated privacy contact information'
+    
+    # Business Associate Agreements
+    elif 'business associate' in requirement or 'service provider' in requirement:
+      return 'Business associate relationships not assessed in this evaluation'
+    
+    # Technical safeguards
+    elif 'technical' in requirement or 'safeguards' in requirement:
+      return 'Technical safeguards not assessed in this evaluation'
+    
+    # Default
+    else:
+      return 'Current practices not assessed for this requirement'
+  
+  def determine_if_gap(check, business_data):
+    """Determine if current practices represent a compliance gap"""
+    requirement = check.get('requirement', '').lower()
+    
+    # Privacy Officer requirements
+    if 'privacy officer' in requirement:
+      # Gap if no privacy officer designated
+      return not business_data.get('has_privacy_officer', False)
+    
+    # Privacy Policy requirements
+    elif 'privacy policy' in requirement or 'privacy notice' in requirement:
+      # Gap if no current policies (existing policies get medium priority for review)
+      if not business_data.get('has_current_policies', False):
+        return True
+      # Even with policies, may need review for compliance (medium priority)
+      return True
+    
+    # Complaint procedures
+    elif 'complaint' in requirement:
+      return not business_data.get('has_complaint_procedures', False)
+    
+    # Contact information
+    elif 'contact' in requirement:
+      return not business_data.get('privacy_contact_available', False)
+    
+    # For requirements we can't assess (technical, BA agreements), assume gap
+    elif any(keyword in requirement for keyword in ['business associate', 'technical', 'safeguards', 'assessment']):
+      return True
+    
+    # Default to gap for unrecognized requirements
+    else:
+      return True
+  
+  def evaluate_applicability_condition(condition, business_data):
+    """Evaluate applicability condition from JSON"""
+    if isinstance(condition, dict):
+      if 'field' in condition:
+        field = condition['field']
+        operator = condition.get('operator', 'equals')
+        value = condition.get('value')
+        
+        field_value = business_data.get(field)
+        return evaluate_operator(field_value, operator, value)
+      
+      elif 'or' in condition:
+        return any(evaluate_applicability_condition(subcond, business_data) for subcond in condition['or'])
+      
+      elif 'and' in condition:
+        return all(evaluate_applicability_condition(subcond, business_data) for subcond in condition['and'])
+    
+    return True  # Default to applicable
+  
+  def evaluate_operator(field_value, operator, value):
+    """Evaluate operator between field value and expected value"""
+    if operator == 'equals':
+      return field_value == value
+    elif operator == 'not_equals':
+      return field_value != value
+    elif operator == 'greater_than':
+      try:
+        return float(field_value) > float(value)
+      except (ValueError, TypeError):
+        return False
+    elif operator == 'greater_than_or_equal':
+      try:
+        return float(field_value) >= float(value)
+      except (ValueError, TypeError):
+        return False
+    elif operator == 'less_than':
+      try:
+        return float(field_value) < float(value)
+      except (ValueError, TypeError):
+        return False
+    elif operator == 'contains':
+      if isinstance(field_value, list):
+        return value in field_value
+      elif isinstance(field_value, str):
+        return value in field_value
+      else:
+        return False
+    elif operator == 'not_contains':
+      if isinstance(field_value, list):
+        return value not in field_value
+      elif isinstance(field_value, str):
+        return value not in field_value
+      else:
+        return True
+    else:
+      log(f"Unknown operator: {operator}")
+      return False
+  
   def generate_gap_analysis_report():
-    """Generate comprehensive gap analysis report"""
+    """Generate comprehensive gap analysis report using JSON-driven analysis"""
+    
+    # Perform comprehensive gap analysis using JSON rules
+    gap_findings = perform_comprehensive_gap_analysis()
+    
     content_parts = [
       f"# Privacy Compliance Gap Analysis Report",
       f"## {company.name}",
@@ -336,23 +858,44 @@ code: |
       "",
       "## Executive Summary",
       "",
-      f"This report presents findings from a privacy compliance assessment conducted for {company.name}. The assessment evaluated current practices against applicable privacy law requirements.",
+      f"This gap analysis report presents the findings of {company.name}'s privacy compliance assessment conducted on {today().strftime('%B %d, %Y')}. The assessment evaluated compliance with the following privacy laws determined to be applicable to your organization:",
       "",
-      "### Applicable Laws",
       generate_applicable_laws_summary(),
       "",
-      "### Key Findings",
-      generate_gap_analysis_findings(),
+      f"A total of **{gap_findings['summary']['total_gaps']}** compliance gaps were identified:",
+      f"* **High Severity Gaps**: {gap_findings['summary']['high_severity']}",
+      f"* **Medium Severity Gaps**: {gap_findings['summary']['medium_severity']}",
+      f"* **Low Severity Gaps**: {gap_findings['summary']['low_severity']}",
       "",
-      "## Detailed Analysis",
-      generate_detailed_gap_analysis(),
+      "## Assessment Scope",
       "",
-      "## Recommendations",
-      generate_compliance_recommendations(),
+      f"This assessment evaluated {company.name}'s compliance with applicable privacy laws based on the business profile and current privacy practices documented during the assessment process.",
+      "",
+      "**Business Profile Summary**:",
+      f"* Industry: {get_industry_category(company.naics_code)}",
+      f"* Employee Count: {company.employee_count:,}",
+      f"* Jurisdictions with Presence: {get_jurisdictional_presence()}",
+      f"* Data Subjects: {get_data_subjects_summary()}",
+      "",
+      "## Detailed Findings",
+      "",
+      generate_detailed_findings_by_jurisdiction(gap_findings),
+      "",
+      generate_findings_by_category(gap_findings),
+      "",
+      "## Impact Assessment",
+      "",
+      generate_impact_assessment(gap_findings),
+      "",
+      "## Conclusion",
+      "",
+      f"This gap analysis has identified {gap_findings['summary']['total_gaps']} areas where {company.name}'s privacy practices do not fully align with applicable legal requirements. Addressing these gaps through the implementation of the accompanying remediation plan will significantly improve compliance posture and reduce privacy-related risks.",
+      "",
+      "A prioritized remediation plan has been developed based on these findings, which recommends specific actions, timeframes, and resource requirements to address the identified gaps.",
       "",
       "---",
       "",
-      f"*This assessment represents a point-in-time evaluation based on information provided as of {today().strftime('%B %d, %Y')}. Privacy laws and business practices change over time, requiring regular reassessment.*"
+      f"*This assessment represents a point-in-time evaluation based on information provided and privacy requirements as of {today().strftime('%B %d, %Y')}. Privacy laws and organizational practices change over time, and regular reassessment is recommended.*"
     ]
     
     content = "\n".join(content_parts)
@@ -363,8 +906,111 @@ code: |
     
     return gap_file
   
+  def generate_detailed_findings_by_jurisdiction(gap_findings):
+    """Generate detailed findings organized by jurisdiction"""
+    findings_parts = ["### Key Compliance Gaps by Jurisdiction", ""]
+    
+    # Group findings by jurisdiction
+    jurisdiction_gaps = {}
+    for priority in ['high_priority', 'medium_priority', 'low_priority']:
+      for gap in gap_findings[priority]:
+        jurisdiction = gap.get('jurisdiction', 'unknown')
+        if jurisdiction not in jurisdiction_gaps:
+          jurisdiction_gaps[jurisdiction] = []
+        jurisdiction_gaps[jurisdiction].append(gap)
+    
+    for jurisdiction_id in applicable_jurisdictions:
+      jurisdiction_name = get_jurisdiction_name(jurisdiction_id)
+      gaps = jurisdiction_gaps.get(jurisdiction_id, [])
+      
+      findings_parts.append(f"#### {jurisdiction_name}")
+      findings_parts.append("")
+      
+      if gaps:
+        for gap in gaps:
+          findings_parts.append(f"**{gap['requirement']}**")
+          findings_parts.append(f"* Current Status: {gap['current_status']}")
+          findings_parts.append(f"* Gap: {gap['gap']}")
+          findings_parts.append(f"* Remediation: {gap['remediation']}")
+          findings_parts.append(f"* Priority: {gap['severity'].title()}")
+          findings_parts.append("")
+      else:
+        findings_parts.append("No significant gaps identified for this jurisdiction.")
+        findings_parts.append("")
+    
+    return "\n".join(findings_parts)
+  
+  def generate_findings_by_category(gap_findings):
+    """Generate findings organized by category"""
+    category_parts = ["### Gaps by Category", ""]
+    
+    category_names = {
+      'policy_gaps': 'Policy Gaps',
+      'operational_gaps': 'Operational Gaps',
+      'technical_gaps': 'Technical Gaps',
+      'documentation_gaps': 'Documentation Gaps',
+      'contractual_gaps': 'Contractual Gaps'
+    }
+    
+    for category_id, category_name in category_names.items():
+      gaps = gap_findings['categories'].get(category_id, [])
+      
+      if gaps:
+        category_parts.append(f"#### {category_name}")
+        category_parts.append("")
+        for gap in gaps:
+          category_parts.append(f"* {gap}")
+        category_parts.append("")
+    
+    return "\n".join(category_parts)
+  
+  def generate_impact_assessment(gap_findings):
+    """Generate impact assessment based on identified gaps"""
+    impact_parts = [
+      f"The identified gaps present the following risks to {company.name}:",
+      "",
+      "### Regulatory Risk",
+      ""
+    ]
+    
+    if gap_findings['summary']['high_severity'] > 0:
+      impact_parts.extend([
+        f"With {gap_findings['summary']['high_severity']} high-severity gaps, the organization faces significant regulatory compliance risk. Failure to address these gaps could result in:",
+        "* Regulatory investigations and enforcement actions",
+        "* Civil monetary penalties and fines",
+        "* Mandatory compliance agreements and ongoing monitoring",
+        ""
+      ])
+    else:
+      impact_parts.extend([
+        "No high-severity gaps were identified, indicating lower immediate regulatory risk.",
+        ""
+      ])
+    
+    impact_parts.extend([
+      "### Reputational Risk",
+      "",
+      "Privacy compliance gaps can result in:",
+      "* Loss of customer trust and confidence",
+      "* Negative media coverage and public scrutiny",
+      "* Competitive disadvantage in privacy-conscious markets",
+      "",
+      "### Operational Risk",
+      "",
+      "Without proper privacy procedures:",
+      "* Increased likelihood of privacy incidents and breaches", 
+      "* Inefficient handling of individual rights requests",
+      "* Potential business disruption from regulatory actions"
+    ])
+    
+    return "\n".join(impact_parts)
+  
   def generate_remediation_action_plan():
-    """Generate prioritized remediation action plan"""
+    """Generate prioritized remediation action plan based on gap analysis"""
+    
+    # Get gap analysis results
+    gap_findings = perform_comprehensive_gap_analysis()
+    
     content_parts = [
       f"# Privacy Compliance Remediation Action Plan",
       f"## {company.name}",
@@ -375,14 +1021,19 @@ code: |
       "",
       f"This action plan provides prioritized steps for {company.name} to achieve privacy compliance based on the gap analysis findings.",
       "",
+      f"**Total Gaps Identified**: {gap_findings['summary']['total_gaps']}",
+      f"* High Priority: {gap_findings['summary']['high_severity']}",
+      f"* Medium Priority: {gap_findings['summary']['medium_severity']}",
+      f"* Low Priority: {gap_findings['summary']['low_severity']}",
+      "",
       "## Immediate Actions (0-30 days)",
-      generate_immediate_actions(),
+      generate_immediate_actions_from_gaps(gap_findings),
       "",
       "## Short-term Actions (30-90 days)", 
-      generate_short_term_actions(),
+      generate_short_term_actions_from_gaps(gap_findings),
       "",
       "## Ongoing Actions (90+ days)",
-      generate_ongoing_actions(),
+      generate_ongoing_actions_from_gaps(gap_findings),
       "",
       "## Implementation Notes",
       "",
@@ -407,6 +1058,72 @@ code: |
     
     return plan_file
   
+  def generate_immediate_actions_from_gaps(gap_findings):
+    """Generate immediate action items based on high priority gaps"""
+    actions = []
+    action_counter = 1
+    
+    # Process high priority gaps first
+    for gap in gap_findings['high_priority']:
+      if 'privacy officer' in gap['requirement'].lower():
+        actions.append(f"{action_counter}. **Designate Privacy Officer** - {gap['remediation']}")
+        action_counter += 1
+      elif 'privacy policy' in gap['requirement'].lower() or 'privacy notice' in gap['requirement'].lower():
+        actions.append(f"{action_counter}. **Update Privacy Documentation** - {gap['remediation']}")
+        action_counter += 1
+      elif 'contact' in gap['requirement'].lower():
+        actions.append(f"{action_counter}. **Establish Privacy Contact** - {gap['remediation']}")
+        action_counter += 1
+    
+    # Add general immediate actions if no specific gaps found
+    if not actions:
+      actions = [
+        "1. **Document Current Practices** - Create inventory of current data processing activities",
+        "2. **Establish Privacy Contact Method** - Set up email/phone for privacy requests",
+        "3. **Publish Required Privacy Notices** - Deploy updated privacy notices on website and physical locations"
+      ]
+    
+    return "\n".join(actions)
+  
+  def generate_short_term_actions_from_gaps(gap_findings):
+    """Generate short-term action items based on medium priority gaps"""
+    actions = []
+    action_counter = 1
+    
+    # Process medium priority gaps
+    for gap in gap_findings['medium_priority']:
+      if 'training' in gap['requirement'].lower():
+        actions.append(f"{action_counter}. **Staff Training Program** - {gap['remediation']}")
+        action_counter += 1
+      elif 'procedures' in gap['requirement'].lower():
+        actions.append(f"{action_counter}. **Implement Procedures** - {gap['remediation']}")
+        action_counter += 1
+      elif 'agreement' in gap['requirement'].lower():
+        actions.append(f"{action_counter}. **Update Vendor Agreements** - {gap['remediation']}")
+        action_counter += 1
+    
+    # Add general short-term actions
+    if action_counter == 1:
+      actions.extend([
+        "1. **Implement Rights Request Procedures** - Create processes for handling access, deletion, and correction requests",
+        "2. **Staff Training Program** - Develop and deliver privacy training for relevant employees", 
+        "3. **Vendor Agreement Updates** - Update contracts with data processing vendors"
+      ])
+    
+    return "\n".join(actions)
+  
+  def generate_ongoing_actions_from_gaps(gap_findings):
+    """Generate ongoing action items for continuous compliance"""
+    actions = [
+      "1. **Regular Compliance Assessments** - Schedule quarterly compliance reviews",
+      "2. **Privacy Impact Assessments** - Implement PIA process for new projects",
+      "3. **Monitoring and Updates** - Track regulatory changes and update practices accordingly",
+      "4. **Vendor Management** - Regular review of third-party data processing arrangements",
+      "5. **Incident Response Preparedness** - Maintain and test breach response procedures"
+    ]
+    
+    return "\n".join(actions)
+  
   # Helper functions for content generation
   def generate_applicable_laws_section():
     """Generate applicable laws section"""
@@ -419,6 +1136,37 @@ code: |
       laws_text += f"* {get_jurisdiction_name(jurisdiction_id)}\n"
     
     return laws_text
+  
+  def generate_applicable_laws_summary():
+    """Generate summary of applicable laws for gap analysis"""
+    if not applicable_jurisdictions:
+      return "No comprehensive privacy laws determined to be applicable based on current business profile."
+    
+    summary = ""
+    for jurisdiction_id in applicable_jurisdictions:
+      summary += f"* **{get_jurisdiction_name(jurisdiction_id)}**: {get_applicability_reason(jurisdiction_id)}\n"
+    
+    return summary
+  
+  def get_jurisdictional_presence():
+    """Get summary of jurisdictional presence"""
+    presence = []
+    if defined('states_with_operations') and states_with_operations.any_true():
+      presence.extend(states_with_operations.true_values())
+    if defined('serves_eu') and serves_eu:
+      presence.append("European Union")
+    return ", ".join(presence) if presence else "Not specified"
+  
+  def get_data_subjects_summary():
+    """Get summary of data subjects processed"""
+    subjects = []
+    if defined('california_records') and california_records > 0:
+      subjects.append(f"{california_records:,} California residents")
+    if defined('texas_records') and texas_records > 0:
+      subjects.append(f"{texas_records:,} Texas residents")
+    if defined('eu_data_subjects') and eu_data_subjects > 0:
+      subjects.append(f"{eu_data_subjects:,} EU data subjects")
+    return ", ".join(subjects) if subjects else "Not specified"
   
   def generate_information_collection_section():
     """Generate information collection section"""
@@ -456,10 +1204,6 @@ code: |
     """Generate security measures section"""
     return "## 7. Data Security\n\nWe implement appropriate technical and organizational measures to protect personal information against unauthorized access, alteration, disclosure, or destruction. These measures include:\n\n* Access controls and authentication\n* Encryption of sensitive data\n* Regular security assessments\n* Employee training on data protection\n* Incident response procedures"
   
-  def generate_contact_information_section():
-    """Generate contact information section"""
-    return f"## 8. Contact Information\n\nFor questions about this privacy policy or to exercise your privacy rights, contact us:\n\n**{company.name}**\n[Street Address]\n[City, State ZIP Code]\nEmail: [Privacy Email]\nPhone: [Privacy Phone]\n\n**Privacy Officer**: [Name and Title]"
-  
   def generate_website_specific_rights():
     """Generate website-specific privacy rights"""
     rights_text = "## Your Online Privacy Rights\n\n"
@@ -491,84 +1235,70 @@ code: |
     
     return rights_text
   
-  def generate_applicable_laws_summary():
-    """Generate summary of applicable laws for gap analysis"""
-    if not applicable_jurisdictions:
-      return "No comprehensive privacy laws determined to be applicable based on current business profile."
+  def get_jurisdiction_name(jurisdiction_id):
+    """Get display name for jurisdiction"""
+    names = {
+      'ccpa': 'California Consumer Privacy Act / California Privacy Rights Act (CCPA/CPRA)',
+      'gdpr': 'General Data Protection Regulation (GDPR)',
+      'tdpsa': 'Texas Data Privacy and Security Act (TDPSA)',
+      'hipaa': 'Health Insurance Portability and Accountability Act (HIPAA)',
+      'glba': 'Gramm-Leach-Bliley Act (GLBA)'
+    }
+    return names.get(jurisdiction_id, jurisdiction_id.upper())
+  
+  def get_applicability_reason(jurisdiction_id):
+    """Get reason why jurisdiction applies"""
+    business_data = get_current_business_data()
     
-    summary = ""
-    for jurisdiction_id in applicable_jurisdictions:
-      summary += f"* **{get_jurisdiction_name(jurisdiction_id)}**: {get_applicability_reason(jurisdiction_id)}\n"
+    if jurisdiction_id == 'ccpa':
+      reasons = []
+      if 'California' in business_data.get('states_with_operations', []):
+        reasons.append("operates in California")
+      if business_data.get('california_records', 0) > 0:
+        reasons.append(f"processes {business_data.get('california_records', 0):,} California residents' data")
+      
+      # Add qualifying thresholds that were met
+      if business_data.get('annual_revenue', 0) >= 25000000:
+        reasons.append("meets $25M revenue threshold")
+      if business_data.get('california_records', 0) >= 100000:
+        reasons.append("processes 100K+ California records")
+      if business_data.get('california_records', 0) >= 50000 and business_data.get('sells_personal_info'):
+        reasons.append("processes 50K+ California records and sells personal information")
+      
+      return "Your business " + " and ".join(reasons) if reasons else "meets CCPA requirements"
     
-    return summary
-  
-  def generate_gap_analysis_findings():
-    """Generate gap analysis findings"""
-    findings = [
-      "* **Privacy Documentation**: Assessment of current privacy notices and policies",
-      "* **Consumer Rights Procedures**: Evaluation of processes for handling individual rights requests", 
-      "* **Data Security Measures**: Review of technical and organizational security controls",
-      "* **Staff Training**: Analysis of privacy training programs and awareness",
-      "* **Vendor Management**: Assessment of third-party data sharing arrangements"
-    ]
-    return "\n".join(findings)
-  
-  def generate_detailed_gap_analysis():
-    """Generate detailed gap analysis by category"""
-    analysis_parts = [
-      "### Policy Gaps",
-      "* Update privacy notices to include all required disclosures",
-      "* Implement consumer rights request procedures",
-      "* Develop data retention and deletion policies",
-      "",
-      "### Operational Gaps", 
-      "* Establish privacy officer role and responsibilities",
-      "* Implement data subject request tracking system",
-      "* Develop vendor data protection agreement templates",
-      "",
-      "### Technical Gaps",
-      "* Enhance data security measures where needed",
-      "* Implement privacy-by-design in new systems",
-      "* Establish data breach detection and response capabilities"
-    ]
-    return "\n".join(analysis_parts)
-  
-  def generate_compliance_recommendations():
-    """Generate compliance recommendations"""
-    recommendations = [
-      "1. **Immediate Priority**: Update privacy notices and publish required disclosures",
-      "2. **Short-term Priority**: Implement consumer rights request procedures",
-      "3. **Medium-term Priority**: Enhance data security measures and staff training",
-      "4. **Ongoing Priority**: Establish regular compliance monitoring and assessment"
-    ]
-    return "\n".join(recommendations)
-  
-  def generate_immediate_actions():
-    """Generate immediate action items"""
-    actions = [
-      "1. **Publish Required Privacy Notices** - Deploy updated privacy notices on website and physical locations",
-      "2. **Establish Consumer Contact Method** - Set up email/phone for privacy requests",
-      "3. **Document Current Practices** - Create inventory of current data processing activities"
-    ]
-    return "\n".join(actions)
-  
-  def generate_short_term_actions():
-    """Generate short-term action items"""
-    actions = [
-      "1. **Implement Rights Request Procedures** - Create processes for handling access, deletion, and correction requests",
-      "2. **Staff Training Program** - Develop and deliver privacy training for relevant employees", 
-      "3. **Vendor Agreement Updates** - Update contracts with data processing vendors"
-    ]
-    return "\n".join(actions)
-  
-  def generate_ongoing_actions():
-    """Generate ongoing action items"""
-    actions = [
-      "1. **Regular Compliance Assessments** - Schedule quarterly compliance reviews",
-      "2. **Privacy Impact Assessments** - Implement PIA process for new projects",
-      "3. **Monitoring and Updates** - Track regulatory changes and update practices accordingly"
-    ]
-    return "\n".join(actions)
+    elif jurisdiction_id == 'gdpr':
+      reasons = []
+      if business_data.get('serves_eu'):
+        reasons.append("serves EU customers")
+      if business_data.get('has_eu_establishment'):
+        reasons.append("has EU establishment")
+      if business_data.get('eu_data_subjects', 0) > 0:
+        reasons.append(f"processes {business_data.get('eu_data_subjects', 0):,} EU data subjects")
+      return "Your business " + " and ".join(reasons) if reasons else "meets GDPR requirements"
+    
+    elif jurisdiction_id == 'tdpsa':
+      reasons = []
+      if 'Texas' in business_data.get('states_with_operations', []):
+        reasons.append("operates in Texas")
+      if business_data.get('texas_records', 0) > 0:
+        reasons.append(f"processes {business_data.get('texas_records', 0):,} Texas residents' data")
+      if business_data.get('texas_records', 0) >= 100000:
+        reasons.append("meets 100K+ Texas records threshold")
+      if business_data.get('texas_records', 0) >= 25000 and business_data.get('sells_personal_info'):
+        reasons.append("meets 25K+ Texas records threshold with sale of personal information")
+      return "Your business " + " and ".join(reasons) if reasons else "meets TDPSA requirements"
+    
+    elif jurisdiction_id == 'hipaa':
+      naics_code = business_data.get('naics_code', '')
+      return f"operates in healthcare sector (NAICS {naics_code})"
+    
+    elif jurisdiction_id == 'glba':
+      naics_code = business_data.get('naics_code', '')
+      return f"operates in financial services sector (NAICS {naics_code})"
+    
+    else:
+      return "meets applicable criteria"
   
   def format_document_name(doc_type):
     """Format document type for display"""
@@ -582,6 +1312,7 @@ code: |
       'remediation_plan': 'Remediation Action Plan'
     }
     return names.get(doc_type, doc_type.replace('_', ' ').title())
+
 ---
 # Trigger document generation after selections
 code: |
