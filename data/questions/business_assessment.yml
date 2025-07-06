@@ -1,5 +1,5 @@
 ---
-# Business Assessment Module - Clean Version with Edit Workflow
+# Business Assessment Module - Fixed Completion Logic
 objects:
   - company: DAObject
 ---
@@ -305,49 +305,65 @@ code: |
     
     return summary_items
 ---
-# Business assessment completion with edit workflow
+# Fixed Business assessment completion logic
 code: |
-  # Ensure all initial steps are complete
-  if (defined('show_intro') and show_intro and
-      defined('basic_business_info_complete') and basic_business_info_complete and
-      defined('naics_selection_complete') and naics_selection_complete and
-      defined('verification_complete') and verification_complete and
-      defined('geographic_scope_complete') and geographic_scope_complete and
-      defined('data_volume_complete') and data_volume_complete and
-      defined('verification_review_complete') and verification_review_complete):
-    
-    # Handle edits if user wants to make changes
-    if not final_verification:
-      if edit_section == "Basic business information":
-        # Clear the basic info completion flags to force re-entry
-        undefine('basic_business_info_complete')
-        undefine('naics_selection_complete') 
-        undefine('verification_complete')
-        
-        # Force re-entry of basic info
-        basic_business_info_complete
-        naics_selection_complete
-        verification_complete
-        
-      elif edit_section == "Geographic and operational scope":
-        # Clear geographic scope completion to force re-entry
-        undefine('geographic_scope_complete')
-        geographic_scope_complete
-        
-      elif edit_section == "Data processing volume":
-        # Clear data volume completion to force re-entry
-        undefine('data_volume_complete')
-        data_volume_complete
+  # This code block defines when business_assessment_complete is True
+  # All these steps must be completed in sequence
+  
+  # Step 1: Introduction
+  show_intro
+  
+  # Step 2: Basic business information
+  basic_business_info_complete
+  
+  # Step 3: NAICS selection
+  naics_selection_complete
+  
+  # Step 4: Verification
+  verification_complete
+  
+  # Step 5: Geographic scope
+  geographic_scope_complete
+  
+  # Step 6: Data volume
+  data_volume_complete
+  
+  # Step 7: Final review and verification
+  verification_review_complete
+  
+  # Handle edits if user wants to make changes
+  if not final_verification:
+    if edit_section == "Basic business information":
+      # Clear the basic info completion flags to force re-entry
+      undefine('basic_business_info_complete')
+      undefine('naics_selection_complete') 
+      undefine('verification_complete')
       
-      # Re-run verification after edits
-      undefine('verification_review_complete')
-      verification_review_complete
+      # Force re-entry of basic info
+      basic_business_info_complete
+      naics_selection_complete
+      verification_complete
+      
+    elif edit_section == "Geographic and operational scope":
+      # Clear geographic scope completion to force re-entry
+      undefine('geographic_scope_complete')
+      geographic_scope_complete
+      
+    elif edit_section == "Data processing volume":
+      # Clear data volume completion to force re-entry
+      undefine('data_volume_complete')
+      data_volume_complete
     
-    # Mark business assessment as complete when verification passes
-    if final_verification:
-      business_assessment_complete = True
-    else:
-      business_assessment_complete = False
+    # Re-run verification after edits
+    undefine('verification_review_complete')
+    verification_review_complete
+  
+  # Only mark as complete when all steps are done AND final verification is True
+  if final_verification:
+    business_assessment_complete = True
   else:
-    business_assessment_complete = False
+    # Go back to verification review
+    undefine('verification_review_complete')
+    verification_review_complete
+    # This will loop until final_verification is True
 ---

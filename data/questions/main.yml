@@ -2,7 +2,7 @@
 metadata:
   title: Privacy Compliance Framework
   short title: Privacy Assessment
-  documentation: https://github.com/yourusername/docassemble-privacyframework
+  documentation: https://github.com/MickLC/privacy_compliance_framework
   authors:
     - name: Mickey Chandler
       organization: Lex Protego PLLC
@@ -25,34 +25,20 @@ objects:
 ---
 mandatory: True
 code: |
-  # Initialize workflow tracking
-  if not defined('workflow_step'):
-    workflow_step = 1
+  # Step 1: Complete Business Assessment - this should trigger ALL the business assessment questions
+  business_assessment_complete
   
-  # Step 1: Business Assessment
-  if workflow_step == 1:
-    if not defined('business_assessment_complete'):
-      # This will trigger the business assessment questions
-      need('business_assessment_complete')
-    workflow_step = 2
+  # Step 2: Determine Applicable Jurisdictions
+  applicable_jurisdictions = determine_applicable_jurisdictions()
   
-  # Step 2: Jurisdiction Determination  
-  if workflow_step == 2:
-    if not defined('applicable_jurisdictions'):
-      applicable_jurisdictions = determine_applicable_jurisdictions()
-    if not defined('jurisdiction_analysis_complete'):
-      need('jurisdiction_analysis_complete') 
-    workflow_step = 3
+  # Step 3: Show Jurisdiction Analysis
+  jurisdiction_analysis_complete
   
-  # Step 3: Document Generation
-  if workflow_step == 3:
-    if not defined('document_generation_complete'):
-      need('document_generation_complete')
-    workflow_step = 4
+  # Step 4: Generate Documents
+  document_generation_complete
   
-  # Final Results
-  if workflow_step == 4:
-    final_screen
+  # Step 5: Final Results
+  final_screen
 ---
 question: |
   Privacy Compliance Assessment Complete
@@ -87,7 +73,7 @@ subquestion: |
   
   ## Recommendations
   
-  % if len(applicable_jurisdictions) > 0:
+  % if applicable_jurisdictions and len(applicable_jurisdictions) > 0:
   Based on your business profile, we recommend:
   
   1. **Immediate Action**: Review generated privacy documentation
