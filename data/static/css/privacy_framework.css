@@ -193,3 +193,12 @@ textarea:focus {
     font-size: 14px;
   }
 }
+.naics-dropdown-enhanced {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}

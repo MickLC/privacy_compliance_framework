@@ -49,11 +49,12 @@ subquestion: |
 fields:
   - Primary Business Activity (NAICS Code): company.naics_code
     required: True
-    datatype: combobox
+    datatype: dropdown
     choices:
       code: get_naics_choices()
     help: |
-      Search by typing keywords (e.g., "legal services", "software", "retail")
+      Use Ctrl+F (or Cmd+F on Mac) to search within the dropdown, or type the first letter to jump to entries
+    css class: naics-dropdown-enhanced
 continue button field: naics_selection_complete
 continue button label: "Continue"
 ---
