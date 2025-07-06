@@ -21,7 +21,7 @@ include:
   - document_engine.yml
 ---
 objects:
-  - company: Individual
+  - company: DAObject
 ---
 mandatory: True
 code: |
