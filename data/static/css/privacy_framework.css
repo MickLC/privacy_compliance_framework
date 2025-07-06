@@ -170,6 +170,89 @@ textarea:focus {
   color: #3498db;
 }
 
+/* NAICS Search Wrapper Styling */
+.naics-search-wrapper {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.naics-search-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  margin-bottom: 10px;
+  background-color: #f8f9fa;
+  border-color: #3498db;
+}
+
+.naics-search-input:focus {
+  border-color: #2980b9;
+  background-color: #fff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* Enhanced dropdown styling for NAICS */
+.naics-searchable {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: white;
+}
+
+.naics-searchable option {
+  padding: 8px;
+  font-size: 13px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.naics-searchable option:hover {
+  background-color: #e3f2fd;
+}
+
+.naics-searchable option:selected {
+  background-color: #3498db;
+  color: white;
+}
+
+/* Search hint styling */
+.naics-search-hint {
+  font-size: 12px;
+  color: #7f8c8d;
+  font-style: italic;
+  margin-top: 5px;
+}
+
+/* Loading indicator for NAICS */
+.naics-loading {
+  text-align: center;
+  padding: 20px;
+  color: #7f8c8d;
+}
+
+.naics-loading::after {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .da-page {
@@ -192,13 +275,9 @@ textarea:focus {
     padding: 10px 15px;
     font-size: 14px;
   }
-}
-.naics-dropdown-enhanced {
-  width: 100%;
-  padding: 10px;
-  font-size: 14px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  max-height: 200px;
-  overflow-y: auto;
+  
+  .naics-search-input,
+  .naics-searchable {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
 }

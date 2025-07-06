@@ -10,6 +10,8 @@ metadata:
 ---
 features:
   css: privacy_framework.css
+  javascript:
+    - naics_search.js
   debug: False
   hide standard menu: False
 ---
@@ -23,62 +25,34 @@ objects:
 ---
 mandatory: True
 code: |
-  # Workflow control with loop prevention
+  # Initialize workflow tracking
   if not defined('workflow_step'):
     workflow_step = 1
   
-  # Step 1: Business Assessment with validation
+  # Step 1: Business Assessment
   if workflow_step == 1:
-    business_assessment_complete
+    if not defined('business_assessment_complete'):
+      # This will trigger the business assessment questions
+      need('business_assessment_complete')
     workflow_step = 2
   
-  # Step 2: Jurisdiction Determination
+  # Step 2: Jurisdiction Determination  
   if workflow_step == 2:
-    applicable_jurisdictions = determine_applicable_jurisdictions()
-    jurisdiction_analysis_complete
+    if not defined('applicable_jurisdictions'):
+      applicable_jurisdictions = determine_applicable_jurisdictions()
+    if not defined('jurisdiction_analysis_complete'):
+      need('jurisdiction_analysis_complete') 
     workflow_step = 3
   
   # Step 3: Document Generation
   if workflow_step == 3:
-    document_generation_complete
+    if not defined('document_generation_complete'):
+      need('document_generation_complete')
     workflow_step = 4
   
   # Final Results
   if workflow_step == 4:
     final_screen
----
-# Add timeout prevention question
-question: |
-  Debug: Workflow Status
-subquestion: |
-  Current workflow step: ${ workflow_step }
-  
-  % if defined('business_assessment_complete'):
-  ✓ Business Assessment Complete
-  % endif
-  
-  % if defined('jurisdiction_analysis_complete'):
-  ✓ Jurisdiction Analysis Complete  
-  % endif
-  
-  % if defined('document_generation_complete'):
-  ✓ Document Generation Complete
-  % endif
-
-field: debug_workflow_status
-show if: 
-  code: |
-    # Show debug only if workflow seems stuck
-    import time
-    current_time = time.time()
-    if not defined('last_activity_time'):
-      last_activity_time = current_time
-      False
-    elif current_time - last_activity_time > 30:  # 30 seconds
-      True
-    else:
-      last_activity_time = current_time
-      False
 ---
 question: |
   Privacy Compliance Assessment Complete

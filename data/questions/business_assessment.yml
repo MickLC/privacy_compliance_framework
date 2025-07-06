@@ -53,8 +53,8 @@ fields:
     choices:
       code: get_naics_choices()
     help: |
-      Use Ctrl+F (or Cmd+F on Mac) to search within the dropdown, or type the first letter to jump to entries
-    css class: naics-dropdown-enhanced
+      Start typing to search for your business activity (e.g., "legal", "software", "restaurant")
+    css class: naics-searchable
 continue button field: naics_selection_complete
 continue button label: "Continue"
 ---
@@ -185,16 +185,8 @@ code: |
   def get_naics_choices():
     """Load NAICS choices efficiently from JSON file"""
     try:
-      # More reliable file path resolution
-      import os
-      from docassemble.base.util import package_data_filename
-      
-      # Try package-specific path first
-      try:
-        naics_file = package_data_filename('docassemble.privacyframework', 'sources/naics.json')
-      except:
-        # Fallback to relative path
-        naics_file = path_and_mimetype('data/sources/naics.json')[0]
+      # Use the correct docassemble path function
+      naics_file = path_and_mimetype('data/sources/naics.json')[0]
       
       log(f"Attempting to load NAICS from: {naics_file}")
       
@@ -231,25 +223,23 @@ code: |
         
     except Exception as e:
       log(f"NAICS loading error: {str(e)}")
-      import traceback
-      log(f"Full traceback: {traceback.format_exc()}")
       return get_fallback_naics_choices()
   
   def get_fallback_naics_choices():
     """Essential fallback NAICS choices"""
     return [
-      ('541110', 'Offices of Lawyers'),
-      ('541613', 'Marketing Consulting Services'),
-      ('541511', 'Custom Computer Programming Services'),
-      ('541512', 'Computer Systems Design Services'),
-      ('621111', 'Offices of Physicians'),
-      ('621210', 'Offices of Dentists'),
-      ('522110', 'Commercial Banking'),
-      ('523110', 'Investment Banking and Securities'),
-      ('524113', 'Direct Life Insurance Carriers'),
-      ('541211', 'Offices of Certified Public Accountants'),
-      ('722511', 'Full-Service Restaurants'),
-      ('999999', 'Other - Please specify in additional information')
+      ('541110', '541110 - Offices of Lawyers'),
+      ('541613', '541613 - Marketing Consulting Services'),
+      ('541511', '541511 - Custom Computer Programming Services'),
+      ('541512', '541512 - Computer Systems Design Services'),
+      ('621111', '621111 - Offices of Physicians'),
+      ('621210', '621210 - Offices of Dentists'),
+      ('522110', '522110 - Commercial Banking'),
+      ('523110', '523110 - Investment Banking and Securities'),
+      ('524113', '524113 - Direct Life Insurance Carriers'),
+      ('541211', '541211 - Offices of Certified Public Accountants'),
+      ('722511', '722511 - Full-Service Restaurants'),
+      ('999999', '999999 - Other - Please specify in additional information')
     ]
   
   def get_industry_category(naics_code):
@@ -318,43 +308,46 @@ code: |
 # Business assessment completion with edit workflow
 code: |
   # Ensure all initial steps are complete
-  show_intro
-  basic_business_info_complete
-  naics_selection_complete
-  verification_complete
-  geographic_scope_complete
-  data_volume_complete
-  
-  # Review and verification loop
-  verification_review_complete
-  
-  # Handle edits if user wants to make changes
-  while not final_verification:
-    if edit_section == "Basic business information":
-      # Clear the basic info completion flags to force re-entry
-      undefine('basic_business_info_complete')
-      undefine('naics_selection_complete') 
-      undefine('verification_complete')
-      
-      # Force re-entry of basic info
-      basic_business_info_complete
-      naics_selection_complete
-      verification_complete
-      
-    elif edit_section == "Geographic and operational scope":
-      # Clear geographic scope completion to force re-entry
-      undefine('geographic_scope_complete')
-      geographic_scope_complete
-      
-    elif edit_section == "Data processing volume":
-      # Clear data volume completion to force re-entry
-      undefine('data_volume_complete')
-      data_volume_complete
+  if (defined('show_intro') and show_intro and
+      defined('basic_business_info_complete') and basic_business_info_complete and
+      defined('naics_selection_complete') and naics_selection_complete and
+      defined('verification_complete') and verification_complete and
+      defined('geographic_scope_complete') and geographic_scope_complete and
+      defined('data_volume_complete') and data_volume_complete and
+      defined('verification_review_complete') and verification_review_complete):
     
-    # Re-run verification after edits
-    undefine('verification_review_complete')
-    verification_review_complete
-  
-  # Mark business assessment as complete when verification passes
-  business_assessment_complete = True
+    # Handle edits if user wants to make changes
+    if not final_verification:
+      if edit_section == "Basic business information":
+        # Clear the basic info completion flags to force re-entry
+        undefine('basic_business_info_complete')
+        undefine('naics_selection_complete') 
+        undefine('verification_complete')
+        
+        # Force re-entry of basic info
+        basic_business_info_complete
+        naics_selection_complete
+        verification_complete
+        
+      elif edit_section == "Geographic and operational scope":
+        # Clear geographic scope completion to force re-entry
+        undefine('geographic_scope_complete')
+        geographic_scope_complete
+        
+      elif edit_section == "Data processing volume":
+        # Clear data volume completion to force re-entry
+        undefine('data_volume_complete')
+        data_volume_complete
+      
+      # Re-run verification after edits
+      undefine('verification_review_complete')
+      verification_review_complete
+    
+    # Mark business assessment as complete when verification passes
+    if final_verification:
+      business_assessment_complete = True
+    else:
+      business_assessment_complete = False
+  else:
+    business_assessment_complete = False
 ---
